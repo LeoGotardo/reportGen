@@ -161,6 +161,36 @@ const CSS = `
   .mob-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg2); border-top: 1px solid var(--b2); z-index: 200; padding: 8px 0 max(8px, env(safe-area-inset-bottom)); }
   .mob-tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; padding: 6px 0; font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
 
+  /* JSON import modal */
+  .json-modal-backdrop {
+    position: fixed; inset: 0; background: rgba(8,10,20,0.82);
+    z-index: 500; display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(8px); padding: 20px;
+  }
+  .json-modal {
+    background: var(--bg2); border: 1px solid var(--b2); border-radius: 20px;
+    width: 100%; max-width: 680px; max-height: 88vh;
+    display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.7);
+    animation: fadeUp .2s ease;
+  }
+  .json-modal-header {
+    display: flex; align-items: center; gap: 14px; padding: 22px 26px;
+    border-bottom: 1px solid var(--b1); flex-shrink: 0;
+  }
+  .json-modal-body { flex: 1; overflow-y: auto; padding: 24px 26px; }
+  .json-modal-footer { padding: 18px 26px; border-top: 1px solid var(--b1); display: flex; gap: 10px; flex-shrink: 0; }
+  .json-textarea {
+    width: 100%; min-height: 260px; resize: vertical;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.7;
+    padding: 16px 18px; border-radius: var(--r-sm);
+    background: #0d1117; color: #e6edf3;
+    border: 1.5px solid var(--b2); transition: border-color .18s, box-shadow .18s;
+  }
+  .json-textarea:focus { border-color: var(--ac); box-shadow: 0 0 0 3px var(--glow); outline: none; }
+  .json-error { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.35); border-radius: var(--r-sm); padding: 12px 16px; font-size: 13px; color: #fca5a5; margin-top: 14px; display: flex; align-items: flex-start; gap: 10px; }
+  .json-success { background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.35); border-radius: var(--r-sm); padding: 12px 16px; font-size: 13px; color: #86efac; margin-top: 14px; display: flex; align-items: center; gap: 10px; }
+
   /* Export progress overlay */
   .export-overlay {
     position: fixed; inset: 0; background: rgba(12,14,24,0.85); z-index: 999;
@@ -340,7 +370,7 @@ function Preview({ config }) {
     <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, lineHeight: 1.75, color: "#1a1a2e", background: "#fff" }}>
       <div style={{ padding: "56px 48px 42px", background: `linear-gradient(160deg, ${primary}08, transparent)`, borderBottom: `4px solid ${primary}` }}>
         {config.logo && <div style={{ marginBottom: 28 }}><img src={config.logo} alt="Logo" style={{ maxHeight: 66, maxWidth: 200, objectFit: "contain" }} /></div>}
-        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#aaa", textTransform: "uppercase", marginBottom: 14 }}>RELATÓRIO DE SEGURANÇA — ANÁLISE TÉCNICA</div>
+        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#aaa", textTransform: "uppercase", marginBottom: 14 }}>RELATÓRIO DE BUGS — ANÁLISE TÉCNICA</div>
         <div style={{ fontSize: 30, fontWeight: 900, color: primary, lineHeight: 1.15, marginBottom: 12, fontFamily: "Georgia, serif" }}>{config.titulo || "Título do Relatório"}</div>
         <div style={{ fontSize: 15, color: secondary, fontWeight: 500, paddingBottom: 22, marginBottom: 22, borderBottom: `1px solid ${secondary}30` }}>{config.subtitulo || "Escopo do sistema analisado"}</div>
         <div style={{ display: "flex", gap: 28, fontSize: 12, color: "#888" }}>
@@ -445,7 +475,7 @@ function Preview({ config }) {
                 )}
                 {hasTextoRes && (
                   <div style={{ marginBottom: 14 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>Texto de resolução</div>
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>Explicação de resolução</div>
                     {d.textoResolucao.filter(t => t.trim()).map((t, j) => (
                       <p key={j} style={{ fontSize: 12, color: "#333", lineHeight: 1.7, marginBottom: 6 }}>{t}</p>
                     ))}
@@ -630,7 +660,7 @@ function buildHtml(config) {
   </div>
   <div style="padding:56px 48px 42px;background:linear-gradient(160deg,${primary}08,transparent);border-bottom:4px solid ${primary}">
     ${logoHtml}
-    <div style="font-size:9px;font-weight:700;letter-spacing:3px;color:#aaa;text-transform:uppercase;margin-bottom:14px">RELATÓRIO DE SEGURANÇA — ANÁLISE TÉCNICA</div>
+    <div style="font-size:9px;font-weight:700;letter-spacing:3px;color:#aaa;text-transform:uppercase;margin-bottom:14px">RELATÓRIO DE BUGS — ANÁLISE TÉCNICA</div>
     <div style="font-size:30px;font-weight:900;color:${primary};line-height:1.15;margin-bottom:12px;font-family:Georgia,serif">${escHtml(config.titulo) || "Título do Relatório"}</div>
     <div style="font-size:15px;color:${secondary};font-weight:500;padding-bottom:22px;margin-bottom:22px;border-bottom:1px solid ${secondary}30">${escHtml(config.subtitulo) || "Escopo do sistema analisado"}</div>
     <div style="display:flex;gap:28px;font-size:12px;color:#888">
@@ -738,7 +768,7 @@ async function buildDocx(config) {
   coverChildren.push(
     new Paragraph({
       spacing: { before: 480, after: 80 },
-      children: [new TextRun({ text: "RELATÓRIO DE SEGURANÇA — ANÁLISE TÉCNICA", size: 16, color: "AAAAAA", font: "Arial", bold: true })]
+      children: [new TextRun({ text: "RELATÓRIO DE BUGS — ANÁLISE TÉCNICA", size: 16, color: "AAAAAA", font: "Arial", bold: true })]
     }),
     new Paragraph({
       spacing: { after: 160 },
@@ -1227,6 +1257,153 @@ function ExportPanel({ config }) {
   );
 }
 
+// ── JSON Import Modal ─────────────────────────────────────────────────────────
+function mergeConfig(base, incoming) {
+  // Ensure all required keys exist, merge deeply
+  const merged = { ...base, ...incoming };
+  merged.cores = { ...base.cores, ...(incoming.cores || {}) };
+  // Normalise problems: ensure each has an id + full detalhe shape
+  if (Array.isArray(merged.problemas)) {
+    merged.problemas = merged.problemas.map(p => ({
+      ...emptyProblem(),
+      ...p,
+      id: Date.now() + Math.random(),
+      detalhe: {
+        ondeOcorre: [""], codigoOnde: [""], porqueProblema: [""],
+        textoResolucao: [""], codigoResolucao: [""],
+        ...(p.detalhe || {}),
+      },
+    }));
+  } else {
+    merged.problemas = [];
+  }
+  if (!Array.isArray(merged.resumoExecutivo) || merged.resumoExecutivo.length === 0) merged.resumoExecutivo = [""];
+  if (!Array.isArray(merged.conclusao) || merged.conclusao.length === 0) merged.conclusao = [""];
+  return merged;
+}
+
+function JsonImportModal({ onClose, onImport }) {
+  const [text, setText] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    textareaRef.current?.focus();
+    const onKey = e => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const handleImport = () => {
+    setError("");
+    const trimmed = text.trim();
+    if (!trimmed) { setError("Cole um JSON válido no campo acima."); return; }
+    let parsed;
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch (e) {
+      setError(`JSON inválido: ${e.message}`);
+      return;
+    }
+    if (typeof parsed !== "object" || Array.isArray(parsed)) {
+      setError("O JSON deve ser um objeto (não um array).");
+      return;
+    }
+    const merged = mergeConfig(initialConfig, parsed);
+    setSuccess(true);
+    setTimeout(() => { onImport(merged); onClose(); }, 700);
+  };
+
+  const handleFile = e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => setText(ev.target.result);
+    reader.readAsText(file);
+  };
+
+  return (
+    <div className="json-modal-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="json-modal">
+        <div className="json-modal-header">
+          <div style={{ width: 44, height: 44, borderRadius: 13, background: "rgba(249,115,22,.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Bi name="braces-asterisk" size={20} style={{ color: "#f97316" }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "var(--tx)" }}>Importar JSON</div>
+            <div style={{ fontSize: 12, color: "var(--tx3)", marginTop: 2 }}>Cole ou carregue um arquivo de configuração exportado anteriormente</div>
+          </div>
+          <button onClick={onClose} className="btn-icon" style={{ flexShrink: 0 }}><Bi name="x-lg" size={15} /></button>
+        </div>
+
+        <div className="json-modal-body">
+          {/* Drop zone / file picker */}
+          <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+            <label className="btn-ghost" style={{ cursor: "pointer", fontSize: 12 }}>
+              <Bi name="folder2-open" size={13} /> Abrir arquivo .json
+              <input type="file" accept=".json,application/json" onChange={handleFile} style={{ display: "none" }} />
+            </label>
+            {text.trim() && (
+              <button className="btn-ghost" style={{ fontSize: 12, color: "var(--tx3)" }} onClick={() => { setText(""); setError(""); setSuccess(false); }}>
+                <Bi name="x-circle" size={13} /> Limpar
+              </button>
+            )}
+            <span style={{ fontSize: 12, color: "var(--tx3)", marginLeft: "auto" }}>
+              {text.trim() ? `${text.length.toLocaleString()} chars` : ""}
+            </span>
+          </div>
+
+          <textarea
+            ref={textareaRef}
+            className="json-textarea"
+            value={text}
+            onChange={e => { setText(e.target.value); setError(""); setSuccess(false); }}
+            placeholder={`Cole aqui o JSON exportado. Exemplo:\n{\n  "titulo": "Análise de Segurança",\n  "autor": "Equipe Red Team",\n  "versao": "2.0",\n  "problemas": [\n    {\n      "titulo": "SQL Injection",\n      "severity": "ALTA",\n      "resumo": "...",\n      "resolucao": "..."\n    }\n  ]\n}`}
+            spellCheck={false}
+          />
+
+          {error && (
+            <div className="json-error">
+              <Bi name="exclamation-triangle-fill" size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>{error}</span>
+            </div>
+          )}
+          {success && (
+            <div className="json-success">
+              <Bi name="check-circle-fill" size={15} style={{ flexShrink: 0 }} />
+              <span>JSON importado com sucesso! Aplicando…</span>
+            </div>
+          )}
+
+          {/* Schema hint */}
+          <div style={{ marginTop: 18, padding: "14px 16px", background: "var(--bg3)", borderRadius: "var(--r-sm)", border: "1px solid var(--b1)" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--tx3)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Campos aceitos</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {["titulo","subtitulo","autor","versao","formato","logo","cores","resumoExecutivo","problemas","conclusao"].map(k => (
+                <code key={k} style={{ fontSize: 11, fontFamily: "var(--mono)", background: "var(--surf)", color: "var(--ac2)", padding: "3px 9px", borderRadius: 6, border: "1px solid var(--b2)" }}>{k}</code>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="json-modal-footer">
+          <button onClick={onClose} className="btn-ghost" style={{ flex: 1, justifyContent: "center" }}>Cancelar</button>
+          <button
+            onClick={handleImport}
+            disabled={!text.trim() || success}
+            className="btn-primary"
+            style={{ flex: 2, justifyContent: "center", opacity: !text.trim() ? 0.5 : 1 }}
+          >
+            <Bi name={success ? "check-lg" : "upload"} size={15} />
+            {success ? "Importado!" : "Importar e aplicar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Stats({ config }) {
   const total = config.problemas.length;
   if (total === 0) return <span style={{ fontSize: 13, color: "var(--tx3)" }}>Sem problemas</span>;
@@ -1262,6 +1439,7 @@ export default function App() {
   const [rightTab, setRightTab] = useState("preview");
   const [mobTab, setMobTab] = useState("editor");
   const [editorWidth, setEditorWidth] = useState(48);
+  const [showImport, setShowImport] = useState(false);
   const bodyRef = useRef(null);
   const isMobile = useIsMobile();
 
@@ -1283,6 +1461,13 @@ export default function App() {
     <div className="app-shell">
       <style>{CSS}</style>
 
+      {showImport && (
+        <JsonImportModal
+          onClose={() => setShowImport(false)}
+          onImport={merged => setConfig(merged)}
+        />
+      )}
+
       <header className="app-header">
         <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
           <div style={{ width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg, var(--ac), var(--ac2))", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px var(--glow)" }}>
@@ -1298,6 +1483,15 @@ export default function App() {
         <Stats config={config} />
 
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={() => setShowImport(true)}
+            className="btn-ghost"
+            style={{ fontSize: 12, padding: "7px 14px", gap: 6 }}
+            title="Importar JSON"
+          >
+            <Bi name="upload" size={13} />
+            <span style={{ display: isMobile ? "none" : "inline" }}>Importar JSON</span>
+          </button>
           <span style={{ fontSize: 12, color: "var(--tx3)", fontFamily: "var(--mono)", background: "var(--surf)", padding: "4px 10px", borderRadius: 7, border: "1px solid var(--b2)" }}>{config.formato}</span>
           <span style={{ fontSize: 12, color: "var(--tx3)", fontFamily: "var(--mono)", background: "var(--surf)", padding: "4px 10px", borderRadius: 7, border: "1px solid var(--b2)" }}>v{config.versao}</span>
         </div>
