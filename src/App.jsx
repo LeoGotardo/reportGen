@@ -435,42 +435,68 @@ function ChangeCard({ change, idx, onChange, onRemove }) {
       </div>
 
       {open && (
-        <div className="anim" style={{ padding: "24px 24px 28px", borderTop: "1px solid var(--b1)" }}>
-          <div style={{ display: "grid", gridTemplateColumns: isMob ? "1fr" : "1fr 160px", gap: 16, marginBottom: 18 }}>
-            <div><label className="lbl">Título da mudança</label><input className="inp" value={change.titulo} onChange={e => upd("titulo", e.target.value)} placeholder="Ex: Refatorar sistema de autenticação JWT" /></div>
-            <div><label className="lbl">Tipo</label>
-              <select value={change.tipo} onChange={e => upd("tipo", e.target.value)}
-                style={{ padding: "11px 14px", fontSize: 13, fontWeight: 700, color: t.color, background: "var(--bg2)", border: `1.5px solid ${t.color}60`, borderRadius: "var(--r-sm)", outline: "none", width: "100%" }}>
-                {Object.entries(CHANGE_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-              </select>
-            </div>
-          </div>
-          <div style={{ marginBottom: 18 }}><label className="lbl">Arquivo(s) modificado(s)</label><input className="inp" value={change.arquivo} onChange={e => upd("arquivo", e.target.value)} placeholder="src/auth/jwt.service.ts, src/middleware/auth.ts" /></div>
-          <div style={{ display: "grid", gridTemplateColumns: isMob ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 18 }}>
-            <div><label className="lbl">Descrição da mudança</label><textarea className="inp" rows={3} value={change.descricao} onChange={e => upd("descricao", e.target.value)} placeholder="O que foi alterado e como..." /></div>
-            <div><label className="lbl">Motivação / Contexto</label><textarea className="inp" rows={3} value={change.motivacao} onChange={e => upd("motivacao", e.target.value)} placeholder="Por que essa mudança foi necessária..." /></div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: isMob ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 18 }}>
-            <div><label className="lbl">Impacto esperado</label><textarea className="inp" rows={2} value={change.impacto} onChange={e => upd("impacto", e.target.value)} placeholder="Ex: Redução de 40% no tempo de resposta..." /></div>
-            <div><label className="lbl">Notas adicionais</label><textarea className="inp" rows={2} value={change.notas} onChange={e => upd("notas", e.target.value)} placeholder="Dependências, cuidados, side effects..." /></div>
-          </div>
-          <div className="div" />
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-            <Bi name="code-slash" size={14} style={{ color: "var(--tx3)" }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--tx3)", letterSpacing: 1.1, textTransform: "uppercase" }}>Diff de Código</span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: isMob ? "1fr" : "1fr 1fr", gap: 16 }}>
-            <div>
-              <label className="lbl" style={{ color: "#DC2626" }}>⊟ Código antes (removido)</label>
-              <textarea className="inp" rows={6} value={change.codigoAntes} onChange={e => upd("codigoAntes", e.target.value)} placeholder={"// código original\nconst token = jwt.sign(payload)"} style={{ fontFamily: "var(--mono)", fontSize: 12, background: "rgba(220,38,38,0.05)", borderColor: "rgba(220,38,38,0.25)" }} />
-            </div>
-            <div>
-              <label className="lbl" style={{ color: "#10B981" }}>⊞ Código depois (adicionado)</label>
-              <textarea className="inp" rows={6} value={change.codigoDepois} onChange={e => upd("codigoDepois", e.target.value)} placeholder={"// código novo\nconst token = await jwtService.sign(payload)"} style={{ fontFamily: "var(--mono)", fontSize: 12, background: "rgba(16,185,129,0.05)", borderColor: "rgba(16,185,129,0.25)" }} />
-            </div>
+      <div className="anim" style={{ padding: "24px 24px 28px", borderTop: "1px solid var(--b1)" }}>
+        {/* Tipo selector com SVG badges */}
+        <div style={{ marginBottom: 20 }}>
+          <label className="lbl">Tipo de Mudança</label>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {Object.entries(CHANGE_TYPES).map(([k, v]) => (
+              <button
+                key={k}
+                onClick={() => upd("tipo", k)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "8px 16px", borderRadius: 10, cursor: "pointer",
+                  border: `2px solid ${change.tipo === k ? v.color : "var(--b2)"}`,
+                  background: change.tipo === k ? v.bg : "var(--bg2)",
+                  color: change.tipo === k ? v.color : "var(--tx3)",
+                  fontWeight: 700, fontSize: 13, transition: "all .15s",
+                }}
+              >
+                <svg viewBox="0 0 14 14" width="14" height="14" style={{ flexShrink: 0 }}>
+                  {k === "feat"     && <polygon points="7,1 9,5 14,5.5 10.5,9 11.5,14 7,11.5 2.5,14 3.5,9 0,5.5 5,5" fill={change.tipo === k ? v.color : "var(--tx3)"} />}
+                  {k === "fix"      && <><circle cx="7" cy="7" r="5.5" fill="none" stroke={change.tipo === k ? v.color : "var(--tx3)"} strokeWidth="2"/><line x1="5" y1="5" x2="9" y2="9" stroke={change.tipo === k ? v.color : "var(--tx3)"} strokeWidth="2"/><line x1="9" y1="5" x2="5" y2="9" stroke={change.tipo === k ? v.color : "var(--tx3)"} strokeWidth="2"/></>}
+                  {k === "breaking" && <><polygon points="7,1 13,13 1,13" fill="none" stroke={change.tipo === k ? v.color : "var(--tx3)"} strokeWidth="2"/><line x1="7" y1="5" x2="7" y2="9" stroke={change.tipo === k ? v.color : "var(--tx3)"} strokeWidth="2"/><circle cx="7" cy="11.5" r="1" fill={change.tipo === k ? v.color : "var(--tx3)"}/></>}
+                  {k === "refactor" && <><path d="M2,7 Q7,2 12,7 Q7,12 2,7" fill="none" stroke={change.tipo === k ? v.color : "var(--tx3)"} strokeWidth="2"/><polyline points="10,4 13,7 10,10" fill="none" stroke={change.tipo === k ? v.color : "var(--tx3)"} strokeWidth="2"/></>}
+                  {k === "perf"     && <><polyline points="1,11 5,7 8,9 13,3" fill="none" stroke={change.tipo === k ? v.color : "var(--tx3)"} strokeWidth="2"/><circle cx="13" cy="3" r="1.5" fill={change.tipo === k ? v.color : "var(--tx3)"}/></>}
+                  {k === "style"    && <><circle cx="7" cy="7" r="5" fill={change.tipo === k ? v.color : "var(--tx3)"} opacity="0.25"/><circle cx="7" cy="7" r="2.5" fill={change.tipo === k ? v.color : "var(--tx3)"}/></>}
+                  {k === "chore"    && <><circle cx="7" cy="7" r="5" fill="none" stroke={change.tipo === k ? v.color : "var(--tx3)"} strokeWidth="2"/><line x1="7" y1="2" x2="7" y2="4.5" stroke={change.tipo === k ? v.color : "var(--tx3)"} strokeWidth="2"/><line x1="7" y1="9.5" x2="7" y2="12" stroke={change.tipo === k ? v.color : "var(--tx3)"} strokeWidth="2"/><line x1="2" y1="7" x2="4.5" y2="7" stroke={change.tipo === k ? v.color : "var(--tx3)"} strokeWidth="2"/><line x1="9.5" y1="7" x2="12" y2="7" stroke={change.tipo === k ? v.color : "var(--tx3)"} strokeWidth="2"/></>}
+                </svg>
+                {v.label}
+              </button>
+            ))}
           </div>
         </div>
-      )}
+
+        <div style={{ display: "grid", gridTemplateColumns: isMob ? "1fr" : "1fr", gap: 16, marginBottom: 18 }}>
+          <div><label className="lbl">Título da mudança</label><input className="inp" value={change.titulo} onChange={e => upd("titulo", e.target.value)} placeholder="Ex: Refatorar sistema de autenticação JWT" /></div>
+        </div>
+        <div style={{ marginBottom: 18 }}><label className="lbl">Arquivo(s) modificado(s)</label><input className="inp" value={change.arquivo} onChange={e => upd("arquivo", e.target.value)} placeholder="src/auth/jwt.service.ts, src/middleware/auth.ts" /></div>
+        <div style={{ display: "grid", gridTemplateColumns: isMob ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 18 }}>
+          <div><label className="lbl">Descrição da mudança</label><textarea className="inp" rows={3} value={change.descricao} onChange={e => upd("descricao", e.target.value)} placeholder="O que foi alterado e como..." /></div>
+          <div><label className="lbl">Motivação / Contexto</label><textarea className="inp" rows={3} value={change.motivacao} onChange={e => upd("motivacao", e.target.value)} placeholder="Por que essa mudança foi necessária..." /></div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: isMob ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 18 }}>
+          <div><label className="lbl">Impacto esperado</label><textarea className="inp" rows={2} value={change.impacto} onChange={e => upd("impacto", e.target.value)} placeholder="Ex: Redução de 40% no tempo de resposta..." /></div>
+          <div><label className="lbl">Notas adicionais</label><textarea className="inp" rows={2} value={change.notas} onChange={e => upd("notas", e.target.value)} placeholder="Dependências, cuidados, side effects..." /></div>
+        </div>
+        <div className="div" />
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+          <Bi name="code-slash" size={14} style={{ color: "var(--tx3)" }} />
+          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--tx3)", letterSpacing: 1.1, textTransform: "uppercase" }}>Diff de Código</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: isMob ? "1fr" : "1fr 1fr", gap: 16 }}>
+          <div>
+            <label className="lbl" style={{ color: "#DC2626" }}>⊟ Código antes (removido)</label>
+            <textarea className="inp" rows={6} value={change.codigoAntes} onChange={e => upd("codigoAntes", e.target.value)} placeholder={"// código original\nconst token = jwt.sign(payload)"} style={{ fontFamily: "var(--mono)", fontSize: 12, background: "rgba(220,38,38,0.05)", borderColor: "rgba(220,38,38,0.25)" }} />
+          </div>
+          <div>
+            <label className="lbl" style={{ color: "#10B981" }}>⊞ Código depois (adicionado)</label>
+            <textarea className="inp" rows={6} value={change.codigoDepois} onChange={e => upd("codigoDepois", e.target.value)} placeholder={"// código novo\nconst token = await jwtService.sign(payload)"} style={{ fontFamily: "var(--mono)", fontSize: 12, background: "rgba(16,185,129,0.05)", borderColor: "rgba(16,185,129,0.25)" }} />
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   );
 }
@@ -1981,7 +2007,7 @@ async function buildAndDownloadDocx(config) {
 
 // ─── EXPORT PANEL ─────────────────────────────────────────────────────────────
 
-function ExportPanel({ config }) {
+function ExportPanel({ config, activeTemplate }) {
   const [exportedHtml, setExportedHtml] = useState(false);
   const [pdfState,  setPdfState]  = useState("idle");
   const [docxState, setDocxState] = useState("idle");
@@ -2664,13 +2690,17 @@ export default function App() {
                     </div>
                   </div>
                   <div style={{ background: "#fff" }}>
-                    {isChangelog ? <ChangelogPreview config={config} /> : <BugsPreview config={config} />}
+                    {activeTemplate === "study"
+                      ? <StudyPreview config={config} />
+                      : isChangelog
+                        ? <ChangelogPreview config={config} />
+                        : <BugsPreview config={config} />}
                   </div>
                 </div>
               </div>
             )}
             {rightTab === "json"   && <div style={{ height: "100%" }}><JsonOutput config={config} /></div>}
-            {rightTab === "export" && <ExportPanel config={config} />}
+            {rightTab === "export" && <ExportPanel config={config} activeTemplate={activeTemplate} />}
           </div>
         </div>
       </div>
