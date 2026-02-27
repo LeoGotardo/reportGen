@@ -30,6 +30,14 @@ const TEMPLATES = {
     accent: "#6271f5",
     accentBg: "rgba(98,113,245,0.12)",
   },
+  study: {
+    id: "study",
+    label: "Relatório de Estudo",
+    icon: "journal-bookmark-fill",
+    description: "Registro de aprendizado, conceitos e práticas de um tema",
+    accent: "#f59e0b",
+    accentBg: "rgba(245,158,11,0.12)",
+  },
   changelog: {
     id: "changelog",
     label: "Changelog / Mudanças",
@@ -38,6 +46,26 @@ const TEMPLATES = {
     accent: "#10b981",
     accentBg: "rgba(16,185,129,0.12)",
   },
+};
+
+// ─── STUDY TEMPLATE CONFIG ───────────────────────────────────────────────────
+const initialStudyConfig = {
+  template: "study",
+  formato: "ABNT",
+  cores: { primaria: "1F3864", secundaria: "2E75B6", concept: "f59e0b", practice: "10b981", summary: "6366f1", codeBg: "1E1E1E", codeText: "D4D4D4" },
+  logo: null, logoNome: "", titulo: "", subtitulo: "", autor: "", versao: "1.0",
+  introducao: [""], topicos: [], conclusao: [""],
+};
+
+const emptyStudyTopic = () => ({
+  id: Date.now() + Math.random(), titulo: "", tipo: "CONCEITO", resumo: "",
+  detalhe: { explicacao: [""], exemplos: [""], codigo: [""] },
+});
+
+const STUDY_TYPES = {
+  CONCEITO: { border: "#f59e0b", text: "#f59e0b", bg: "rgba(245,158,11,0.07)", icon: "lightbulb-fill" },
+  PRÁTICA:  { border: "#10b981", text: "#10b981", bg: "rgba(16,185,129,0.07)", icon: "code-square" },
+  RESUMO:   { border: "#6366f1", text: "#6366f1", bg: "rgba(99,102,241,0.07)", icon: "text-paragraph" },
 };
 
 // ─── BUGS TEMPLATE CONFIG ────────────────────────────────────────────────────
@@ -726,6 +754,148 @@ function BugsPreview({ config }) {
   );
 }
 
+// ─── STUDY COMPONENTS ─────────────────────────────────────────────────────────
+
+function StudyTopicCard({ topic, idx, onChange, onRemove }) {
+  const [open, setOpen] = useState(false);
+  const isMob = useIsMobile();
+  const typeInfo = STUDY_TYPES[topic.tipo] || STUDY_TYPES.CONCEITO;
+  const upd = (f, v) => onChange({ ...topic, [f]: v });
+  const updD = (f, v) => onChange({ ...topic, detalhe: { ...topic.detalhe, [f]: v } });
+  return (
+    <div className="card anim" style={{ border: `1px solid ${open ? typeInfo.border + "90" : "var(--b2)"}`, overflow: "hidden", transition: "border-color .2s" }}>
+      <div onClick={() => setOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "18px 22px", cursor: "pointer", userSelect: "none", background: open ? typeInfo.bg : "transparent", transition: "background .2s" }}>
+        <div style={{ width: 32, height: 32, borderRadius: 9, background: typeInfo.border, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Bi name={typeInfo.icon} size={14} style={{ color: "#fff" }} />
+        </div>
+        <span style={{ padding: "3px 12px", borderRadius: 20, fontSize: 10, fontWeight: 800, background: `${typeInfo.border}22`, color: typeInfo.text, flexShrink: 0, letterSpacing: .8, border: `1px solid ${typeInfo.border}40` }}>{topic.tipo}</span>
+        <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: topic.titulo ? "var(--tx)" : "var(--tx3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{topic.titulo || "Sem título"}</span>
+        <button onClick={e => { e.stopPropagation(); onRemove(); }} className="btn-icon" style={{ background: "transparent", border: "none", color: "var(--tx3)" }}><Bi name="trash3" size={13} /></button>
+        <span style={{ color: "var(--tx3)", marginLeft: 4 }}><Bi name={open ? "chevron-up" : "chevron-down"} size={14} /></span>
+      </div>
+      {open && (
+        <div className="anim" style={{ padding: "24px 24px 28px", borderTop: "1px solid var(--b1)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMob ? "1fr" : "1fr 140px", gap: 16, marginBottom: 18 }}>
+            <div><label className="lbl">Título do Tópico</label><input className="inp" value={topic.titulo} onChange={e => upd("titulo", e.target.value)} placeholder="Ex: Hooks no React" /></div>
+            <div><label className="lbl">Tipo</label>
+              <select value={topic.tipo} onChange={e => upd("tipo", e.target.value)}
+                style={{ padding: "11px 14px", fontSize: 13, fontWeight: 700, color: typeInfo.text, background: "var(--bg2)", border: `1.5px solid ${typeInfo.border}60`, borderRadius: "var(--r-sm)", outline: "none", width: "100%" }}>
+                {Object.keys(STUDY_TYPES).map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ marginBottom: 18 }}><label className="lbl">Resumo (tabela)</label><textarea className="inp" rows={2} value={topic.resumo} onChange={e => upd("resumo", e.target.value)} placeholder="Descrição breve do aprendizado..." /></div>
+          <div className="div" />
+          <ArrayField label="Explicação Detalhada" values={topic.detalhe.explicacao} onChange={v => updD("explicacao", v)} placeholder="Explique o conceito ou o que foi estudado..." />
+          <ArrayField label="Exemplos Práticos" values={topic.detalhe.exemplos} onChange={v => updD("exemplos", v)} placeholder="Exemplos de uso ou casos reais..." />
+          <ArrayField label="Código de Exemplo" values={topic.detalhe.codigo} onChange={v => updD("codigo", v)} mono placeholder="// exemplo de código" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StudyPreview({ config }) {
+  const primary = `#${config.cores.primaria}`;
+  const secondary = `#${config.cores.secundaria}`;
+  const typeColors = { CONCEITO: `#${config.cores.concept}`, PRÁTICA: `#${config.cores.practice}`, RESUMO: `#${config.cores.summary}` };
+  return (
+    <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, lineHeight: 1.75, color: "#1a1a2e", background: "#fff" }}>
+      <div style={{ padding: "56px 48px 42px", background: `linear-gradient(160deg, ${primary}08, transparent)`, borderBottom: `4px solid ${primary}` }}>
+        {config.logo && <div style={{ marginBottom: 28 }}><img src={config.logo} alt="Logo" style={{ maxHeight: 100, maxWidth: 350, objectFit: "contain" }} /></div>}
+        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#aaa", textTransform: "uppercase", marginBottom: 14 }}>RELATÓRIO DE ESTUDO — APRENDIZADO TÉCNICO</div>
+        <div style={{ fontSize: 30, fontWeight: 900, color: primary, lineHeight: 1.15, marginBottom: 12, fontFamily: "Georgia, serif" }}>{config.titulo || "Título do Estudo"}</div>
+        <div style={{ fontSize: 15, color: secondary, fontWeight: 500, paddingBottom: 22, marginBottom: 22, borderBottom: `1px solid ${secondary}30` }}>{config.subtitulo || "Tema ou assunto estudado"}</div>
+        <div style={{ display: "flex", gap: 28, fontSize: 12, color: "#888" }}>
+          <span><strong style={{ color: "#555" }}>Estudante:</strong> {config.autor || "—"}</span>
+          <span><strong style={{ color: "#555" }}>Versão:</strong> {config.versao}</span>
+          <span><strong style={{ color: "#555" }}>Data:</strong> {new Date().toLocaleDateString('pt-BR')}</span>
+        </div>
+      </div>
+      {config.introducao.some(t => t.trim()) && (
+        <div style={{ padding: "38px 48px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+            <div style={{ width: 5, height: 24, background: primary, borderRadius: 3 }} />
+            <div style={{ fontSize: 18, fontWeight: 800, color: primary }}>Introdução e Objetivos</div>
+          </div>
+          {config.introducao.filter(t => t.trim()).map((t, i) => <p key={i} style={{ fontSize: 13, color: "#333", marginBottom: 12 }}>{t}</p>)}
+        </div>
+      )}
+      {config.topicos.length > 0 && (
+        <div style={{ padding: "38px 48px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+            <div style={{ width: 5, height: 24, background: typeColors.CONCEITO, borderRadius: 3 }} />
+            <div style={{ fontSize: 18, fontWeight: 800, color: primary }}>Resumo dos Tópicos</div>
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: primary }}>
+                {["#", "Tópico", "Tipo", "Resumo"].map((h, i) => (
+                  <th key={h} style={{ color: "#fff", padding: "10px 14px", textAlign: "left", fontWeight: 700, width: i === 0 ? 38 : "auto" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {config.topicos.map((p, i) => {
+                const c = typeColors[p.tipo] || typeColors.CONCEITO;
+                return (
+                  <tr key={i} style={{ background: i % 2 ? "#f8f8fb" : "#fff" }}>
+                    <td style={{ padding: "9px 14px", borderBottom: "1px solid #eee", fontWeight: 700, color: "#bbb", fontFamily: "monospace", fontSize: 11 }}>{i + 1}</td>
+                    <td style={{ padding: "9px 14px", borderBottom: "1px solid #eee", fontWeight: 600 }}>{p.titulo || "—"}</td>
+                    <td style={{ padding: "9px 14px", borderBottom: "1px solid #eee" }}>
+                      <span style={{ background: `${c}18`, color: c, padding: "3px 10px", borderRadius: 12, fontSize: 10, fontWeight: 800, letterSpacing: .5 }}>{p.tipo}</span>
+                    </td>
+                    <td style={{ padding: "9px 14px", borderBottom: "1px solid #eee", color: "#444" }}>{p.resumo || "—"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {config.topicos.length > 0 && (
+        <div style={{ padding: "38px 48px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+            <div style={{ width: 5, height: 24, background: typeColors.PRÁTICA, borderRadius: 3 }} />
+            <div style={{ fontSize: 18, fontWeight: 800, color: primary }}>Desenvolvimento do Estudo</div>
+          </div>
+          {config.topicos.map((p, i) => {
+            const c = typeColors[p.tipo] || typeColors.CONCEITO;
+            const d = p.detalhe || {};
+            return (
+              <div key={i} style={{ marginBottom: 40, borderLeft: `4px solid ${c}`, paddingLeft: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 7, background: c, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", fontFamily: "monospace" }}>{i + 1}</span>
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#1a1a2e" }}>{p.titulo || "Sem título"}</div>
+                  <span style={{ background: `${c}18`, color: c, padding: "2px 10px", borderRadius: 12, fontSize: 10, fontWeight: 800, letterSpacing: .5, marginLeft: "auto" }}>{p.tipo}</span>
+                </div>
+                {d.explicacao?.some(t => t.trim()) && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>Explicação</div>{d.explicacao.filter(t => t.trim()).map((t, j) => <p key={j} style={{ fontSize: 12, color: "#333", lineHeight: 1.7, marginBottom: 6 }}>{t}</p>)}</div>}
+                {d.exemplos?.some(t => t.trim()) && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>Exemplos / Casos de uso</div>{d.exemplos.filter(t => t.trim()).map((t, j) => <p key={j} style={{ fontSize: 12, color: "#333", lineHeight: 1.7, marginBottom: 6 }}>{t}</p>)}</div>}
+                {d.codigo?.some(t => t.trim()) && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>Código de Exemplo</div>{d.codigo.filter(t => t.trim()).map((t, j) => <pre key={j} style={{ background: `#${config.cores.codeBg}`, color: `#${config.cores.codeText}`, padding: "12px 16px", borderRadius: 8, fontSize: 11, fontFamily: "monospace", lineHeight: 1.6, overflowX: "auto", marginBottom: 8, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{t}</pre>)}</div>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {config.conclusao.some(t => t.trim()) && (
+        <div style={{ padding: "38px 48px 56px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+            <div style={{ width: 5, height: 24, background: typeColors.RESUMO, borderRadius: 3 }} />
+            <div style={{ fontSize: 18, fontWeight: 800, color: primary }}>Conclusão e Próximos Passos</div>
+          </div>
+          {config.conclusao.filter(t => t.trim()).map((t, i) => <p key={i} style={{ fontSize: 13, color: "#333", marginBottom: 12 }}>{t}</p>)}
+        </div>
+      )}
+      <div style={{ padding: "24px 48px", borderTop: "1px solid #eee", display: "flex", alignItems: "center", justifyContent: "space-between", color: "#999", fontSize: 11 }}>
+        <span>Relatório de Estudo — {config.titulo || "Documento"}</span>
+        {config.logo && <img src={config.logo} alt="Logo" style={{ maxHeight: 32, maxWidth: 100, objectFit: "contain", opacity: 0.6 }} />}
+      </div>
+    </div>
+  );
+}
+
 // ─── TEMPLATE SELECTOR ────────────────────────────────────────────────────────
 
 function TemplateSelector({ current, onSelect, onClose }) {
@@ -953,6 +1123,146 @@ ${config.mudancas.length ? `
 </body></html>`;
 }
 
+function buildStudyHtml(config) {
+  const primary   = `#${config.cores.primaria}`;
+  const secondary = `#${config.cores.secundaria}`;
+  const typeColors = { CONCEITO: `#${config.cores.concept}`, PRÁTICA: `#${config.cores.practice}`, RESUMO: `#${config.cores.summary}` };
+  const escHtml = s => (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+  const topicRows = config.topicos.map((p, i) => {
+    const c = typeColors[p.tipo] || typeColors.CONCEITO;
+    return `<tr style="background:${i%2?"#f8f8fb":"#fff"}">
+      <td style="padding:9px 14px;border-bottom:1px solid #eee;font-weight:700;color:#bbb;font-family:monospace">${i+1}</td>
+      <td style="padding:9px 14px;border-bottom:1px solid #eee;font-weight:600">${escHtml(p.titulo)}</td>
+      <td style="padding:9px 14px;border-bottom:1px solid #eee"><span style="background:${c}22;color:${c};padding:3px 10px;border-radius:12px;font-size:10px;font-weight:800">${p.tipo}</span></td>
+      <td style="padding:9px 14px;border-bottom:1px solid #eee;color:#444">${escHtml(p.resumo)}</td>
+    </tr>`;
+  }).join("");
+
+  const developmentHtml = config.topicos.map((p, i) => {
+    const c = typeColors[p.tipo] || typeColors.CONCEITO;
+    const d = p.detalhe || {};
+    return `<div style="margin-bottom:40px;border-left:4px solid ${c};padding-left:20px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div style="width:28px;height:28px;border-radius:7px;background:${c};display:flex;align-items:center;justify-content:center;color:#fff;font-family:monospace;font-weight:800">${i+1}</div>
+        <div style="font-size:15px;font-weight:800;color:#1a1a2e">${escHtml(p.titulo)}</div>
+        <span style="background:${c}18;color:${c};padding:2px 10px;border-radius:12px;font-size:10px;font-weight:800;margin-left:auto">${p.tipo}</span>
+      </div>
+      ${d.explicacao?.some(t => t.trim()) ? `<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;color:#999;text-transform:uppercase;margin-bottom:6px">Explicação</div>${d.explicacao.filter(t => t.trim()).map(t => `<p style="font-size:12px;color:#333;line-height:1.7;margin-bottom:6px">${escHtml(t)}</p>`).join("")}</div>` : ""}
+      ${d.exemplos?.some(t => t.trim()) ? `<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;color:#999;text-transform:uppercase;margin-bottom:6px">Exemplos</div>${d.exemplos.filter(t => t.trim()).map(t => `<p style="font-size:12px;color:#333;line-height:1.7;margin-bottom:6px">${escHtml(t)}</p>`).join("")}</div>` : ""}
+      ${d.codigo?.some(t => t.trim()) ? `<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;color:#999;text-transform:uppercase;margin-bottom:6px">Código de Exemplo</div>${d.codigo.filter(t => t.trim()).map(t => `<pre style="background:#${config.cores.codeBg};color:#${config.cores.codeText};padding:12px 16px;border-radius:8px;font-size:11px;font-family:monospace;line-height:1.6;white-space:pre-wrap;word-break:break-all;margin-bottom:8px">${escHtml(t)}</pre>`).join("")}</div>` : ""}
+    </div>`;
+  }).join("");
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"/><title>${escHtml(config.titulo)||"Relatório de Estudo"}</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.75;color:#1a1a2e;background:#fff}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.no-print{display:none!important}@page{margin:1.5cm}}
+.print-bar{background:#1e2138;padding:12px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.print-btn{padding:8px 20px;border:none;border-radius:8px;background:#f59e0b;color:#fff;font-size:13px;font-weight:700;cursor:pointer}
+</style></head><body>
+<div class="print-bar no-print">
+  <span style="color:#fff;font-weight:700;font-size:14px">Relatório de Estudo</span>
+  <button class="print-btn" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+</div>
+<div style="padding:56px 48px 42px;background:linear-gradient(160deg,${primary}08,transparent);border-bottom:4px solid ${primary}">
+  ${config.logo ? `<div style="margin-bottom:28px"><img src="${config.logo}" style="max-height:100px;max-width:350px;object-fit:contain"/></div>` : ""}
+  <div style="font-size:9px;font-weight:700;letter-spacing:3px;color:#aaa;text-transform:uppercase;margin-bottom:14px">RELATÓRIO DE ESTUDO — APRENDIZADO TÉCNICO</div>
+  <div style="font-size:30px;font-weight:900;color:${primary};line-height:1.15;margin-bottom:12px;font-family:Georgia,serif">${escHtml(config.titulo)||"Título do Estudo"}</div>
+  <div style="font-size:15px;color:${secondary};font-weight:500;padding-bottom:22px;margin-bottom:22px;border-bottom:1px solid ${secondary}30">${escHtml(config.subtitulo)||""}</div>
+  <div style="display:flex;gap:28px;font-size:12px;color:#888">
+    <span><strong style="color:#555">Estudante:</strong> ${escHtml(config.autor)||"—"}</span>
+    <span><strong style="color:#555">Versão:</strong> ${escHtml(config.versao)}</span>
+  </div>
+</div>
+${config.introducao.length ? `<div style="padding:38px 48px 0"><div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><div style="width:5px;height:24px;background:${primary};border-radius:3px"></div><span style="font-size:18px;font-weight:800;color:${primary}">Introdução</span></div>${config.introducao.map(t => `<p style="font-size:13px;color:#333;margin-bottom:12px">${escHtml(t)}</p>`).join("")}</div>` : ""}
+${config.topicos.length ? `<div style="padding:38px 48px 0"><div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><div style="width:5px;height:24px;background:${typeColors.CONCEITO};border-radius:3px"></div><span style="font-size:18px;font-weight:800;color:${primary}">Tópicos</span></div><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:${primary}"><th style="color:#fff;padding:10px 14px;text-align:left">#</th><th style="color:#fff;padding:10px 14px;text-align:left">Tópico</th><th style="color:#fff;padding:10px 14px;text-align:left">Tipo</th><th style="color:#fff;padding:10px 14px;text-align:left">Resumo</th></tr></thead><tbody>${topicRows}</tbody></table></div>` : ""}
+<div style="padding:38px 48px 0"><div style="display:flex;align-items:center;gap:12px;margin-bottom:24px"><div style="width:5px;height:24px;background:${typeColors.PRÁTICA};border-radius:3px"></div><span style="font-size:18px;font-weight:800;color:${primary}">Desenvolvimento</span></div>${developmentHtml}</div>
+${config.conclusao.length ? `<div style="padding:38px 48px 56px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><div style="width:5px;height:24px;background:${typeColors.RESUMO};border-radius:3px"></div><span style="font-size:18px;font-weight:800;color:${primary}">Conclusão</span></div>${config.conclusao.map(t => `<p style="font-size:13px;color:#333;margin-bottom:12px">${escHtml(t)}</p>`).join("")}</div>` : ""}
+<div style="padding:24px 48px;border-top:1px solid #eee;display:flex;align-items:center;justify-content:space-between;color:#999;font-size:11px"><span>Relatório de Estudo — ${escHtml(config.titulo)}</span></div>
+</body></html>`;
+}
+
+function buildStudyPdfDef(config, logoDataUrl) {
+  const primary = pdfColor(config.cores.primaria);
+  const secondary = pdfColor(config.cores.secundaria);
+  const typeColors = { CONCEITO: pdfColor(config.cores.concept), PRÁTICA: pdfColor(config.cores.practice), RESUMO: pdfColor(config.cores.summary) };
+  const codeBg = pdfColor(config.cores.codeBg);
+  const codeText = pdfColor(config.cores.codeText);
+  const content = [];
+
+  if (logoDataUrl) content.push({ image: logoDataUrl, width: 160, margin: [0, 0, 0, 16] });
+  content.push(
+    { text: "RELATÓRIO DE ESTUDO — APRENDIZADO TÉCNICO", fontSize: 8, color: "#AAAAAA", bold: true, margin: [0, 0, 0, 10] },
+    { text: config.titulo || "Título do Estudo", fontSize: 26, bold: true, color: primary, margin: [0, 0, 0, 8] },
+    { text: config.subtitulo || "", fontSize: 13, color: secondary, margin: [0, 0, 0, 16] },
+    { canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: "#DDDDDD" }], margin: [0, 0, 0, 12] },
+    { columns: [{ text: [{ text: "Estudante: ", bold: true }, { text: config.autor || "—" }], fontSize: 10 }, { text: [{ text: "Versão: ", bold: true }, { text: config.versao || "1.0" }], fontSize: 10 }], margin: [0, 0, 0, 24] },
+    { text: "", pageBreak: "after" }
+  );
+
+  const intro = (config.introducao || []).filter(t => t.trim());
+  if (intro.length) {
+    content.push({ text: "Introdução", fontSize: 16, bold: true, color: primary, margin: [0, 0, 0, 10] }, ...intro.map(t => ({ text: t, fontSize: 11, margin: [0, 0, 0, 8], lineHeight: 1.5 })), { text: "", margin: [0, 16, 0, 0] });
+  }
+
+  if (config.topicos.length) {
+    content.push({ text: "Tabela de Tópicos", fontSize: 16, bold: true, color: primary, margin: [0, 0, 0, 10] });
+    const tableBody = [[{ text: "#", bold: true, color: "#FFFFFF", fillColor: primary }, { text: "Tópico", bold: true, color: "#FFFFFF", fillColor: primary }, { text: "Tipo", bold: true, color: "#FFFFFF", fillColor: primary }, { text: "Resumo", bold: true, color: "#FFFFFF", fillColor: primary }]];
+    config.topicos.forEach((p, i) => {
+      const fill = i % 2 ? "#F8F8FB" : "#FFFFFF";
+      tableBody.push([{ text: String(i+1), fillColor: fill }, { text: p.titulo, bold: true, fillColor: fill }, { text: p.tipo, color: typeColors[p.tipo], bold: true, fillColor: fill }, { text: p.resumo, fillColor: fill }]);
+    });
+    content.push({ table: { widths: [25, "*", 70, "*"], body: tableBody }, layout: "lightHorizontalLines", margin: [0, 0, 0, 24] }, { text: "", pageBreak: "after" });
+
+    content.push({ text: "Desenvolvimento do Estudo", fontSize: 16, bold: true, color: primary, margin: [0, 0, 0, 16] });
+    config.topicos.forEach((p, i) => {
+      const c = typeColors[p.tipo] || typeColors.CONCEITO;
+      const stack = [{ columns: [{ text: `${i + 1}. ${p.titulo}`, fontSize: 13, bold: true }, { text: p.tipo, fontSize: 10, bold: true, color: c, alignment: "right" }] }];
+      const pushS = (lbl, items) => {
+        if (!items?.some(t => t.trim())) return;
+        stack.push({ text: lbl, fontSize: 8, bold: true, color: "#999999", margin: [0, 6, 0, 3] });
+        items.filter(t => t.trim()).forEach(t => stack.push({ text: t, fontSize: 10, margin: [0, 0, 0, 3], lineHeight: 1.4 }));
+      };
+      const pushC = (lbl, items) => {
+        if (!items?.some(t => t.trim())) return;
+        stack.push({ text: lbl, fontSize: 8, bold: true, color: "#999999", margin: [0, 6, 0, 3] });
+        items.filter(t => t.trim()).forEach(t => {
+            const lines = t.split("\n");
+            const tableRows = lines.map(line => ([{
+              text: line,
+              fontSize: 8.5,
+              color: codeText,
+              fillColor: codeBg,
+              margin: [0, 1, 0, 1],
+              preserveLeadingSpaces: true
+            }]));
+            stack.push({
+              table: {
+                widths: ['*'],
+                body: tableRows
+              },
+              layout: 'noBorders',
+              margin: [0, 0, 0, 4]
+            });
+            stack.push({ text: "", margin: [0, 0, 0, 4] });
+        });
+      };
+      pushS("EXPLICAÇÃO", p.detalhe.explicacao);
+      pushS("EXEMPLOS", p.detalhe.exemplos);
+      pushC("CÓDIGO", p.detalhe.codigo);
+      content.push({ columns: [{ width: 5, canvas: [{ type: "rect", x: 0, y: 0, w: 5, h: 40, color: c }] }, { width: "*", stack, margin: [10, 0, 0, 0] }], margin: [0, 0, 0, 20] });
+    });
+  }
+
+  const conc = (config.conclusao || []).filter(t => t.trim());
+  if (conc.length) {
+    content.push({ text: "", pageBreak: "before" }, { text: "Conclusão", fontSize: 16, bold: true, color: typeColors.RESUMO, margin: [0, 0, 0, 10] }, ...conc.map(t => ({ text: t, fontSize: 11, margin: [0, 0, 0, 8], lineHeight: 1.5 })));
+  }
+
+  return { pageSize: config.formato === "ABNT" ? "A4" : "LETTER", pageMargins: [56, 56, 56, 56], content, footer: (cp, pc) => ({ columns: [{ text: `Relatório de Estudo — ${config.titulo}`, fontSize: 9, color: "#999999", margin: [56, 8, 0, 0] }, { text: `${cp}/${pc}`, fontSize: 9, color: "#999999", alignment: "right", margin: [0, 8, 56, 0] }] }), defaultStyle: { font: "Roboto" } };
+}
+
 // ─── PDF BUILDER (pdfmake — texto vetorial real, não imagem) ─────────────────
 
 async function loadPdfMake() {
@@ -1090,9 +1400,26 @@ function buildBugsPdfDef(config, logoDataUrl) {
       const pushCodeSection = (label, items) => {
         if (!items?.some(t => t.trim())) return;
         stack.push({ text: label, fontSize: 8, bold: true, color: "#999999", margin: [0, 6, 0, 3] });
-        items.filter(t => t.trim()).forEach(t =>
-          stack.push({ text: t, fontSize: 8.5, color: codeText, background: codeBg, margin: [0, 0, 0, 4], lineHeight: 1.5, preserveLeadingSpaces: true })
-        );
+        items.filter(t => t.trim()).forEach(t => {
+          const lines = t.split("\n");
+          const tableRows = lines.map(line => ([{
+            text: line,
+            fontSize: 8.5,
+            color: codeText,
+            fillColor: codeBg,
+            margin: [0, 1, 0, 1],
+            preserveLeadingSpaces: true
+          }]));
+          stack.push({
+            table: {
+              widths: ['*'],
+              body: tableRows
+            },
+            layout: 'noBorders',
+            margin: [0, 0, 0, 4]
+          });
+          stack.push({ text: "", margin: [0, 0, 0, 4] });
+        });
       };
       pushSection("ONDE OCORRE", d.ondeOcorre);
       pushCodeSection("CÓDIGO ONDE OCORRE", d.codigoOnde);
@@ -1255,15 +1582,41 @@ function buildChangelogPdfDef(config, logoDataUrl) {
         }
         if (m.codigoAntes?.trim()) {
           stack.push({ text: "ANTES", fontSize: 8, bold: true, color: "#DC2626", margin: [0, 4, 0, 2] });
-          m.codigoAntes.split("\n").forEach(l =>
-            stack.push({ text: `- ${l}`, fontSize: 8.5, color: "#FCA5A5", background: "#2D0000", lineHeight: 1.3, preserveLeadingSpaces: true })
-          );
+          const antesRows = m.codigoAntes.split("\n").map(l => ([{
+            text: `- ${l}`,
+            fontSize: 8.5,
+            color: "#FCA5A5",
+            fillColor: "#2D0000",
+            margin: [0, 1, 0, 1],
+            preserveLeadingSpaces: true
+          }]));
+          stack.push({
+            table: {
+              widths: ['*'],
+              body: antesRows
+            },
+            layout: 'noBorders',
+            margin: [0, 4, 0, 4]
+          });
         }
         if (m.codigoDepois?.trim()) {
           stack.push({ text: "DEPOIS", fontSize: 8, bold: true, color: "#10B981", margin: [0, 4, 0, 2] });
-          m.codigoDepois.split("\n").forEach(l =>
-            stack.push({ text: `+ ${l}`, fontSize: 8.5, color: "#86EFAC", background: "#002D1A", lineHeight: 1.3, preserveLeadingSpaces: true })
-          );
+          const depoisRows = m.codigoDepois.split("\n").map(l => ([{
+            text: `+ ${l}`,
+            fontSize: 8.5,
+            color: "#86EFAC",
+            fillColor: "#002D1A",
+            margin: [0, 1, 0, 1],
+            preserveLeadingSpaces: true
+          }]));
+          stack.push({
+            table: {
+              widths: ['*'],
+              body: depoisRows
+            },
+            layout: 'noBorders',
+            margin: [0, 4, 0, 4]
+          });
         }
         if (m.notas?.trim()) stack.push({ text: `⚠ Nota: ${m.notas}`, fontSize: 9, color: "#D97706", margin: [0, 4, 0, 0] });
 
@@ -1311,7 +1664,7 @@ async function buildAndDownloadPdf(config, onProgress) {
   onProgress("Preparando conteúdo…");
   const logoDataUrl = await logoToDataUrl(config.logo);
   onProgress("Gerando PDF vetorial…");
-  const buildDef = config.template === "changelog" ? buildChangelogPdfDef : buildBugsPdfDef;
+  const buildDef = config.template === "study" ? buildStudyPdfDef : (config.template === "changelog" ? buildChangelogPdfDef : buildBugsPdfDef);
   const docDef = buildDef(config, logoDataUrl);
   const slug = (config.titulo || "relatorio").replace(/\s+/g, "-").toLowerCase();
   return new Promise((resolve, reject) => {
@@ -1636,8 +1989,8 @@ function ExportPanel({ config }) {
   const [overlay,   setOverlay]   = useState(null);
 
   const isChangelog = config.template === "changelog";
-  const buildHtml = isChangelog ? buildChangelogHtml : buildBugsHtml;
-  const items = isChangelog ? config.mudancas : config.problemas;
+  const buildHtml = activeTemplate === "study" ? buildStudyHtml : (isChangelog ? buildChangelogHtml : buildBugsHtml);
+  const items = activeTemplate === "study" ? config.topicos : (isChangelog ? config.mudancas : config.problemas);
   const total = items.length;
   const slug = (config.titulo || "relatorio").replace(/\s+/g, "-").toLowerCase();
 
@@ -1923,6 +2276,19 @@ function ResizeHandle({ onResize }) {
 // ─── STATS ────────────────────────────────────────────────────────────────────
 
 function Stats({ config }) {
+  if (config.template === "study") {
+    const total = config.topicos.length;
+    if (total === 0) return <span style={{ fontSize: 13, color: "var(--tx3)" }}>Sem tópicos</span>;
+    const grouped = config.topicos.reduce((acc, m) => { acc[m.tipo] = (acc[m.tipo] || 0) + 1; return acc; }, {});
+    return (
+      <div style={{ display: "flex", gap: 7, alignItems: "center", flexWrap: "wrap" }}>
+        {Object.keys(STUDY_TYPES).filter(t => grouped[t]).map(t => {
+          const info = STUDY_TYPES[t];
+          return <span key={t} style={{ padding: "4px 11px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: `${info.border}18`, color: info.text, border: `1px solid ${info.border}30` }}>{grouped[t]} {t}</span>;
+        })}
+      </div>
+    );
+  }
   if (config.template === "changelog") {
     const total = config.mudancas.length;
     if (total === 0) return <span style={{ fontSize: 13, color: "var(--tx3)" }}>Sem mudanças</span>;
@@ -1946,6 +2312,76 @@ function Stats({ config }) {
       {alta  > 0 && <span style={{ padding: "4px 11px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: "rgba(192,0,0,.15)",   color: "#ff8080", border: "1px solid rgba(192,0,0,.3)"   }}>{alta}  Alta</span>}
       {media > 0 && <span style={{ padding: "4px 11px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: "rgba(197,90,17,.15)", color: "#ffa060", border: "1px solid rgba(197,90,17,.3)" }}>{media} Média</span>}
       {baixa > 0 && <span style={{ padding: "4px 11px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: "rgba(55,86,35,.15)",  color: "#86efac", border: "1px solid rgba(55,86,35,.3)"  }}>{baixa} Baixa</span>}
+    </div>
+  );
+}
+
+import { useEffect as useEff } from "react";
+function StudyEditor({ config, setConfig }) {
+  const isMobile = useIsMobile();
+  const upd     = useCallback((f, v) => setConfig(c => ({ ...c, [f]: v })), [setConfig]);
+  const updCore = useCallback((f, v) => setConfig(c => ({ ...c, cores: { ...c.cores, [f]: v } })), [setConfig]);
+  const updLogo = useCallback((url, nome) => setConfig(c => ({ ...c, logo: url, logoNome: nome })), [setConfig]);
+  const addTopic    = () => setConfig(c => ({ ...c, topicos: [...c.topicos, emptyStudyTopic()] }));
+  const updateTopic = (id, p) => setConfig(c => ({ ...c, topicos: c.topicos.map(x => x.id === id ? p : x) }));
+  const removeTopic = id      => setConfig(c => ({ ...c, topicos: c.topicos.filter(x => x.id !== id) }));
+
+  return (
+    <div className="editor-inner">
+      <div style={{ marginBottom: 48 }}>
+        <SectionHeader icon={<Bi name="journal-text" size={22} />} title="Informações do Estudo" subtitle="Metadados do relatório de aprendizado" />
+        <div className="card" style={{ padding: 30 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, marginBottom: 18 }}>
+            <div><label className="lbl">Formato</label><select className="inp" value={config.formato} onChange={e => upd("formato", e.target.value)}><option value="ABNT">ABNT (A4)</option><option value="CARTA">CARTA</option></select></div>
+            <div><label className="lbl">Versão</label><input className="inp" value={config.versao} onChange={e => upd("versao", e.target.value)} placeholder="1.0" /></div>
+          </div>
+          <div style={{ marginBottom: 18 }}><label className="lbl">Título</label><input className="inp" value={config.titulo} onChange={e => upd("titulo", e.target.value)} placeholder="Estudo de React Hooks e Context API" /></div>
+          <div style={{ marginBottom: 18 }}><label className="lbl">Subtítulo / Tema</label><input className="inp" value={config.subtitulo} onChange={e => upd("subtitulo", e.target.value)} placeholder="Desenvolvimento Frontend Moderno" /></div>
+          <div style={{ marginBottom: 22 }}><label className="lbl">Estudante / Autor</label><input className="inp" value={config.autor} onChange={e => upd("autor", e.target.value)} placeholder="Seu nome" /></div>
+          <LogoField value={config.logo} nome={config.logoNome} onChange={updLogo} />
+        </div>
+      </div>
+      <div style={{ marginBottom: 48 }}>
+        <SectionHeader icon={<Bi name="palette2" size={22} />} title="Paleta de Cores" subtitle="Personalização visual" />
+        <div className="card" style={{ padding: 30 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 18 }}>
+            {[["primaria","Cor Primária"],["secundaria","Cor Secundária"],["concept","Conceito"],["practice","Prática"],["summary","Resumo"],["codeBg","Código BG"],["codeText","Código Texto"]].map(([k, label]) => (
+              <ColorField key={k} label={label} value={config.cores[k]} onChange={v => updCore(k, v)} />
+            ))}
+          </div>
+        </div>
+      </div>
+      <div style={{ marginBottom: 48 }}>
+        <SectionHeader icon={<Bi name="info-circle" size={22} />} title="Introdução" />
+        <div className="card" style={{ padding: 30 }}>
+          <ArrayField values={config.introducao} onChange={v => upd("introducao", v)} placeholder="Objetivos do estudo e contexto..." />
+        </div>
+      </div>
+      <div style={{ marginBottom: 48 }}>
+        <SectionHeader icon={<Bi name="journal-bookmark-fill" size={22} />} title="Tópicos de Estudo" subtitle="Conceitos e práticas aprendidas" badge={config.topicos.length} />
+        {config.topicos.length === 0 ? (
+          <div className="card" style={{ padding: "56px 36px", textAlign: "center", border: "2px dashed var(--b2)" }}>
+            <div style={{ width: 72, height: 72, borderRadius: 22, background: "var(--s2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+              <Bi name="journal-plus" size={32} style={{ color: "var(--tx3)" }} />
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--tx2)", marginBottom: 10 }}>Nenhum tópico cadastrado</div>
+            <button onClick={addTopic} className="btn-primary"><Bi name="plus-circle-fill" size={16} /> Adicionar Tópico</button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {config.topicos.map((topic, i) => (
+              <StudyTopicCard key={topic.id} topic={topic} idx={i} onChange={p => updateTopic(topic.id, p)} onRemove={() => removeTopic(topic.id)} />
+            ))}
+            <button onClick={addTopic} className="btn-primary full" style={{ marginTop: 4 }}><Bi name="plus-circle-fill" size={16} /> Adicionar Tópico</button>
+          </div>
+        )}
+      </div>
+      <div>
+        <SectionHeader icon={<Bi name="check2-circle" size={22} />} title="Conclusão" />
+        <div className="card" style={{ padding: 30 }}>
+          <ArrayField values={config.conclusao} onChange={v => upd("conclusao", v)} placeholder="Resumo do aprendizado e próximos passos..." />
+        </div>
+      </div>
     </div>
   );
 }
@@ -2112,6 +2548,7 @@ function ChangelogEditor({ config, setConfig }) {
 
 export default function App() {
   const [activeTemplate, setActiveTemplate] = useState("bugs");
+  const [studyConfig, setStudyConfig] = useState(initialStudyConfig);
   const [bugsConfig, setBugsConfig] = useState(initialBugsConfig);
   const [changelogConfig, setChangelogConfig] = useState(initialChangelogConfig);
   const [rightTab, setRightTab] = useState("preview");
@@ -2122,8 +2559,8 @@ export default function App() {
   const bodyRef = useRef(null);
   const isMobile = useIsMobile();
 
-  const config    = activeTemplate === "changelog" ? changelogConfig : bugsConfig;
-  const setConfig = activeTemplate === "changelog" ? setChangelogConfig : setBugsConfig;
+  const config = activeTemplate === "study" ? studyConfig : (activeTemplate === "changelog" ? changelogConfig : bugsConfig);
+  const setConfig = activeTemplate === "study" ? setStudyConfig : (activeTemplate === "changelog" ? setChangelogConfig : setBugsConfig);
 
   const handleResize = useCallback(clientX => {
     if (!bodyRef.current) return;
@@ -2153,7 +2590,7 @@ export default function App() {
           onImport={merged => {
             const t = merged.template || "bugs";
             setActiveTemplate(t);
-            if (t === "changelog") setChangelogConfig(merged);
+            if (t === "study") setStudyConfig(merged); else if (t === "changelog") setChangelogConfig(merged);
             else setBugsConfig(merged);
           }}
           currentConfig={config}
@@ -2201,10 +2638,7 @@ export default function App() {
 
       <div className="app-body" ref={bodyRef}>
         <div className={`pane-editor${mobTab === "editor" ? " mob-active" : ""}`} style={{ width: `${editorWidth}%` }}>
-          {isChangelog
-            ? <ChangelogEditor config={changelogConfig} setConfig={setChangelogConfig} />
-            : <BugsEditor config={bugsConfig} setConfig={setBugsConfig} />
-          }
+          {activeTemplate === "study" ? <StudyEditor config={studyConfig} setConfig={setStudyConfig} /> : (isChangelog ? <ChangelogEditor config={changelogConfig} setConfig={setChangelogConfig} /> : <BugsEditor config={bugsConfig} setConfig={setBugsConfig} />)}
         </div>
 
         <ResizeHandle onResize={handleResize} />
