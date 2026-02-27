@@ -2,6 +2,8 @@
 
 **ReportGen** é uma ferramenta web moderna e intuitiva desenvolvida em **React** para a criação de relatórios técnicos profissionais. Focada em segurança da informação e desenvolvimento de software, a ferramenta permite gerar documentos estruturados como Relatórios de Bugs e Changelogs de forma rápida e padronizada.
 
+![Screenshot Principal do ReportGen](./public/assets/main_screenshot.webp)
+
 ---
 
 ## ✨ Funcionalidades Principais
@@ -9,18 +11,16 @@
 O ReportGen oferece dois templates principais, cada um com campos específicos e personalização visual:
 
 ### 🛡️ Relatório de Bugs (Security Report)
-Ideal para profissionais de segurança e QA documentarem vulnerabilidades.
-- **Estrutura ABNT:** Formatação automática seguindo padrões técnicos.
-- **Níveis de Severidade:** Classificação visual (Alta, Média, Baixa) com cores distintas.
-- **Detalhamento Técnico:** Campos para "Onde ocorre", "Por que é um problema" e "Resolução sugerida".
-- **Blocos de Código:** Suporte para inclusão de trechos de código com sintaxe destacada.
+
+Ideal para profissionais de segurança e QA documentarem vulnerabilidades e achados técnicos de segurança. Permite a criação de relatórios detalhados com formatação ABNT, classificação de severidade (Alta, Média, Baixa) e inclusão de blocos de código para contextualização técnica.
+
+![Template de Relatório de Bugs](./public/assets/reportgen_bugs_template.webp)
 
 ### 📝 Changelog / Mudanças
-Perfeito para equipes de desenvolvimento registrarem a evolução de seus projetos.
-- **Categorização de Mudanças:** Suporte para `feat`, `fix`, `breaking`, `refactor`, `perf`, `style` e `chore`.
-- **Histórico de Versões:** Controle de versão do release, datas de início/fim e link para repositório.
-- **Impacto e Motivação:** Campos dedicados para explicar o "porquê" de cada alteração.
-- **Diferencial de Código:** Visualização clara de "antes" e "depois" das mudanças.
+
+Perfeito para equipes de desenvolvimento registrarem a evolução de seus projetos. Este template facilita a categorização de mudanças (feat, fix, breaking, refactor, perf, style, chore), o controle de versão e a documentação do impacto e motivação de cada alteração, incluindo diferenciais de código (antes e depois).
+
+![Template de Changelog](./public/assets/changelog_screenshot.webp)
 
 ---
 
@@ -28,41 +28,49 @@ Perfeito para equipes de desenvolvimento registrarem a evolução de seus projet
 
 O projeto foi construído utilizando as melhores práticas do ecossistema React moderno:
 
-- **[React 19](https://react.dev/):** Biblioteca principal para construção da interface.
-- **[Vite](https://vitejs.dev/):** Ferramenta de build ultra-rápida para o desenvolvimento frontend.
-- **[Bootstrap Icons](https://icons.getbootstrap.com/):** Conjunto de ícones consistente e leve.
-- **CSS Custom Properties:** Sistema de temas dinâmico (Dark Mode nativo).
-- **JSON Import/Export:** Portabilidade total dos dados do relatório.
+*   **[React 19](https://react.dev/):** Biblioteca principal para construção da interface de usuário.
+*   **[Vite](https://vitejs.dev/):** Ferramenta de build ultra-rápida para o desenvolvimento frontend, garantindo uma experiência de desenvolvimento ágil.
+*   **[Bootstrap Icons](https://icons.getbootstrap.com/):** Conjunto de ícones consistente e leve, utilizado para enriquecer a interface visual.
+*   **CSS Custom Properties:** Implementação de um sistema de temas dinâmico, incluindo um Dark Mode nativo, para personalização visual.
+*   **JSON Import/Export:** Funcionalidade que oferece portabilidade total dos dados do relatório, permitindo salvar e carregar configurações facilmente.
 
 ---
 
 ## 🚀 Como Começar
 
 ### Pré-requisitos
-Certifique-se de ter o [Node.js](https://nodejs.org/) instalado em sua máquina.
+
+Certifique-se de ter o [Node.js](https://nodejs.org/) instalado em sua máquina, que inclui o npm (Node Package Manager).
 
 ### Instalação
-1. Clone o repositório:
-   ```bash
-   git clone https://github.com/LeoGotardo/reportGen.git
-   ```
-2. Acesse o diretório:
-   ```bash
-   cd reportGen
-   ```
-3. Instale as dependências:
-   ```bash
-   npm install
-   ```
+
+1.  Clone o repositório:
+    ```bash
+    git clone https://github.com/LeoGotardo/reportGen.git
+    ```
+2.  Acesse o diretório do projeto:
+    ```bash
+    cd reportGen
+    ```
+3.  Instale as dependências:
+    ```bash
+    npm install
+    ```
 
 ### Desenvolvimento
-Para rodar o projeto localmente:
+
+Para rodar o projeto localmente em modo de desenvolvimento:
+
 ```bash
 npm run dev
 ```
 
+O aplicativo estará disponível em `http://localhost:5173` (ou outra porta disponível, caso a 5173 esteja em uso).
+
 ### Build
-Para gerar a versão de produção:
+
+Para gerar a versão de produção do aplicativo:
+
 ```bash
 npm run build
 ```
@@ -73,31 +81,34 @@ npm run build
 
 ```text
 reportGen/
-├── public/          # Ativos estáticos
-├── src/
-│   ├── assets/      # Imagens e SVGs
-│   ├── App.jsx      # Lógica principal e componentes
-│   ├── App.css      # Estilização global e variáveis
-│   └── main.jsx     # Ponto de entrada da aplicação
-├── index.html       # Template HTML principal
-└── package.json     # Dependências e scripts
+├── public/          # Ativos estáticos (imagens, ícones, etc.)
+├── src/             # Código fonte da aplicação React
+│   ├── assets/      # Imagens e SVGs específicos da aplicação
+│   ├── App.jsx      # Componente principal da aplicação e lógica de negócio
+│   ├── App.css      # Estilização global e variáveis CSS
+│   └── main.jsx     # Ponto de entrada da aplicação (renderização do React)
+├── .eslintrc.js     # Configuração do ESLint para padronização de código
+├── index.html       # Template HTML principal da aplicação
+├── package.json     # Metadados do projeto, scripts e lista de dependências
+├── package-lock.json# Bloqueio de versões das dependências
+└── vite.config.js   # Configuração do Vite para o processo de build
 ```
 
 ---
 
 ## 💡 Como Usar
 
-1. **Selecione o Template:** Escolha entre "Relatório de Bugs" ou "Changelog" no cabeçalho.
-2. **Preencha as Informações:** Utilize o editor à esquerda para inserir os dados.
-3. **Visualize em Tempo Real:** O painel à direita mostra exatamente como o relatório ficará.
-4. **Personalize:** Altere cores, logos e títulos conforme a necessidade.
-5. **Exporte:** Salve seu progresso exportando o JSON ou utilize a função de impressão/exportação para gerar o documento final.
+1.  **Selecione o Template:** No cabeçalho da aplicação, escolha entre "Relatório de Bugs" ou "Changelog" para iniciar.
+2.  **Preencha as Informações:** Utilize o painel de edição à esquerda para inserir todos os dados relevantes do seu relatório.
+3.  **Visualize em Tempo Real:** O painel à direita exibe uma pré-visualização dinâmica do relatório, mostrando como ele ficará após a exportação.
+4.  **Personalize:** Altere cores, adicione logotipos e ajuste títulos conforme a necessidade do seu documento.
+5.  **Exporte:** Salve seu progresso a qualquer momento exportando o JSON do relatório. Utilize a função de impressão/exportação para gerar o documento final em PDF ou outros formatos suportados pelo navegador.
 
 ---
 
 ## 📄 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes (se disponível).
+Este projeto está sob a licença MIT. Para mais detalhes, consulte o arquivo [LICENSE](LICENSE) (se disponível no repositório).
 
 ---
 
