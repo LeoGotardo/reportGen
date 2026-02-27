@@ -472,7 +472,6 @@ function ChangelogPreview({ config }) {
 
   return (
     <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, lineHeight: 1.75, color: "#1a1a2e", background: "#fff" }}>
-      {/* Header */}
       <div style={{ padding: "48px 48px 36px", background: `linear-gradient(160deg, #0F4C3508, transparent)`, borderBottom: `4px solid ${primary}` }}>
         {config.logo && <div style={{ marginBottom: 24 }}><img src={config.logo} alt="Logo" style={{ maxHeight: 80, maxWidth: 280, objectFit: "contain" }} /></div>}
         <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#aaa", textTransform: "uppercase", marginBottom: 12 }}>CHANGELOG — REGISTRO DE MUDANÇAS</div>
@@ -487,7 +486,6 @@ function ChangelogPreview({ config }) {
         </div>
       </div>
 
-      {/* Summary badges */}
       {config.mudancas.length > 0 && (
         <div style={{ padding: "28px 48px 0", display: "flex", gap: 10, flexWrap: "wrap" }}>
           {typeOrder.filter(t => grouped[t]?.length > 0).map(t => {
@@ -502,7 +500,6 @@ function ChangelogPreview({ config }) {
         </div>
       )}
 
-      {/* Descrição geral */}
       {config.descricao.some(t => t.trim()) && (
         <div style={{ padding: "32px 48px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
@@ -513,7 +510,6 @@ function ChangelogPreview({ config }) {
         </div>
       )}
 
-      {/* Changes table */}
       {config.mudancas.length > 0 && (
         <div style={{ padding: "32px 48px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
@@ -549,7 +545,6 @@ function ChangelogPreview({ config }) {
         </div>
       )}
 
-      {/* Detailed changes */}
       {config.mudancas.length > 0 && (
         <div style={{ padding: "32px 48px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
@@ -610,7 +605,6 @@ function ChangelogPreview({ config }) {
         </div>
       )}
 
-      {/* Resumo / Conclusão */}
       {config.resumo.some(t => t.trim()) && (
         <div style={{ padding: "32px 48px 48px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
@@ -629,7 +623,7 @@ function ChangelogPreview({ config }) {
   );
 }
 
-// ─── BUGS PREVIEW (original) ─────────────────────────────────────────────────
+// ─── BUGS PREVIEW ─────────────────────────────────────────────────────────────
 
 function BugsPreview({ config }) {
   const primary = `#${config.cores.primaria}`;
@@ -959,118 +953,372 @@ ${config.mudancas.length ? `
 </body></html>`;
 }
 
-// ─── PDF BUILDER (jsPDF + html2canvas) ────────────────────────────────────────
+// ─── PDF BUILDER (pdfmake — texto vetorial real, não imagem) ─────────────────
 
-async function loadPdfLibs() {
-  const load = src => new Promise((res, rej) => {
-    if (document.querySelector(`script[src="${src}"]`)) return res();
-    const s = document.createElement("script");
-    s.src = src; s.onload = res; s.onerror = rej;
-    document.head.appendChild(s);
+async function loadPdfMake() {
+  if (window._pdfMakeReady) return;
+  const load = src =>
+    new Promise((res, rej) => {
+      if (document.querySelector(`script[src="${src}"]`)) return res();
+      const s = document.createElement("script");
+      s.src = src; s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  await load("https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js");
+  await load("https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js");
+  // Assign VFS - vfs_fonts.js may expose it in different ways
+  if (window.pdfMake) {
+    if (!window.pdfMake.vfs) {
+      if (window.pdfFonts?.pdfMake?.vfs) window.pdfMake.vfs = window.pdfFonts.pdfMake.vfs;
+      else if (window.pdfFonts?.vfs) window.pdfMake.vfs = window.pdfFonts.vfs;
+    }
+  }
+
+  // Garante que apenas Roboto (disponível no VFS padrão) está registrado
+  // Courier foi removido do uso — blocos de código usam Roboto com estilo visual
+  window._pdfMakeReady = true;
+}
+
+function pdfColor(hex) {
+  return `#${(hex || "000000").replace("#", "").padStart(6, "0")}`;
+}
+
+async function logoToDataUrl(logoSrc) {
+  if (!logoSrc) return null;
+  if (logoSrc.startsWith("data:")) return logoSrc;
+  return new Promise(res => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = img.width; c.height = img.height;
+      c.getContext("2d").drawImage(img, 0, 0);
+      res(c.toDataURL("image/png"));
+    };
+    img.onerror = () => res(null);
+    img.src = logoSrc;
   });
-  await load("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
-  await load("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+}
+
+function buildBugsPdfDef(config, logoDataUrl) {
+  const primary = pdfColor(config.cores.primaria);
+  const secondary = pdfColor(config.cores.secundaria);
+  const sevColors = {
+    ALTA:  pdfColor(config.cores.altaSev),
+    MÉDIA: pdfColor(config.cores.mediaSev),
+    BAIXA: pdfColor(config.cores.baixaSev),
+  };
+  const codeBg   = pdfColor(config.cores.codeBg);
+  const codeText = pdfColor(config.cores.codeText);
+  const isAbnt = config.formato === "ABNT";
+  const content = [];
+
+  // Capa
+  if (logoDataUrl) content.push({ image: logoDataUrl, width: 160, margin: [0, 0, 0, 16] });
+  content.push(
+    { text: "RELATÓRIO DE BUGS — ANÁLISE TÉCNICA", fontSize: 8, color: "#AAAAAA", bold: true, margin: [0, 0, 0, 10] },
+    { text: config.titulo || "Título do Relatório", fontSize: 26, bold: true, color: primary, margin: [0, 0, 0, 8] },
+    { text: config.subtitulo || "", fontSize: 13, color: secondary, margin: [0, 0, 0, 16] },
+    { canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: "#DDDDDD" }], margin: [0, 0, 0, 12] },
+    {
+      columns: [
+        { text: [{ text: "Autor: ", bold: true, color: "#555555" }, { text: config.autor || "—", color: "#888888" }], fontSize: 10 },
+        { text: [{ text: "Versão: ", bold: true, color: "#555555" }, { text: config.versao || "1.0", color: "#888888" }], fontSize: 10 },
+        { text: [{ text: "Formato: ", bold: true, color: "#555555" }, { text: config.formato, color: "#888888" }], fontSize: 10 },
+      ],
+      margin: [0, 0, 0, 24],
+    },
+    { text: "", pageBreak: "after" }
+  );
+
+  // Resumo Executivo
+  const resumoTextos = (config.resumoExecutivo || []).filter(t => t.trim());
+  if (resumoTextos.length > 0) {
+    content.push(
+      { text: "Resumo Executivo", fontSize: 16, bold: true, color: primary, margin: [0, 0, 0, 10] },
+      ...resumoTextos.map(t => ({ text: t, fontSize: 11, color: "#333333", margin: [0, 0, 0, 8], lineHeight: 1.5 })),
+      { text: "", margin: [0, 16, 0, 0] }
+    );
+  }
+
+  // Tabela de Problemas
+  if (config.problemas.length > 0) {
+    content.push({ text: "Tabela de Problemas", fontSize: 16, bold: true, color: primary, margin: [0, 0, 0, 10] });
+    const tableBody = [
+      [
+        { text: "#",          bold: true, color: "#FFFFFF", fillColor: primary, fontSize: 10, margin: [4, 6, 4, 6] },
+        { text: "Problema",   bold: true, color: "#FFFFFF", fillColor: primary, fontSize: 10, margin: [4, 6, 4, 6] },
+        { text: "Severidade", bold: true, color: "#FFFFFF", fillColor: primary, fontSize: 10, margin: [4, 6, 4, 6] },
+        { text: "Resolução",  bold: true, color: "#FFFFFF", fillColor: primary, fontSize: 10, margin: [4, 6, 4, 6] },
+      ],
+      ...config.problemas.map((p, i) => {
+        const c = sevColors[p.severity] || sevColors.ALTA;
+        const fill = i % 2 ? "#F8F8FB" : "#FFFFFF";
+        return [
+          { text: String(i + 1),  bold: true, color: "#BBBBBB", fillColor: fill, fontSize: 10, margin: [4, 5, 4, 5] },
+          { text: p.titulo || "—", bold: true, fillColor: fill, fontSize: 11, margin: [4, 5, 4, 5] },
+          { text: p.severity, color: c, bold: true, fillColor: fill, fontSize: 10, margin: [4, 5, 4, 5] },
+          { text: p.resolucao || "—", fillColor: fill, fontSize: 10, margin: [4, 5, 4, 5], color: "#444444" },
+        ];
+      }),
+    ];
+    content.push({
+      table: { widths: [30, "*", 70, "*"], body: tableBody },
+      layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => "#DDDDDD", vLineColor: () => "#DDDDDD" },
+      margin: [0, 0, 0, 24],
+    }, { text: "", pageBreak: "after" });
+
+    // Detalhamento
+    content.push({ text: "Detalhamento dos Problemas", fontSize: 16, bold: true, color: primary, margin: [0, 0, 0, 16] });
+    config.problemas.forEach((p, i) => {
+      const c = sevColors[p.severity] || sevColors.ALTA;
+      const d = p.detalhe || {};
+      const stack = [
+        {
+          columns: [
+            { text: `${i + 1}. ${p.titulo || "Sem título"}`, fontSize: 13, bold: true, color: "#1A1A2E" },
+            { text: p.severity, fontSize: 10, bold: true, color: c, alignment: "right" },
+          ],
+        },
+      ];
+      if (p.resumo) stack.push({ text: p.resumo, fontSize: 10, color: "#333333", margin: [0, 6, 0, 4], lineHeight: 1.5 });
+      const pushSection = (label, items) => {
+        if (!items?.some(t => t.trim())) return;
+        stack.push({ text: label, fontSize: 8, bold: true, color: "#999999", margin: [0, 6, 0, 3] });
+        items.filter(t => t.trim()).forEach(t => stack.push({ text: t, fontSize: 10, color: "#333333", margin: [0, 0, 0, 3], lineHeight: 1.4 }));
+      };
+      const pushCodeSection = (label, items) => {
+        if (!items?.some(t => t.trim())) return;
+        stack.push({ text: label, fontSize: 8, bold: true, color: "#999999", margin: [0, 6, 0, 3] });
+        items.filter(t => t.trim()).forEach(t =>
+          stack.push({ text: t, fontSize: 8.5, color: codeText, background: codeBg, margin: [0, 0, 0, 4], lineHeight: 1.5, preserveLeadingSpaces: true })
+        );
+      };
+      pushSection("ONDE OCORRE", d.ondeOcorre);
+      pushCodeSection("CÓDIGO ONDE OCORRE", d.codigoOnde);
+      pushSection("POR QUE É UM PROBLEMA", d.porqueProblema);
+      pushSection("EXPLICAÇÃO DE RESOLUÇÃO", d.textoResolucao);
+      pushCodeSection("CÓDIGO DE RESOLUÇÃO", d.codigoResolucao);
+
+      content.push({
+        columns: [
+          { width: 5, canvas: [{ type: "rect", x: 0, y: 0, w: 5, h: 60, color: c }] },
+          { width: "*", stack, margin: [10, 0, 0, 0] },
+        ],
+        margin: [0, 0, 0, 20],
+      });
+    });
+  }
+
+  // Conclusão
+  const conclusaoTextos = (config.conclusao || []).filter(t => t.trim());
+  if (conclusaoTextos.length > 0) {
+    content.push(
+      { text: "", pageBreak: "before" },
+      { text: "Conclusão", fontSize: 16, bold: true, color: pdfColor(config.cores.baixaSev), margin: [0, 0, 0, 10] },
+      ...conclusaoTextos.map(t => ({ text: t, fontSize: 11, color: "#333333", margin: [0, 0, 0, 8], lineHeight: 1.5 }))
+    );
+  }
+
+  return {
+    pageSize: isAbnt ? "A4" : "LETTER",
+    pageMargins: [56, 56, 56, 56],
+    content,
+    footer: (currentPage, pageCount) => ({
+      columns: [
+        { text: `Relatório Técnico — ${config.titulo || "Documento"}`, fontSize: 9, color: "#999999", margin: [56, 8, 0, 0] },
+        { text: `${currentPage}/${pageCount}`, fontSize: 9, color: "#999999", alignment: "right", margin: [0, 8, 56, 0] },
+      ],
+    }),
+    defaultStyle: { font: "Roboto", fontSize: 11, color: "#1A1A2E" },
+
+  };
+}
+
+// SVG icons for change types in PDF
+function changeTypeSvg(tipo, color, size = 14) {
+  const shapes = {
+    feat:     `<polygon points="7,1 9,5 14,5.5 10.5,9 11.5,14 7,11.5 2.5,14 3.5,9 0,5.5 5,5" fill="${color}"/>`,
+    fix:      `<circle cx="7" cy="7" r="6" fill="none" stroke="${color}" stroke-width="2"/><line x1="5" y1="5" x2="9" y2="9" stroke="${color}" stroke-width="2"/><line x1="9" y1="5" x2="5" y2="9" stroke="${color}" stroke-width="2"/>`,
+    breaking: `<polygon points="7,1 13,13 1,13" fill="none" stroke="${color}" stroke-width="2"/><line x1="7" y1="5" x2="7" y2="9" stroke="${color}" stroke-width="2"/><circle cx="7" cy="11" r="1" fill="${color}"/>`,
+    refactor: `<path d="M3,7 Q7,2 11,7 Q7,12 3,7" fill="none" stroke="${color}" stroke-width="2"/><polyline points="10,4 13,7 10,10" fill="none" stroke="${color}" stroke-width="2"/>`,
+    perf:     `<polyline points="1,11 5,7 8,9 13,3" fill="none" stroke="${color}" stroke-width="2"/><circle cx="13" cy="3" r="1.5" fill="${color}"/>`,
+    style:    `<circle cx="7" cy="7" r="5" fill="${color}" opacity="0.3"/><circle cx="7" cy="7" r="2.5" fill="${color}"/>`,
+    chore:    `<circle cx="7" cy="7" r="5" fill="none" stroke="${color}" stroke-width="2"/><line x1="7" y1="2" x2="7" y2="5" stroke="${color}" stroke-width="2"/><line x1="7" y1="9" x2="7" y2="12" stroke="${color}" stroke-width="2"/><line x1="2" y1="7" x2="5" y2="7" stroke="${color}" stroke-width="2"/><line x1="9" y1="7" x2="12" y2="7" stroke="${color}" stroke-width="2"/>`,
+  };
+  const shape = shapes[tipo] || shapes.chore;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="${size}" height="${size}">${shape}</svg>`;
+}
+
+function buildChangelogPdfDef(config, logoDataUrl) {
+  const isAbnt = config.formato === "ABNT";
+  const primary = pdfColor(config.cores.primaria);
+  const typeColors = {
+    feat:     pdfColor(config.cores.feat),
+    fix:      pdfColor(config.cores.fix),
+    breaking: pdfColor(config.cores.breaking),
+    refactor: pdfColor(config.cores.refactor),
+    perf:     pdfColor(config.cores.perf),
+    style:    pdfColor(config.cores.style || "DB2777"),
+    chore:    pdfColor(config.cores.chore),
+  };
+  const codeBg   = pdfColor(config.cores.codeBg);
+  const codeText = pdfColor(config.cores.codeText);
+  const typeOrder = ["breaking","feat","fix","refactor","perf","style","chore"];
+  const content = [];
+
+  // Capa
+  if (logoDataUrl) content.push({ image: logoDataUrl, width: 160, margin: [0, 0, 0, 16] });
+  content.push(
+    { text: "CHANGELOG — REGISTRO DE MUDANÇAS", fontSize: 8, color: "#AAAAAA", bold: true, margin: [0, 0, 0, 10] },
+    { text: config.titulo || "Changelog do Projeto", fontSize: 26, bold: true, color: primary, margin: [0, 0, 0, 8] },
+    { text: config.subtitulo || "", fontSize: 13, color: "#10B981", margin: [0, 0, 0, 16] },
+    { canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: "#DDDDDD" }], margin: [0, 0, 0, 12] }
+  );
+  const metaItems = [];
+  if (config.projeto) metaItems.push({ text: [{ text: "Projeto: ", bold: true, color: "#555555" }, { text: config.projeto, color: "#888888" }], fontSize: 10 });
+  if (config.autor)   metaItems.push({ text: [{ text: "Autor: ",   bold: true, color: "#555555" }, { text: config.autor,   color: "#888888" }], fontSize: 10 });
+  metaItems.push({ text: [{ text: "Versão: ", bold: true, color: "#555555" }, { text: config.versao || "1.0", color: "#888888" }], fontSize: 10 });
+  if (config.dataInicio) metaItems.push({ text: [{ text: "Período: ", bold: true, color: "#555555" }, { text: config.dataInicio + (config.dataFim ? ` → ${config.dataFim}` : ""), color: "#888888" }], fontSize: 10 });
+  content.push({ columns: metaItems, margin: [0, 0, 0, 24] }, { text: "", pageBreak: "after" });
+
+  // Visão Geral
+  const descTextos = (config.descricao || []).filter(t => t.trim());
+  if (descTextos.length > 0) {
+    content.push(
+      { text: "Visão Geral", fontSize: 16, bold: true, color: primary, margin: [0, 0, 0, 10] },
+      ...descTextos.map(t => ({ text: t, fontSize: 11, color: "#333333", margin: [0, 0, 0, 8], lineHeight: 1.5 })),
+      { text: "", margin: [0, 16, 0, 0] }
+    );
+  }
+
+  // Tabela de Mudanças
+  if (config.mudancas.length > 0) {
+    content.push({ text: "Tabela de Mudanças", fontSize: 16, bold: true, color: primary, margin: [0, 0, 0, 10] });
+    const tableBody = [
+      [
+        { text: "#",          bold: true, color: "#FFFFFF", fillColor: primary, fontSize: 10, margin: [4, 6, 4, 6] },
+        { text: "Tipo",       bold: true, color: "#FFFFFF", fillColor: primary, fontSize: 10, margin: [4, 6, 4, 6] },
+        { text: "Mudança",    bold: true, color: "#FFFFFF", fillColor: primary, fontSize: 10, margin: [4, 6, 4, 6] },
+        { text: "Arquivo(s)", bold: true, color: "#FFFFFF", fillColor: primary, fontSize: 10, margin: [4, 6, 4, 6] },
+        { text: "Impacto",    bold: true, color: "#FFFFFF", fillColor: primary, fontSize: 10, margin: [4, 6, 4, 6] },
+      ],
+      ...config.mudancas.map((m, i) => {
+        const info = CHANGE_TYPES[m.tipo] || CHANGE_TYPES.feat;
+        const c = typeColors[m.tipo] || info.color;
+        const fill = i % 2 ? "#F8F9FB" : "#FFFFFF";
+        return [
+          { text: String(i + 1),  bold: true, color: "#BBBBBB", fillColor: fill, fontSize: 9,  margin: [4, 5, 4, 5] },
+          { columns: [
+              { svg: changeTypeSvg(m.tipo, c, 12), width: 14, margin: [0, 1, 4, 0] },
+              { text: info.label, bold: true, color: c, fontSize: 10 },
+            ], fillColor: fill, margin: [4, 5, 4, 5] },
+          { text: m.titulo || "—", bold: true,                  fillColor: fill, fontSize: 10, margin: [4, 5, 4, 5] },
+          { text: m.arquivo || "—",            color: "#666666", fillColor: fill, fontSize: 9,  margin: [4, 5, 4, 5] },
+          { text: m.impacto || "—",            color: "#444444", fillColor: fill, fontSize: 9,  margin: [4, 5, 4, 5] },
+        ];
+      }),
+    ];
+    content.push(
+      { table: { widths: [24, 55, "*", 110, 100], body: tableBody }, layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => "#DDDDDD", vLineColor: () => "#DDDDDD" }, margin: [0, 0, 0, 24] },
+      { text: "", pageBreak: "after" }
+    );
+
+    // Detalhamento por tipo
+    content.push({ text: "Detalhamento das Mudanças", fontSize: 16, bold: true, color: primary, margin: [0, 0, 0, 16] });
+    const grouped = {};
+    config.mudancas.forEach(m => { if (!grouped[m.tipo]) grouped[m.tipo] = []; grouped[m.tipo].push(m); });
+
+    typeOrder.filter(t => grouped[t]?.length > 0).forEach(tipo => {
+      const info = CHANGE_TYPES[tipo];
+      const c = typeColors[tipo] || info.color;
+      content.push({
+        columns: [
+          { svg: changeTypeSvg(tipo, c, 16), width: 20, margin: [0, 0, 6, 0] },
+          { text: `${info.label} (${grouped[tipo].length})`, fontSize: 12, bold: true, color: c },
+        ],
+        margin: [0, 8, 0, 10],
+      });
+      grouped[tipo].forEach(m => {
+        const stack = [
+          { text: m.titulo || "Sem título", fontSize: 12, bold: true, color: "#1A1A2E" },
+        ];
+        if (m.arquivo) stack.push({ text: m.arquivo, fontSize: 9, color: "#666666", margin: [0, 2, 0, 4] });
+        if (m.descricao?.trim()) stack.push({ text: m.descricao, fontSize: 10, color: "#333333", margin: [0, 2, 0, 4], lineHeight: 1.4 });
+        if (m.motivacao?.trim()) {
+          stack.push({ text: "MOTIVAÇÃO", fontSize: 8, bold: true, color: "#999999", margin: [0, 4, 0, 2] });
+          stack.push({ text: m.motivacao, fontSize: 10, color: "#555555", lineHeight: 1.4 });
+        }
+        if (m.impacto?.trim()) {
+          stack.push({ text: "IMPACTO", fontSize: 8, bold: true, color: "#999999", margin: [0, 4, 0, 2] });
+          stack.push({ text: m.impacto, fontSize: 10, color: "#555555", lineHeight: 1.4 });
+        }
+        if (m.codigoAntes?.trim()) {
+          stack.push({ text: "ANTES", fontSize: 8, bold: true, color: "#DC2626", margin: [0, 4, 0, 2] });
+          m.codigoAntes.split("\n").forEach(l =>
+            stack.push({ text: `- ${l}`, fontSize: 8.5, color: "#FCA5A5", background: "#2D0000", lineHeight: 1.3, preserveLeadingSpaces: true })
+          );
+        }
+        if (m.codigoDepois?.trim()) {
+          stack.push({ text: "DEPOIS", fontSize: 8, bold: true, color: "#10B981", margin: [0, 4, 0, 2] });
+          m.codigoDepois.split("\n").forEach(l =>
+            stack.push({ text: `+ ${l}`, fontSize: 8.5, color: "#86EFAC", background: "#002D1A", lineHeight: 1.3, preserveLeadingSpaces: true })
+          );
+        }
+        if (m.notas?.trim()) stack.push({ text: `⚠ Nota: ${m.notas}`, fontSize: 9, color: "#D97706", margin: [0, 4, 0, 0] });
+
+        content.push({
+          columns: [
+            { width: 4, canvas: [{ type: "rect", x: 0, y: 0, w: 4, h: 60, color: c }] },
+            { width: "*", stack, margin: [8, 0, 0, 0] },
+          ],
+          margin: [0, 0, 0, 16],
+        });
+      });
+    });
+  }
+
+  // Resumo Final
+  const resumoTextos = (config.resumo || []).filter(t => t.trim());
+  if (resumoTextos.length > 0) {
+    content.push(
+      { text: "", pageBreak: "before" },
+      { text: "Resumo Final", fontSize: 16, bold: true, color: primary, margin: [0, 0, 0, 10] },
+      ...resumoTextos.map(t => ({ text: t, fontSize: 11, color: "#333333", margin: [0, 0, 0, 8], lineHeight: 1.5 }))
+    );
+  }
+
+  return {
+    pageSize: isAbnt ? "A4" : "LETTER",
+    pageMargins: [56, 56, 56, 56],
+    content,
+    footer: (currentPage, pageCount) => ({
+      columns: [
+        { text: `Changelog — ${config.titulo || "Documento"} · v${config.versao}`, fontSize: 9, color: "#999999", margin: [56, 8, 0, 0] },
+        { text: `${currentPage}/${pageCount}`, fontSize: 9, color: "#999999", alignment: "right", margin: [0, 8, 56, 0] },
+      ],
+    }),
+    defaultStyle: { font: "Roboto", fontSize: 11, color: "#1A1A2E" },
+    fonts: {
+      Roboto: { normal: "Roboto-Regular.ttf", bold: "Roboto-Medium.ttf", italics: "Roboto-Italic.ttf", bolditalics: "Roboto-MediumItalic.ttf" },
+    },
+  };
 }
 
 async function buildAndDownloadPdf(config, onProgress) {
-  await loadPdfLibs();
-  const { jsPDF } = window.jspdf;
-  const isAbnt = config.formato === "ABNT";
-  const buildHtml = config.template === "changelog" ? buildChangelogHtml : buildBugsHtml;
-
-  onProgress("Renderizando documento…");
-
-  // Build HTML with page-break CSS injected
-  const rawHtml = buildHtml(config);
-  const htmlWithBreaks = rawHtml.replace(
-    "</style>",
-    `
-    /* Auto page breaks */
-    .page-section { page-break-inside: avoid; break-inside: avoid; }
-    h2, h3 { page-break-after: avoid; break-after: avoid; }
-    table { page-break-inside: auto; }
-    tr { page-break-inside: avoid; break-inside: avoid; }
-    pre { page-break-inside: avoid; break-inside: avoid; }
-    </style>`
-  );
-
-  const iframe = document.createElement("iframe");
-  iframe.style.cssText = "position:fixed;left:-9999px;top:0;width:794px;height:auto;border:none;visibility:hidden;";
-  document.body.appendChild(iframe);
-
-  await new Promise(res => { iframe.onload = res; iframe.srcdoc = htmlWithBreaks; });
-  await new Promise(res => setTimeout(res, 900));
-
-  const iDoc = iframe.contentDocument || iframe.contentWindow.document;
-  const bar = iDoc.querySelector(".print-bar, .no-print");
-  if (bar) bar.style.display = "none";
-  iDoc.body.style.width = "794px";
-
-  onProgress("Capturando conteúdo…");
-
-  const canvas = await window.html2canvas(iDoc.body, {
-    scale: 2,
-    useCORS: true,
-    allowTaint: true,
-    backgroundColor: "#ffffff",
-    width: 794,
-    windowWidth: 794,
-    logging: false,
+  onProgress("Carregando biblioteca PDF…");
+  await loadPdfMake();
+  onProgress("Preparando conteúdo…");
+  const logoDataUrl = await logoToDataUrl(config.logo);
+  onProgress("Gerando PDF vetorial…");
+  const buildDef = config.template === "changelog" ? buildChangelogPdfDef : buildBugsPdfDef;
+  const docDef = buildDef(config, logoDataUrl);
+  const slug = (config.titulo || "relatorio").replace(/\s+/g, "-").toLowerCase();
+  return new Promise((resolve, reject) => {
+    try {
+      window.pdfMake.createPdf(docDef).download(`${slug}.pdf`, () => resolve());
+    } catch (e) { reject(e); }
   });
-
-  document.body.removeChild(iframe);
-  onProgress("Montando páginas com quebras automáticas…");
-
-  const pageW = isAbnt ? 210 : 215.9;
-  const pageH = isAbnt ? 297 : 279.4;
-  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: isAbnt ? "a4" : "letter" });
-
-  // Scale factor: canvas px → mm
-  const pxPerMm = canvas.width / pageW;
-  const pageHeightPx = pageH * pxPerMm;
-  const imgW = pageW;
-
-  let srcY = 0;
-  let page = 0;
-  const totalH = canvas.height;
-
-  while (srcY < totalH) {
-    if (page > 0) pdf.addPage();
-
-    // Avoid cutting inside a "safe zone" — scan back up to 60px to find whitespace
-    let sliceH = Math.min(pageHeightPx, totalH - srcY);
-    if (srcY + sliceH < totalH) {
-      const ctx2 = document.createElement("canvas");
-      ctx2.width = 1;
-      ctx2.height = 60;
-      const s2 = ctx2.getContext("2d");
-      s2.drawImage(canvas, 0, srcY + sliceH - 60, canvas.width, 60, 0, 0, 1, 60);
-      const data = s2.getImageData(0, 0, 1, 60).data;
-      // Walk back to find a mostly-white row (all channels > 240)
-      for (let row = 59; row > 10; row--) {
-        const r = data[row * 4], g = data[row * 4 + 1], b = data[row * 4 + 2];
-        if (r > 240 && g > 240 && b > 240) { sliceH = sliceH - 60 + row; break; }
-      }
-    }
-
-    const pageCanvas = document.createElement("canvas");
-    pageCanvas.width = canvas.width;
-    pageCanvas.height = Math.ceil(sliceH);
-    const ctx = pageCanvas.getContext("2d");
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-    ctx.drawImage(canvas, 0, srcY, canvas.width, Math.ceil(sliceH), 0, 0, canvas.width, Math.ceil(sliceH));
-
-    const imgData = pageCanvas.toDataURL("image/jpeg", 0.93);
-    const sliceHMm = (sliceH / pxPerMm);
-    pdf.addImage(imgData, "JPEG", 0, 0, imgW, sliceHMm);
-
-    srcY += sliceH;
-    page++;
-  }
-
-  const filename = `${(config.titulo || "relatorio").replace(/\s+/g, "-").toLowerCase()}.pdf`;
-  pdf.save(filename);
 }
 
 // ─── DOCX BUILDER ────────────────────────────────────────────────────────────
@@ -1097,7 +1345,6 @@ async function buildAndDownloadDocx(config) {
   const isChangelog = config.template === "changelog";
   const primary = config.cores.primaria;
   const isAbnt = config.formato === "ABNT";
-  // A4: 11906 × 16838, Letter: 12240 × 15840 (DXA)
   const pageW = isAbnt ? 11906 : 12240;
   const pageH = isAbnt ? 16838 : 15840;
   const margin = 1440;
@@ -1109,17 +1356,9 @@ async function buildAndDownloadDocx(config) {
   const h1 = (text, color = primary) => new Paragraph({
     heading: HeadingLevel.HEADING_1,
     spacing: { before: 320, after: 160 },
-    pageBreakBefore: false,
     keepNext: true,
     border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: primary, space: 4 } },
     children: [new TextRun({ text, bold: true, size: 32, color, font: "Arial" })]
-  });
-
-  const h2 = (text, color = primary) => new Paragraph({
-    heading: HeadingLevel.HEADING_2,
-    spacing: { before: 240, after: 120 },
-    keepNext: true,
-    children: [new TextRun({ text, bold: true, size: 26, color, font: "Arial" })]
   });
 
   const para = (text, opts = {}) => new Paragraph({
@@ -1138,18 +1377,18 @@ async function buildAndDownloadDocx(config) {
     shading: { type: ShadingType.CLEAR, fill: config.cores.codeBg },
     indent: { left: 360, right: 360 },
     border: {
-      top: { style: BorderStyle.SINGLE, size: 1, color: "444444", space: 4 },
+      top:    { style: BorderStyle.SINGLE, size: 1, color: "444444", space: 4 },
       bottom: { style: BorderStyle.SINGLE, size: 1, color: "444444", space: 4 },
-      left: { style: BorderStyle.THICK, size: 8, color: "6271f5", space: 4 },
-      right: { style: BorderStyle.SINGLE, size: 1, color: "444444", space: 4 },
+      left:   { style: BorderStyle.THICK,  size: 8, color: "6271f5", space: 4 },
+      right:  { style: BorderStyle.SINGLE, size: 1, color: "444444", space: 4 },
     },
     children: [new TextRun({ text: text || "", size: 18, font: "Courier New", color: config.cores.codeText })]
   });
 
-  const spacer = () => new Paragraph({ spacing: { after: 160 }, children: [] });
+  const spacer    = () => new Paragraph({ spacing: { after: 160 }, children: [] });
   const pageBreak = () => new Paragraph({ children: [new PageBreak()] });
 
-  // ── Logo ──
+  // Logo
   let logoData = null;
   if (config.logo?.startsWith("data:image")) {
     try {
@@ -1165,7 +1404,7 @@ async function buildAndDownloadDocx(config) {
 
   const children = [];
 
-  // ── Cover ──
+  // Capa
   if (logoData) {
     children.push(new Paragraph({
       spacing: { after: 240 },
@@ -1192,7 +1431,7 @@ async function buildAndDownloadDocx(config) {
       spacing: { after: 80 },
       children: [
         ...(isChangelog && config.projeto ? [new TextRun({ text: "Projeto: ", bold: true, size: 20, color: "555555", font: "Arial" }), new TextRun({ text: config.projeto + "     ", size: 20, color: "888888", font: "Arial" })] : []),
-        new TextRun({ text: "Autor: ", bold: true, size: 20, color: "555555", font: "Arial" }),
+        new TextRun({ text: "Autor: ",  bold: true, size: 20, color: "555555", font: "Arial" }),
         new TextRun({ text: (config.autor || "—") + "     ", size: 20, color: "888888", font: "Arial" }),
         new TextRun({ text: "Versão: ", bold: true, size: 20, color: "555555", font: "Arial" }),
         new TextRun({ text: config.versao || "1.0", size: 20, color: "888888", font: "Arial" }),
@@ -1203,14 +1442,12 @@ async function buildAndDownloadDocx(config) {
   );
 
   if (isChangelog) {
-    // ── Visão Geral ──
     if (config.descricao?.some(t => t.trim())) {
       children.push(h1("Visão Geral", primary));
       config.descricao.filter(t => t.trim()).forEach(t => children.push(para(t)));
       children.push(spacer());
     }
 
-    // ── Tabela de Mudanças ──
     if (config.mudancas.length > 0) {
       children.push(h1("Tabela de Mudanças", primary));
       const typeColors = { feat: config.cores.feat || "2563EB", fix: config.cores.fix || "D97706", breaking: config.cores.breaking || "DC2626", refactor: config.cores.refactor || "7C3AED", perf: config.cores.perf || "0891B2", style: config.cores.style || "DB2777", chore: config.cores.chore || "64748B" };
@@ -1240,7 +1477,6 @@ async function buildAndDownloadDocx(config) {
       });
       children.push(new Table({ width: { size: contentW, type: WidthType.DXA }, columnWidths: colW, rows: [headerRow, ...dataRows] }), spacer(), pageBreak());
 
-      // ── Detalhamento ──
       children.push(h1("Detalhamento das Mudanças", primary));
       config.mudancas.forEach((m, i) => {
         const info = CHANGE_TYPES[m.tipo] || CHANGE_TYPES.feat;
@@ -1261,28 +1497,17 @@ async function buildAndDownloadDocx(config) {
         if (m.arquivo?.trim()) children.push(new Paragraph({ spacing: { after: 80 }, children: [new TextRun({ text: m.arquivo, size: 18, font: "Courier New", color: "666666" })] }));
         if (m.descricao?.trim()) { children.push(subLabel("Descrição")); children.push(para(m.descricao)); }
         if (m.motivacao?.trim()) { children.push(subLabel("Motivação")); children.push(para(m.motivacao)); }
-        if (m.impacto?.trim()) { children.push(subLabel("Impacto")); children.push(para(m.impacto)); }
+        if (m.impacto?.trim())   { children.push(subLabel("Impacto"));   children.push(para(m.impacto)); }
         if (m.codigoAntes?.trim()) {
           children.push(subLabel("Código antes (removido)"));
-          m.codigoAntes.split("\n").forEach(line => children.push(new Paragraph({
-            spacing: { after: 40 },
-            shading: { type: ShadingType.CLEAR, fill: "2D0000" },
-            indent: { left: 360 },
-            children: [new TextRun({ text: `- ${line}`, size: 18, font: "Courier New", color: "FCA5A5" })]
-          })));
+          m.codigoAntes.split("\n").forEach(line => children.push(new Paragraph({ spacing: { after: 40 }, shading: { type: ShadingType.CLEAR, fill: "2D0000" }, indent: { left: 360 }, children: [new TextRun({ text: `- ${line}`, size: 18, font: "Courier New", color: "FCA5A5" })] })));
         }
         if (m.codigoDepois?.trim()) {
           children.push(subLabel("Código depois (adicionado)"));
-          m.codigoDepois.split("\n").forEach(line => children.push(new Paragraph({
-            spacing: { after: 40 },
-            shading: { type: ShadingType.CLEAR, fill: "002D1A" },
-            indent: { left: 360 },
-            children: [new TextRun({ text: `+ ${line}`, size: 18, font: "Courier New", color: "86EFAC" })]
-          })));
+          m.codigoDepois.split("\n").forEach(line => children.push(new Paragraph({ spacing: { after: 40 }, shading: { type: ShadingType.CLEAR, fill: "002D1A" }, indent: { left: 360 }, children: [new TextRun({ text: `+ ${line}`, size: 18, font: "Courier New", color: "86EFAC" })] })));
         }
         if (m.notas?.trim()) { children.push(subLabel("Notas")); children.push(para(m.notas, { color: "D97706" })); }
         children.push(spacer());
-        // Page break every 3 items to avoid overly long pages
         if ((i + 1) % 3 === 0 && i + 1 < config.mudancas.length) children.push(pageBreak());
       });
     }
@@ -1293,7 +1518,7 @@ async function buildAndDownloadDocx(config) {
     }
 
   } else {
-    // ── BUGS template ──
+    // BUGS template
     if (config.resumoExecutivo?.some(t => t.trim())) {
       children.push(h1("Resumo Executivo", primary));
       config.resumoExecutivo.filter(t => t.trim()).forEach(t => children.push(para(t)));
@@ -1344,12 +1569,12 @@ async function buildAndDownloadDocx(config) {
             ]
           })
         );
-        if (p.resumo?.trim()) { children.push(subLabel("Descrição")); children.push(para(p.resumo)); }
-        if (d.ondeOcorre?.some(t => t.trim())) { children.push(subLabel("Onde ocorre")); d.ondeOcorre.filter(t => t.trim()).forEach(t => children.push(para(t))); }
-        if (d.codigoOnde?.some(t => t.trim())) { children.push(subLabel("Código onde ocorre")); d.codigoOnde.filter(t => t.trim()).forEach(t => t.split("\n").forEach(l => children.push(codeBlock(l)))); }
-        if (d.porqueProblema?.some(t => t.trim())) { children.push(subLabel("Por que é um problema")); d.porqueProblema.filter(t => t.trim()).forEach(t => children.push(para(t))); }
-        if (d.textoResolucao?.some(t => t.trim())) { children.push(subLabel("Explicação de resolução")); d.textoResolucao.filter(t => t.trim()).forEach(t => children.push(para(t))); }
-        if (d.codigoResolucao?.some(t => t.trim())) { children.push(subLabel("Código de resolução")); d.codigoResolucao.filter(t => t.trim()).forEach(t => t.split("\n").forEach(l => children.push(codeBlock(l)))); }
+        if (p.resumo?.trim())                              { children.push(subLabel("Descrição"));               children.push(para(p.resumo)); }
+        if (d.ondeOcorre?.some(t => t.trim()))             { children.push(subLabel("Onde ocorre"));             d.ondeOcorre.filter(t => t.trim()).forEach(t => children.push(para(t))); }
+        if (d.codigoOnde?.some(t => t.trim()))             { children.push(subLabel("Código onde ocorre"));      d.codigoOnde.filter(t => t.trim()).forEach(t => t.split("\n").forEach(l => children.push(codeBlock(l)))); }
+        if (d.porqueProblema?.some(t => t.trim()))         { children.push(subLabel("Por que é um problema"));   d.porqueProblema.filter(t => t.trim()).forEach(t => children.push(para(t))); }
+        if (d.textoResolucao?.some(t => t.trim()))         { children.push(subLabel("Explicação de resolução")); d.textoResolucao.filter(t => t.trim()).forEach(t => children.push(para(t))); }
+        if (d.codigoResolucao?.some(t => t.trim()))        { children.push(subLabel("Código de resolução"));     d.codigoResolucao.filter(t => t.trim()).forEach(t => t.split("\n").forEach(l => children.push(codeBlock(l)))); }
         children.push(spacer());
         if ((i + 1) % 2 === 0 && i + 1 < config.problemas.length) children.push(pageBreak());
       });
@@ -1405,16 +1630,15 @@ async function buildAndDownloadDocx(config) {
 
 function ExportPanel({ config }) {
   const [exportedHtml, setExportedHtml] = useState(false);
-  const [pdfState, setPdfState]   = useState("idle"); // idle | loading | done | error
+  const [pdfState,  setPdfState]  = useState("idle");
   const [docxState, setDocxState] = useState("idle");
-  const [pdfMsg, setPdfMsg]       = useState("");
-  const [overlay, setOverlay]     = useState(null);   // null | "pdf" | "docx"
+  const [pdfMsg,    setPdfMsg]    = useState("");
+  const [overlay,   setOverlay]   = useState(null);
 
   const isChangelog = config.template === "changelog";
   const buildHtml = isChangelog ? buildChangelogHtml : buildBugsHtml;
   const items = isChangelog ? config.mudancas : config.problemas;
   const total = items.length;
-
   const slug = (config.titulo || "relatorio").replace(/\s+/g, "-").toLowerCase();
 
   const exportHtml = () => {
@@ -1467,7 +1691,6 @@ function ExportPanel({ config }) {
   return (
     <div style={{ height: "100%", overflowY: "auto", padding: "40px 36px", background: "var(--bg3)", display: "flex", flexDirection: "column", gap: 24 }}>
 
-      {/* Loading overlay */}
       {overlay && (
         <div className="export-overlay">
           <div className="export-spinner" />
@@ -1513,7 +1736,7 @@ function ExportPanel({ config }) {
           <div>
             <div style={{ fontSize: 15, fontWeight: 800, color: "var(--tx)", marginBottom: 4 }}>Exportar como PDF</div>
             <div style={{ fontSize: 13, color: "var(--tx3)", lineHeight: 1.6 }}>
-              Gera um <code style={{ fontFamily: "var(--mono)", color: "var(--ac2)", fontSize: 12 }}>.pdf</code> direto com layout fiel ao preview. <strong style={{ color: "var(--tx2)" }}>Quebra de página automática</strong> entre seções.
+              Gera um <code style={{ fontFamily: "var(--mono)", color: "var(--ac2)", fontSize: 12 }}>.pdf</code> com <strong style={{ color: "var(--tx2)" }}>texto vetorial real</strong> — pesquisável, copiável e acessível. Logo inserida como imagem.
             </div>
           </div>
         </div>
@@ -1533,7 +1756,7 @@ function ExportPanel({ config }) {
           <div>
             <div style={{ fontSize: 15, fontWeight: 800, color: "var(--tx)", marginBottom: 4 }}>Exportar como DOCX (Word)</div>
             <div style={{ fontSize: 13, color: "var(--tx3)", lineHeight: 1.6 }}>
-              Gera um <code style={{ fontFamily: "var(--mono)", color: "var(--ac2)", fontSize: 12 }}>.docx</code> editável com <strong style={{ color: "var(--tx2)" }}>quebras de página automáticas</strong>, tabelas formatadas e blocos de diff coloridos.
+              Gera um <code style={{ fontFamily: "var(--mono)", color: "var(--ac2)", fontSize: 12 }}>.docx</code> editável com <strong style={{ color: "var(--tx2)" }}>tabelas e texto nativos</strong>, blocos de código, diff colorido e logo como imagem.
             </div>
           </div>
         </div>
@@ -1597,7 +1820,7 @@ function mergeConfig(base, incoming) {
       merged.mudancas = merged.mudancas.map(m => ({ ...emptyChange(), ...m, id: Date.now() + Math.random() }));
     } else merged.mudancas = [];
     if (!Array.isArray(merged.descricao) || !merged.descricao.length) merged.descricao = [""];
-    if (!Array.isArray(merged.resumo) || !merged.resumo.length) merged.resumo = [""];
+    if (!Array.isArray(merged.resumo)    || !merged.resumo.length)    merged.resumo    = [""];
   } else {
     if (Array.isArray(merged.problemas)) {
       merged.problemas = merged.problemas.map(p => ({
@@ -1606,7 +1829,7 @@ function mergeConfig(base, incoming) {
       }));
     } else merged.problemas = [];
     if (!Array.isArray(merged.resumoExecutivo) || !merged.resumoExecutivo.length) merged.resumoExecutivo = [""];
-    if (!Array.isArray(merged.conclusao) || !merged.conclusao.length) merged.conclusao = [""];
+    if (!Array.isArray(merged.conclusao)       || !merged.conclusao.length)       merged.conclusao       = [""];
   }
   return merged;
 }
@@ -1668,7 +1891,7 @@ function JsonImportModal({ onClose, onImport, currentConfig }) {
           </div>
           <textarea ref={textareaRef} className="json-textarea" value={text} onChange={e => { setText(e.target.value); setError(""); setSuccess(false); }}
             placeholder={`{\n  "template": "changelog",\n  "titulo": "...",\n  "mudancas": []\n}`} spellCheck={false} />
-          {error && <div className="json-error"><Bi name="exclamation-triangle-fill" size={15} style={{ flexShrink: 0 }} /><span>{error}</span></div>}
+          {error   && <div className="json-error"><Bi name="exclamation-triangle-fill" size={15} style={{ flexShrink: 0 }} /><span>{error}</span></div>}
           {success && <div className="json-success"><Bi name="check-circle-fill" size={15} /><span>Importado com sucesso!</span></div>}
         </div>
         <div className="json-modal-footer">
@@ -1715,14 +1938,14 @@ function Stats({ config }) {
   }
   const total = config.problemas.length;
   if (total === 0) return <span style={{ fontSize: 13, color: "var(--tx3)" }}>Sem problemas</span>;
-  const alta = config.problemas.filter(p => p.severity === "ALTA").length;
+  const alta  = config.problemas.filter(p => p.severity === "ALTA").length;
   const media = config.problemas.filter(p => p.severity === "MÉDIA").length;
   const baixa = config.problemas.filter(p => p.severity === "BAIXA").length;
   return (
     <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
-      {alta > 0 && <span style={{ padding: "4px 11px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: "rgba(192,0,0,.15)", color: "#ff8080", border: "1px solid rgba(192,0,0,.3)" }}>{alta} Alta</span>}
+      {alta  > 0 && <span style={{ padding: "4px 11px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: "rgba(192,0,0,.15)",   color: "#ff8080", border: "1px solid rgba(192,0,0,.3)"   }}>{alta}  Alta</span>}
       {media > 0 && <span style={{ padding: "4px 11px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: "rgba(197,90,17,.15)", color: "#ffa060", border: "1px solid rgba(197,90,17,.3)" }}>{media} Média</span>}
-      {baixa > 0 && <span style={{ padding: "4px 11px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: "rgba(55,86,35,.15)", color: "#86efac", border: "1px solid rgba(55,86,35,.3)" }}>{baixa} Baixa</span>}
+      {baixa > 0 && <span style={{ padding: "4px 11px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: "rgba(55,86,35,.15)",  color: "#86efac", border: "1px solid rgba(55,86,35,.3)"  }}>{baixa} Baixa</span>}
     </div>
   );
 }
@@ -1731,12 +1954,12 @@ function Stats({ config }) {
 
 function BugsEditor({ config, setConfig }) {
   const isMobile = useIsMobile();
-  const upd = useCallback((f, v) => setConfig(c => ({ ...c, [f]: v })), [setConfig]);
+  const upd     = useCallback((f, v) => setConfig(c => ({ ...c, [f]: v })), [setConfig]);
   const updCore = useCallback((f, v) => setConfig(c => ({ ...c, cores: { ...c.cores, [f]: v } })), [setConfig]);
   const updLogo = useCallback((url, nome) => setConfig(c => ({ ...c, logo: url, logoNome: nome })), [setConfig]);
-  const addProblem = () => setConfig(c => ({ ...c, problemas: [...c.problemas, emptyBugProblem()] }));
+  const addProblem    = () => setConfig(c => ({ ...c, problemas: [...c.problemas, emptyBugProblem()] }));
   const updateProblem = (id, p) => setConfig(c => ({ ...c, problemas: c.problemas.map(x => x.id === id ? p : x) }));
-  const removeProblem = id => setConfig(c => ({ ...c, problemas: c.problemas.filter(x => x.id !== id) }));
+  const removeProblem = id      => setConfig(c => ({ ...c, problemas: c.problemas.filter(x => x.id !== id) }));
 
   return (
     <div className="editor-inner">
@@ -1801,12 +2024,12 @@ function BugsEditor({ config, setConfig }) {
 
 function ChangelogEditor({ config, setConfig }) {
   const isMobile = useIsMobile();
-  const upd = useCallback((f, v) => setConfig(c => ({ ...c, [f]: v })), [setConfig]);
+  const upd     = useCallback((f, v) => setConfig(c => ({ ...c, [f]: v })), [setConfig]);
   const updCore = useCallback((f, v) => setConfig(c => ({ ...c, cores: { ...c.cores, [f]: v } })), [setConfig]);
   const updLogo = useCallback((url, nome) => setConfig(c => ({ ...c, logo: url, logoNome: nome })), [setConfig]);
-  const addChange = () => setConfig(c => ({ ...c, mudancas: [...c.mudancas, emptyChange()] }));
+  const addChange    = () => setConfig(c => ({ ...c, mudancas: [...c.mudancas, emptyChange()] }));
   const updateChange = (id, m) => setConfig(c => ({ ...c, mudancas: c.mudancas.map(x => x.id === id ? m : x) }));
-  const removeChange = id => setConfig(c => ({ ...c, mudancas: c.mudancas.filter(x => x.id !== id) }));
+  const removeChange = id      => setConfig(c => ({ ...c, mudancas: c.mudancas.filter(x => x.id !== id) }));
 
   return (
     <div className="editor-inner">
@@ -1851,12 +2074,7 @@ function ChangelogEditor({ config, setConfig }) {
       </div>
 
       <div style={{ marginBottom: 48 }}>
-        <SectionHeader
-          icon={<Bi name="git-commit-fill" size={22} />}
-          title="Mudanças"
-          subtitle="Alterações, refatorações e melhorias"
-          badge={config.mudancas.length}
-        />
+        <SectionHeader icon={<Bi name="git-commit-fill" size={22} />} title="Mudanças" subtitle="Alterações, refatorações e melhorias" badge={config.mudancas.length} />
         {config.mudancas.length === 0 ? (
           <div className="card" style={{ padding: "56px 36px", textAlign: "center", border: "2px dashed var(--b2)" }}>
             <div style={{ width: 72, height: 72, borderRadius: 22, background: "var(--s2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
@@ -1904,7 +2122,7 @@ export default function App() {
   const bodyRef = useRef(null);
   const isMobile = useIsMobile();
 
-  const config = activeTemplate === "changelog" ? changelogConfig : bugsConfig;
+  const config    = activeTemplate === "changelog" ? changelogConfig : bugsConfig;
   const setConfig = activeTemplate === "changelog" ? setChangelogConfig : setBugsConfig;
 
   const handleResize = useCallback(clientX => {
@@ -1914,7 +2132,7 @@ export default function App() {
     setEditorWidth(Math.min(75, Math.max(20, pct)));
   }, []);
 
-  const handleSelectTemplate = (id) => {
+  const handleSelectTemplate = id => {
     setActiveTemplate(id);
     setRightTab("preview");
   };
@@ -1953,7 +2171,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Template switcher */}
         <button
           onClick={() => setShowTemplateSelector(true)}
           style={{
@@ -2018,7 +2235,7 @@ export default function App() {
                 </div>
               </div>
             )}
-            {rightTab === "json" && <div style={{ height: "100%" }}><JsonOutput config={config} /></div>}
+            {rightTab === "json"   && <div style={{ height: "100%" }}><JsonOutput config={config} /></div>}
             {rightTab === "export" && <ExportPanel config={config} />}
           </div>
         </div>
