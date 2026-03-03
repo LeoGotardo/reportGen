@@ -5,14 +5,14 @@ import { CHANGE_TYPES } from "../constants/templates";
 
 function TypeIcon({ type, color }) {
   const s = { flexShrink: 0 };
-  if (type === "feat")     return <svg viewBox="0 0 14 14" width="14" height="14" style={s}><polygon points="7,1 9,5 14,5.5 10.5,9 11.5,14 7,11.5 2.5,14 3.5,9 0,5.5 5,5" fill={color}/></svg>;
+  if (type === "feat")     return <svg viewBox="0 0 14 14" width="14" height="14" style={s}><polygon points="7,1 9,5 14,5.5 10.5,9 11.5,14 7,11.5 2.5,14 3.5,9 0,5.5 5,5" style={{ fill: color }}/></svg>;
   if (type === "fix")      return <svg viewBox="0 0 14 14" width="14" height="14" style={s}><circle cx="7" cy="7" r="5.5" fill="none" stroke={color} strokeWidth="2"/><line x1="5" y1="5" x2="9" y2="9" stroke={color} strokeWidth="2"/><line x1="9" y1="5" x2="5" y2="9" stroke={color} strokeWidth="2"/></svg>;
-  if (type === "breaking") return <svg viewBox="0 0 14 14" width="14" height="14" style={s}><polygon points="7,1 13,13 1,13" fill="none" stroke={color} strokeWidth="2"/><line x1="7" y1="5" x2="7" y2="9" stroke={color} strokeWidth="2"/><circle cx="7" cy="11.5" r="1" fill={color}/></svg>;
+  if (type === "breaking") return <svg viewBox="0 0 14 14" width="14" height="14" style={s}><polygon points="7,1 13,13 1,13" fill="none" stroke={color} strokeWidth="2"/><line x1="7" y1="5" x2="7" y2="9" stroke={color} strokeWidth="2"/><circle cx="7" cy="11.5" r="1" style={{ fill: color }}/></svg>;
   if (type === "refactor") return <svg viewBox="0 0 14 14" width="14" height="14" style={s}><path d="M2,7 Q7,2 12,7 Q7,12 2,7" fill="none" stroke={color} strokeWidth="2"/><polyline points="10,4 13,7 10,10" fill="none" stroke={color} strokeWidth="2"/></svg>;
-  if (type === "perf")     return <svg viewBox="0 0 14 14" width="14" height="14" style={s}><polyline points="1,11 5,7 8,9 13,3" fill="none" stroke={color} strokeWidth="2"/><circle cx="13" cy="3" r="1.5" fill={color}/></svg>;
-  if (type === "style")    return <svg viewBox="0 0 14 14" width="14" height="14" style={s}><circle cx="7" cy="7" r="5" fill={color} opacity="0.25"/><circle cx="7" cy="7" r="2.5" fill={color}/></svg>;
+  if (type === "perf")     return <svg viewBox="0 0 14 14" width="14" height="14" style={s}><polyline points="1,11 5,7 8,9 13,3" fill="none" stroke={color} strokeWidth="2"/><circle cx="13" cy="3" r="1.5" style={{ fill: color }}/></svg>;
+  if (type === "style")    return <svg viewBox="0 0 14 14" width="14" height="14" style={s}><circle cx="7" cy="7" r="5" style={{ fill: color }} opacity="0.25"/><circle cx="7" cy="7" r="2.5" style={{ fill: color }}/></svg>;
   if (type === "chore")    return <svg viewBox="0 0 14 14" width="14" height="14" style={s}><circle cx="7" cy="7" r="5" fill="none" stroke={color} strokeWidth="2"/><line x1="7" y1="2" x2="7" y2="4.5" stroke={color} strokeWidth="2"/><line x1="7" y1="9.5" x2="7" y2="12" stroke={color} strokeWidth="2"/><line x1="2" y1="7" x2="4.5" y2="7" stroke={color} strokeWidth="2"/><line x1="9.5" y1="7" x2="12" y2="7" stroke={color} strokeWidth="2"/></svg>;
-  return <svg viewBox="0 0 14 14" width="14" height="14" style={s}><circle cx="7" cy="7" r="5" fill={color} opacity="0.5"/></svg>;
+  return <svg viewBox="0 0 14 14" width="14" height="14" style={s}><circle cx="7" cy="7" r="5" style={{ fill: color }} opacity="0.5"/></svg>;
 }
 
 export function ChangeCard({ change, idx, onChange, onRemove }) {

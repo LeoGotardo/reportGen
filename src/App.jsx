@@ -138,7 +138,7 @@ const CSS = `
 `;
 
 export default function App() {
-  useBootstrapIcons(); // Fix #10
+  useBootstrapIcons();
 
   const [activeTemplate, setActiveTemplate] = useState("bugs");
   const [studyConfig,     setStudyConfig]     = useState(initialStudyConfig);
@@ -194,7 +194,6 @@ export default function App() {
     activeTemplate === "changelog" ? ChangelogPreview :
                                      BugsPreview;
 
-  // Fix #8: right-body scrollable class — was broken by \$ escape in original
   const rightBodyClass = `right-body${(rightTab === "preview" || rightTab === "export") ? " scrollable" : ""}`;
 
   return (
@@ -294,7 +293,6 @@ export default function App() {
             ))}
           </div>
 
-          {/* Fix #8: rightBodyClass computed above — no more \$ escape */}
           <div
             className={rightBodyClass}
             style={{
