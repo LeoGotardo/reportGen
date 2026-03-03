@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 
 // Components
 import { Bi } from "./components/Bi";
@@ -14,16 +14,23 @@ import { BugsPreview, ChangelogPreview, StudyPreview } from "./components/Previe
 import { useIsMobile } from "./hooks/useIsMobile";
 
 // Constants
-import { 
-  TEMPLATES, 
-  initialBugsConfig, 
-  initialChangelogConfig, 
-  initialStudyConfig 
-} from "./constants/templates";
+import { TEMPLATES } from "./constants/templates";
+import { initialBugsConfig, initialChangelogConfig, initialStudyConfig } from "./constants/initialConfigs";
 
-// CSS
+// Fix #10: Bootstrap Icons CDN injected once on mount.
+function useBootstrapIcons() {
+  useEffect(() => {
+    if (document.getElementById("bi-css")) return;
+    const link = document.createElement("link");
+    link.id   = "bi-css";
+    link.rel  = "stylesheet";
+    link.href = "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css";
+    document.head.appendChild(link);
+  }, []);
+}
+
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@700;800;900&family=DM+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@700;800;900&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --bg:   #0c0e18;
@@ -56,9 +63,7 @@ const CSS = `
     border-radius: var(--r-sm); transition: border-color .18s, box-shadow .18s;
     font-size: 14px;
   }
-  input:focus, textarea:focus, select:focus {
-    border-color: var(--ac); box-shadow: 0 0 0 3px var(--glow);
-  }
+  input:focus, textarea:focus, select:focus { border-color: var(--ac); box-shadow: 0 0 0 3px var(--glow); }
   input::placeholder, textarea::placeholder { color: var(--tx3); }
   select option { background: var(--bg2); }
   button { cursor: pointer; font-family: var(--fn); transition: all .15s; border: none; }
@@ -83,18 +88,9 @@ const CSS = `
   .app-body { display: flex; flex: 1; overflow: hidden; }
   .pane-editor { min-width: 280px; max-width: 75%; border-right: none; overflow-y: auto; flex-shrink: 0; }
   .editor-inner { padding: 36px 36px 80px; }
-  .resize-handle {
-    width: 5px; flex-shrink: 0; background: var(--b1);
-    cursor: col-resize; position: relative; transition: background .15s;
-    border-left: 1px solid var(--b2); border-right: 1px solid var(--b2);
-  }
+  .resize-handle { width: 5px; flex-shrink: 0; background: var(--b1); cursor: col-resize; position: relative; transition: background .15s; border-left: 1px solid var(--b2); border-right: 1px solid var(--b2); }
   .resize-handle:hover, .resize-handle.dragging { background: var(--ac); border-color: var(--ac); }
-  .resize-handle::after {
-    content: ''; position: absolute; top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 3px; height: 40px; border-radius: 99px;
-    background: var(--b2); transition: background .15s;
-  }
+  .resize-handle::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 3px; height: 40px; border-radius: 99px; background: var(--b2); transition: background .15s; }
   .resize-handle:hover::after, .resize-handle.dragging::after { background: var(--ac2); }
   @media (max-width: 860px) { .resize-handle { display: none; } }
   .pane-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg3); }
@@ -142,24 +138,34 @@ const CSS = `
 `;
 
 export default function App() {
+  useBootstrapIcons(); // Fix #10
+
   const [activeTemplate, setActiveTemplate] = useState("bugs");
-  const [studyConfig, setStudyConfig] = useState(initialStudyConfig);
-  const [bugsConfig, setBugsConfig] = useState(initialBugsConfig);
+  const [studyConfig,     setStudyConfig]     = useState(initialStudyConfig);
+  const [bugsConfig,      setBugsConfig]      = useState(initialBugsConfig);
   const [changelogConfig, setChangelogConfig] = useState(initialChangelogConfig);
-  const [rightTab, setRightTab] = useState("preview");
-  const [mobTab, setMobTab] = useState("editor");
+  const [rightTab,  setRightTab]  = useState("preview");
+  const [mobTab,    setMobTab]    = useState("editor");
   const [editorWidth, setEditorWidth] = useState(48);
-  const [showImport, setShowImport] = useState(false);
+  const [showImport,   setShowImport]   = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
-  const bodyRef = useRef(null);
+  const bodyRef  = useRef(null);
   const isMobile = useIsMobile();
 
-  const config = activeTemplate === "study" ? studyConfig : (activeTemplate === "changelog" ? changelogConfig : bugsConfig);
-  
+  const config =
+    activeTemplate === "study"     ? studyConfig :
+    activeTemplate === "changelog" ? changelogConfig :
+                                     bugsConfig;
+
+  const setConfig =
+    activeTemplate === "study"     ? setStudyConfig :
+    activeTemplate === "changelog" ? setChangelogConfig :
+                                     setBugsConfig;
+
   const handleResize = useCallback(clientX => {
     if (!bodyRef.current) return;
     const rect = bodyRef.current.getBoundingClientRect();
-    const pct = ((clientX - rect.left) / rect.width) * 100;
+    const pct  = ((clientX - rect.left) / rect.width) * 100;
     setEditorWidth(Math.min(75, Math.max(20, pct)));
   }, []);
 
@@ -168,32 +174,56 @@ export default function App() {
     setRightTab("preview");
   };
 
+  const handleImport = merged => {
+    const t = merged.template || "bugs";
+    setActiveTemplate(t);
+    if      (t === "study")     setStudyConfig(merged);
+    else if (t === "changelog") setChangelogConfig(merged);
+    else                        setBugsConfig(merged);
+  };
+
   const tmpl = TEMPLATES[activeTemplate];
-  const isChangelog = activeTemplate === "changelog";
+
+  const EditorComponent  =
+    activeTemplate === "study"     ? StudyEditor     :
+    activeTemplate === "changelog" ? ChangelogEditor :
+                                     BugsEditor;
+
+  const PreviewComponent =
+    activeTemplate === "study"     ? StudyPreview     :
+    activeTemplate === "changelog" ? ChangelogPreview :
+                                     BugsPreview;
+
+  // Fix #8: right-body scrollable class — was broken by \$ escape in original
+  const rightBodyClass = `right-body${(rightTab === "preview" || rightTab === "export") ? " scrollable" : ""}`;
 
   return (
     <div className="app-shell">
       <style>{CSS}</style>
 
       {showTemplateSelector && (
-        <TemplateSelector current={activeTemplate} onSelect={handleSelectTemplate} onClose={() => setShowTemplateSelector(false)} />
+        <TemplateSelector
+          current={activeTemplate}
+          onSelect={handleSelectTemplate}
+          onClose={() => setShowTemplateSelector(false)}
+        />
       )}
       {showImport && (
         <JsonImportModal
           onClose={() => setShowImport(false)}
-          onImport={merged => {
-            const t = merged.template || "bugs";
-            setActiveTemplate(t);
-            if (t === "study") setStudyConfig(merged); else if (t === "changelog") setChangelogConfig(merged);
-            else setBugsConfig(merged);
-          }}
-          currentConfig={config}
+          onImport={handleImport}
         />
       )}
 
       <header className="app-header">
+        {/* Logo + title */}
         <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: `linear-gradient(135deg, ${tmpl.accent}, ${tmpl.accent}cc)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 16px ${tmpl.accent}44`, transition: "all .3s" }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: 12,
+            background: `linear-gradient(135deg, ${tmpl.accent}, ${tmpl.accent}cc)`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: `0 4px 16px ${tmpl.accent}44`, transition: "all .3s",
+          }}>
             <Bi name={tmpl.icon} size={20} style={{ color: "#fff" }} />
           </div>
           <div>
@@ -202,6 +232,7 @@ export default function App() {
           </div>
         </div>
 
+        {/* Template switcher */}
         <button
           onClick={() => setShowTemplateSelector(true)}
           style={{
@@ -219,6 +250,8 @@ export default function App() {
         </button>
 
         <div style={{ width: 1, height: 30, background: "var(--b2)" }} />
+
+        {/* Fix #4: Stats with colored pills */}
         <Stats config={config} />
 
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
@@ -226,57 +259,97 @@ export default function App() {
             <Bi name="upload" size={13} />
             <span style={{ display: isMobile ? "none" : "inline" }}>Importar JSON</span>
           </button>
-          <span style={{ fontSize: 12, color: "var(--tx3)", fontFamily: "var(--mono)", background: "var(--surf)", padding: "4px 10px", borderRadius: 7, border: "1px solid var(--b2)" }}>v{config.versao}</span>
+          <span style={{ fontSize: 12, color: "var(--tx3)", fontFamily: "var(--mono)", background: "var(--surf)", padding: "4px 10px", borderRadius: 7, border: "1px solid var(--b2)" }}>
+            v{config.versao}
+          </span>
         </div>
       </header>
 
       <div className="app-body" ref={bodyRef}>
-        <div className={`pane-editor${mobTab === "editor" ? " mob-active" : ""}`} style={{ width: `${editorWidth}%` }}>
-          {activeTemplate === "study" ? <StudyEditor config={studyConfig} setConfig={setStudyConfig} /> : (isChangelog ? <ChangelogEditor config={changelogConfig} setConfig={setChangelogConfig} /> : <BugsEditor config={bugsConfig} setConfig={setBugsConfig} />)}
+        {/* Editor pane */}
+        <div
+          className={`pane-editor${mobTab === "editor" ? " mob-active" : ""}`}
+          style={{ width: `${editorWidth}%` }}
+        >
+          <EditorComponent config={config} setConfig={setConfig} />
         </div>
 
         <ResizeHandle onResize={handleResize} />
 
+        {/* Right pane */}
         <div className={`pane-right${mobTab !== "editor" ? " mob-active" : ""}`}>
           <div className="right-tabs">
-            {[["preview","eye-fill","Preview"],["json","braces-asterisk","JSON"],["export","box-arrow-up","Exportar"]].map(([id, icon, label]) => (
-              <button key={id} className={`right-tab${rightTab === id ? " active" : ""}`} onClick={() => setRightTab(id)}>
+            {[
+              ["preview", "eye-fill",         "Preview"],
+              ["json",    "braces-asterisk",  "JSON"],
+              ["export",  "box-arrow-up",     "Exportar"],
+            ].map(([id, icon, label]) => (
+              <button
+                key={id}
+                className={`right-tab${rightTab === id ? " active" : ""}`}
+                onClick={() => setRightTab(id)}
+              >
                 <Bi name={icon} size={15} /> {label}
               </button>
             ))}
           </div>
-          <div className={`right-body\${(rightTab === "preview" || rightTab === "export") ? " scrollable" : ""}`} style={{ background: rightTab === "preview" ? "var(--bg3)" : rightTab === "export" ? "var(--bg3)" : "#0d1117" }}>
+
+          {/* Fix #8: rightBodyClass computed above — no more \$ escape */}
+          <div
+            className={rightBodyClass}
+            style={{
+              background:
+                rightTab === "json" ? "#0d1117" : "var(--bg3)",
+            }}
+          >
             {rightTab === "preview" && (
               <div style={{ padding: "32px 36px 56px" }}>
                 <div style={{ borderRadius: 18, overflow: "hidden", boxShadow: "0 24px 70px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.07)" }}>
+                  {/* Fake browser chrome */}
                   <div style={{ background: "var(--s2)", padding: "13px 20px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid var(--b1)" }}>
                     <div style={{ display: "flex", gap: 7 }}>
-                      {["#ff5f57","#febc2e","#28c840"].map(c => <div key={c} style={{ width: 12, height: 12, borderRadius: "50%", background: c }} />)}
+                      {["#ff5f57", "#febc2e", "#28c840"].map(c => (
+                        <div key={c} style={{ width: 12, height: 12, borderRadius: "50%", background: c }} />
+                      ))}
                     </div>
                     <div style={{ flex: 1, textAlign: "center", fontSize: 12, color: "var(--tx3)", fontFamily: "var(--mono)" }}>
                       preview — {tmpl.label} · {config.formato}
                     </div>
                   </div>
                   <div style={{ background: "#fff" }}>
-                    {activeTemplate === "study"
-                      ? <StudyPreview config={config} />
-                      : isChangelog
-                        ? <ChangelogPreview config={config} />
-                        : <BugsPreview config={config} />}
+                    <PreviewComponent config={config} />
                   </div>
                 </div>
               </div>
             )}
-            {rightTab === "json"   && <div style={{ height: "100%" }}><JsonOutput config={config} /></div>}
-            {rightTab === "export" && <ExportPanel config={config} activeTemplate={activeTemplate} />}
+
+            {rightTab === "json" && (
+              <div style={{ height: "100%" }}>
+                <JsonOutput config={config} />
+              </div>
+            )}
+
+            {rightTab === "export" && (
+              <ExportPanel config={config} activeTemplate={activeTemplate} />
+            )}
           </div>
         </div>
       </div>
 
+      {/* Mobile nav */}
       <nav className="mob-nav">
-        {[["editor","pencil-fill","Editor"],["preview","eye-fill","Preview"],["json","braces","JSON"],["export","box-arrow-up","Exportar"]].map(([id, icon, label]) => (
-          <button key={id} className="mob-tab" onClick={() => { setMobTab(id); if (id !== "editor") setRightTab(id); }}
-            style={{ color: mobTab === id ? tmpl.accent : "var(--tx3)" }}>
+        {[
+          ["editor",  "pencil-fill", "Editor"],
+          ["preview", "eye-fill",    "Preview"],
+          ["json",    "braces",      "JSON"],
+          ["export",  "box-arrow-up","Exportar"],
+        ].map(([id, icon, label]) => (
+          <button
+            key={id}
+            className="mob-tab"
+            onClick={() => { setMobTab(id); if (id !== "editor") setRightTab(id); }}
+            style={{ color: mobTab === id ? tmpl.accent : "var(--tx3)" }}
+          >
             <Bi name={icon} size={22} />{label}
           </button>
         ))}

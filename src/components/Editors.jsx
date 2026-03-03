@@ -5,7 +5,7 @@ import { BugProblemCard } from "./BugsComponents";
 import { ChangeCard } from "./ChangelogComponents";
 import { StudyTopicCard } from "./StudyComponents";
 import { useIsMobile } from "../hooks/useIsMobile";
-import { emptyBugProblem, emptyChange, emptyStudyTopic } from "../constants/templates";
+import { emptyBugProblem, emptyChange, emptyStudyTopic } from "../constants/initialConfigs";
 
 export function StudyEditor({ config, setConfig }) {
   const isMobile = useIsMobile();
