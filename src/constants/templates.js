@@ -18,7 +18,7 @@ export const TEMPLATES = {
   changelog: {
     id: "changelog",
     label: "Changelog / Mudanças",
-    icon: "git-commit-fill",
+    icon: "git",
     description: "Registro de alterações, refatorações e melhorias de código",
     accent: "#10b981",
     accentBg: "rgba(16,185,129,0.12)",

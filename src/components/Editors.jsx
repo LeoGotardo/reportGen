@@ -158,7 +158,7 @@ export function ChangelogEditor({ config, setConfig }) {
   return (
     <div className="editor-inner">
       <div style={{ marginBottom: 48 }}>
-        <SectionHeader icon={<Bi name="git-commit-fill" size={22} />} title="Informações da Versão" subtitle="Metadados do release" />
+        <SectionHeader icon={<Bi name="git" size={22} />} title="Informações da Versão" subtitle="Metadados do release" />
         <div className="card" style={{ padding: 30 }}>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, marginBottom: 18 }}>
             <div><label className="lbl">Formato</label><select className="inp" value={config.formato} onChange={e => upd("formato", e.target.value)}><option value="ABNT">ABNT (A4)</option><option value="CARTA">CARTA</option></select></div>
@@ -198,7 +198,7 @@ export function ChangelogEditor({ config, setConfig }) {
       </div>
 
       <div style={{ marginBottom: 48 }}>
-        <SectionHeader icon={<Bi name="git-commit-fill" size={22} />} title="Mudanças" subtitle="Alterações, refatorações e melhorias" badge={config.mudancas.length} />
+        <SectionHeader icon={<Bi name="git" size={22} />} title="Mudanças" subtitle="Alterações, refatorações e melhorias" badge={config.mudancas.length} />
         {config.mudancas.length === 0 ? (
           <div className="card" style={{ padding: "56px 36px", textAlign: "center", border: "2px dashed var(--b2)" }}>
             <div style={{ width: 72, height: 72, borderRadius: 22, background: "var(--s2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
