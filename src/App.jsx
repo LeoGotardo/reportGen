@@ -12,6 +12,7 @@ import { BugsPreview, ChangelogPreview, StudyPreview } from "./components/Previe
 
 // Hooks
 import { useIsMobile } from "./hooks/useIsMobile";
+import { useLang } from "./contexts/LangContext";
 
 // Constants
 import { TEMPLATES } from "./constants/templates";
@@ -139,6 +140,7 @@ const CSS = `
 
 export default function App() {
   useBootstrapIcons();
+  const { t, lang, setLang } = useLang();
 
   const [activeTemplate, setActiveTemplate] = useState("bugs");
   const [studyConfig,     setStudyConfig]     = useState(initialStudyConfig);
@@ -227,7 +229,7 @@ export default function App() {
           </div>
           <div>
             <div style={{ fontSize: 17, fontWeight: 900, letterSpacing: -.4, fontFamily: "var(--disp)", lineHeight: 1.1 }}>ReportGen</div>
-            <div style={{ fontSize: 10, color: "var(--tx3)", letterSpacing: .8, textTransform: "uppercase" }}>Security Report Builder</div>
+            <div style={{ fontSize: 10, color: "var(--tx3)", letterSpacing: .8, textTransform: "uppercase" }}>{t.appSubtitle}</div>
           </div>
         </div>
 
@@ -244,7 +246,7 @@ export default function App() {
           onMouseLeave={e => e.currentTarget.style.borderColor = `${tmpl.accent}50`}
         >
           <Bi name={tmpl.icon} size={14} />
-          <span style={{ display: isMobile ? "none" : "inline" }}>{tmpl.label}</span>
+          <span style={{ display: isMobile ? "none" : "inline" }}>{t[`tmpl_${activeTemplate}_label`]}</span>
           <Bi name="chevron-expand" size={12} style={{ opacity: 0.6 }} />
         </button>
 
@@ -254,9 +256,17 @@ export default function App() {
         <Stats config={config} />
 
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={() => setLang(lang === "pt" ? "en" : "pt")}
+            className="btn-ghost"
+            style={{ fontSize: 11, padding: "6px 11px", fontFamily: "var(--mono)", fontWeight: 800 }}
+            title={lang === "pt" ? "Switch to English" : "Mudar para Português"}
+          >
+            {lang === "pt" ? "EN" : "PT"}
+          </button>
           <button onClick={() => setShowImport(true)} className="btn-ghost" style={{ fontSize: 12, padding: "7px 14px", gap: 6 }}>
             <Bi name="upload" size={13} />
-            <span style={{ display: isMobile ? "none" : "inline" }}>Importar JSON</span>
+            <span style={{ display: isMobile ? "none" : "inline" }}>{t.importJson}</span>
           </button>
           <span style={{ fontSize: 12, color: "var(--tx3)", fontFamily: "var(--mono)", background: "var(--surf)", padding: "4px 10px", borderRadius: 7, border: "1px solid var(--b2)" }}>
             v{config.versao}
@@ -279,9 +289,9 @@ export default function App() {
         <div className={`pane-right${mobTab !== "editor" ? " mob-active" : ""}`}>
           <div className="right-tabs">
             {[
-              ["preview", "eye-fill",         "Preview"],
-              ["json",    "braces-asterisk",  "JSON"],
-              ["export",  "box-arrow-up",     "Exportar"],
+              ["preview", "eye-fill",        t.tabPreview],
+              ["json",    "braces-asterisk", t.tabJson],
+              ["export",  "box-arrow-up",    t.tabExport],
             ].map(([id, icon, label]) => (
               <button
                 key={id}
@@ -311,7 +321,7 @@ export default function App() {
                       ))}
                     </div>
                     <div style={{ flex: 1, textAlign: "center", fontSize: 12, color: "var(--tx3)", fontFamily: "var(--mono)" }}>
-                      preview — {tmpl.label} · {config.formato}
+                      preview — {t[`tmpl_${activeTemplate}_label`]} · {config.formato}
                     </div>
                   </div>
                   <div style={{ background: "#fff" }}>
@@ -337,10 +347,10 @@ export default function App() {
       {/* Mobile nav */}
       <nav className="mob-nav">
         {[
-          ["editor",  "pencil-fill", "Editor"],
-          ["preview", "eye-fill",    "Preview"],
-          ["json",    "braces",      "JSON"],
-          ["export",  "box-arrow-up","Exportar"],
+          ["editor",  "pencil-fill", t.navEditor],
+          ["preview", "eye-fill",    t.navPreview],
+          ["json",    "braces",      t.navJson],
+          ["export",  "box-arrow-up",t.navExport],
         ].map(([id, icon, label]) => (
           <button
             key={id}

@@ -3,8 +3,10 @@ import { Bi } from "./Bi";
 import { ArrayField } from "./UI";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { STUDY_TYPES } from "../constants/templates";
+import { useLang } from "../contexts/LangContext";
 
-export function StudyTopicCard({ topic, idx, onChange, onRemove }) {
+export function StudyTopicCard({ topic, onChange, onRemove }) {
+  const { t } = useLang();
   const [open, setOpen] = useState(false);
   const isMob = useIsMobile();
   const type = STUDY_TYPES[topic.tipo] || STUDY_TYPES.CONCEITO;
@@ -18,26 +20,26 @@ export function StudyTopicCard({ topic, idx, onChange, onRemove }) {
           <Bi name={type.icon} size={14} style={{ color: "#fff" }} />
         </div>
         <span style={{ padding: "3px 12px", borderRadius: 20, fontSize: 10, fontWeight: 800, background: `${type.border}22`, color: type.text, flexShrink: 0, letterSpacing: .8, border: `1px solid ${type.border}40` }}>{topic.tipo}</span>
-        <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: topic.titulo ? "var(--tx)" : "var(--tx3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{topic.titulo || "Sem título"}</span>
+        <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: topic.titulo ? "var(--tx)" : "var(--tx3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{topic.titulo || t.noTitle}</span>
         <button onClick={e => { e.stopPropagation(); onRemove(); }} className="btn-icon" style={{ background: "transparent", border: "none", color: "var(--tx3)" }}><Bi name="trash3" size={13} /></button>
         <span style={{ color: "var(--tx3)", marginLeft: 4 }}><Bi name={open ? "chevron-up" : "chevron-down"} size={14} /></span>
       </div>
       {open && (
         <div className="anim" style={{ padding: "24px 24px 28px", borderTop: "1px solid var(--b1)" }}>
           <div style={{ display: "grid", gridTemplateColumns: isMob ? "1fr" : "1fr 160px", gap: 16, marginBottom: 18 }}>
-            <div><label className="lbl">Título do Tópico</label><input className="inp" value={topic.titulo} onChange={e => upd("titulo", e.target.value)} placeholder="Ex: Introdução ao React Hooks" /></div>
-            <div><label className="lbl">Tipo</label>
+            <div><label className="lbl">{t.topicTitleLabel}</label><input className="inp" value={topic.titulo} onChange={e => upd("titulo", e.target.value)} placeholder={t.topicTitlePh} /></div>
+            <div><label className="lbl">{t.topicTypeLabel}</label>
               <select value={topic.tipo} onChange={e => upd("tipo", e.target.value)}
                 style={{ padding: "11px 14px", fontSize: 13, fontWeight: 700, color: type.text, background: "var(--bg2)", border: `1.5px solid ${type.border}60`, borderRadius: "var(--r-sm)", outline: "none", width: "100%" }}>
                 {Object.keys(STUDY_TYPES).map(k => <option key={k} value={k}>{k}</option>)}
               </select>
             </div>
           </div>
-          <div style={{ marginBottom: 18 }}><label className="lbl">Resumo Curto</label><textarea className="inp" rows={2} value={topic.resumo} onChange={e => upd("resumo", e.target.value)} placeholder="Uma frase que resume este tópico..." /></div>
+          <div style={{ marginBottom: 18 }}><label className="lbl">{t.topicSummaryLabel}</label><textarea className="inp" rows={2} value={topic.resumo} onChange={e => upd("resumo", e.target.value)} placeholder={t.topicSummaryPh} /></div>
           <div className="div" />
-          <ArrayField label="Explicação Detalhada" values={topic.detalhe.explicacao} onChange={v => updD("explicacao", v)} placeholder="Desenvolva o conceito aqui..." />
-          <ArrayField label="Exemplos / Casos de Uso" values={topic.detalhe.exemplos} onChange={v => updD("exemplos", v)} placeholder="Ex: No projeto X usamos isso para..." />
-          <ArrayField label="Código de Exemplo" values={topic.detalhe.codigo} onChange={v => updD("codigo", v)} mono placeholder="// seu código aqui" />
+          <ArrayField label={t.topicExplanation} values={topic.detalhe.explicacao} onChange={v => updD("explicacao", v)} placeholder={t.topicExplanationPh} />
+          <ArrayField label={t.topicExamples} values={topic.detalhe.exemplos} onChange={v => updD("exemplos", v)} placeholder={t.topicExamplesPh} />
+          <ArrayField label={t.topicCode} values={topic.detalhe.codigo} onChange={v => updD("codigo", v)} mono placeholder={t.topicCodePh} />
         </div>
       )}
     </div>

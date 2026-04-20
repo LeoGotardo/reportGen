@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { Bi } from "./Bi";
+import { useLang } from "../contexts/LangContext";
 
 export function JsonOutput({ config }) {
+  const { t } = useLang();
   const [copied, setCopied] = useState(false);
   const json = JSON.stringify(config, null, 2);
   const copy = () => { navigator.clipboard.writeText(json); setCopied(true); setTimeout(() => setCopied(false), 2000); };
@@ -19,10 +21,10 @@ export function JsonOutput({ config }) {
         <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "#8b949e", marginLeft: 4 }}>report-config.json</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
           <button onClick={copy} style={{ padding: "7px 16px", border: "1px solid #30363d", borderRadius: 7, fontSize: 12, fontWeight: 600, background: copied ? "rgba(34,197,94,.15)" : "#161b22", color: copied ? "#22c55e" : "#8b949e", display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--fn)" }}>
-            <Bi name={copied ? "check-lg" : "clipboard"} size={12} /> {copied ? "Copiado!" : "Copiar"}
+            <Bi name={copied ? "check-lg" : "clipboard"} size={12} /> {copied ? t.copied : t.copy}
           </button>
           <button onClick={download} style={{ padding: "7px 16px", border: "1px solid #30363d", borderRadius: 7, fontSize: 12, fontWeight: 600, background: "#161b22", color: "#8b949e", display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--fn)" }}>
-            <Bi name="download" size={12} /> Baixar
+            <Bi name="download" size={12} /> {t.download}
           </button>
         </div>
       </div>

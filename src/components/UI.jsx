@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { Bi } from "./Bi";
+import { useLang } from "../contexts/LangContext";
 
 export function ArrayField({ label, values, onChange, mono = false, placeholder = "" }) {
+  const { t } = useLang();
   return (
     <div style={{ marginBottom: 24 }}>
       {label && <label className="lbl">{label}</label>}
@@ -21,7 +23,7 @@ export function ArrayField({ label, values, onChange, mono = false, placeholder 
         ))}
       </div>
       <button onClick={() => onChange([...values, ""])} className="btn-ghost" style={{ marginTop: 12 }}>
-        <Bi name="plus-lg" size={12} /> Adicionar linha
+        <Bi name="plus-lg" size={12} /> {t.addLine}
       </button>
     </div>
   );
@@ -46,6 +48,7 @@ export function ColorField({ label, value, onChange }) {
 }
 
 export function LogoField({ value, nome, onChange }) {
+  const { t } = useLang();
   const [drag, setDrag] = useState(false);
   const handleFile = f => {
     if (!f || !f.type.startsWith("image/")) return;
@@ -55,7 +58,7 @@ export function LogoField({ value, nome, onChange }) {
   };
   return (
     <div>
-      <label className="lbl">Logo da Empresa</label>
+      <label className="lbl">{t.logoLabel}</label>
       {value ? (
         <div className="card" style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 20px" }}>
           <div style={{ width: 60, height: 60, borderRadius: 12, background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
@@ -64,10 +67,10 @@ export function LogoField({ value, nome, onChange }) {
           <div style={{ flex: 1, overflow: "hidden" }}>
             <div style={{ fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nome}</div>
             <div style={{ fontSize: 12, color: "#22c55e", marginTop: 4, display: "flex", alignItems: "center", gap: 5 }}>
-              <Bi name="check-circle-fill" size={11} /> Carregado
+              <Bi name="check-circle-fill" size={11} /> {t.logoLoaded}
             </div>
           </div>
-          <label className="btn-ghost" style={{ cursor: "pointer" }}><Bi name="arrow-repeat" size={13} /> Trocar<input type="file" accept="image/*" onChange={e => handleFile(e.target.files[0])} style={{ display: "none" }} /></label>
+          <label className="btn-ghost" style={{ cursor: "pointer" }}><Bi name="arrow-repeat" size={13} /> {t.logoChange}<input type="file" accept="image/*" onChange={e => handleFile(e.target.files[0])} style={{ display: "none" }} /></label>
           <button className="btn-icon" onClick={() => onChange(null, "")} style={{ borderColor: "rgba(239,68,68,.3)", color: "#ef4444" }}><Bi name="trash3" size={13} /></button>
         </div>
       ) : (
@@ -80,8 +83,8 @@ export function LogoField({ value, nome, onChange }) {
             <Bi name="cloud-arrow-up" size={28} style={{ color: drag ? "var(--ac)" : "var(--tx3)" }} />
           </div>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: drag ? "var(--ac)" : "var(--tx2)" }}>Arraste ou <span style={{ color: "var(--ac)", textDecoration: "underline" }}>clique para selecionar</span></div>
-            <div style={{ fontSize: 12, color: "var(--tx3)", marginTop: 5 }}>PNG, JPG, SVG, WEBP</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: drag ? "var(--ac)" : "var(--tx2)" }}>{t.logoDrag}</div>
+            <div style={{ fontSize: 12, color: "var(--tx3)", marginTop: 5 }}>{t.logoDragSub}</div>
           </div>
           <input type="file" accept="image/*" onChange={e => handleFile(e.target.files[0])} style={{ display: "none" }} />
         </label>

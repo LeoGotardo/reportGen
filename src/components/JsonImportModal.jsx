@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Bi } from "./Bi";
 import { initialBugsConfig, initialChangelogConfig, initialStudyConfig, emptyBugProblem, emptyChange, emptyStudyTopic } from "../constants/initialConfigs";
+import { useLang } from "../contexts/LangContext";
 
 // Fix #2: Proper mergeConfig that normalises arrays, re-assigns IDs,
 // and guarantees the nested `detalhe` structure on every item.
@@ -48,6 +49,7 @@ function mergeConfig(incoming) {
 }
 
 export function JsonImportModal({ onClose, onImport }) {
+  const { t } = useLang();
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -63,10 +65,10 @@ export function JsonImportModal({ onClose, onImport }) {
   const handleImport = () => {
     setError("");
     const trimmed = text.trim();
-    if (!trimmed) { setError("Cole um JSON válido no campo acima."); return; }
+    if (!trimmed) { setError(t.pasteValid); return; }
     let parsed;
-    try { parsed = JSON.parse(trimmed); } catch (e) { setError(`JSON inválido: ${e.message}`); return; }
-    if (typeof parsed !== "object" || Array.isArray(parsed)) { setError("O JSON deve ser um objeto."); return; }
+    try { parsed = JSON.parse(trimmed); } catch (e) { setError(`${t.invalidJson} ${e.message}`); return; }
+    if (typeof parsed !== "object" || Array.isArray(parsed)) { setError(t.objectRequired); return; }
     const merged = mergeConfig(parsed);
     setSuccess(true);
     setTimeout(() => { onImport(merged); onClose(); }, 700);
@@ -87,8 +89,8 @@ export function JsonImportModal({ onClose, onImport }) {
             <Bi name="braces-asterisk" size={20} style={{ color: "#f97316" }} />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: "var(--tx)" }}>Importar JSON</div>
-            <div style={{ fontSize: 12, color: "var(--tx3)", marginTop: 2 }}>Cole ou carregue um arquivo exportado anteriormente</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "var(--tx)" }}>{t.importTitle}</div>
+            <div style={{ fontSize: 12, color: "var(--tx3)", marginTop: 2 }}>{t.importSub}</div>
           </div>
           <button onClick={onClose} className="btn-icon"><Bi name="x-lg" size={15} /></button>
         </div>
@@ -96,12 +98,12 @@ export function JsonImportModal({ onClose, onImport }) {
         <div className="json-modal-body">
           <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
             <label className="btn-ghost" style={{ cursor: "pointer", fontSize: 12 }}>
-              <Bi name="folder2-open" size={13} /> Abrir .json
+              <Bi name="folder2-open" size={13} /> {t.openFile}
               <input type="file" accept=".json,application/json" onChange={handleFile} style={{ display: "none" }} />
             </label>
             {text.trim() && (
               <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => { setText(""); setError(""); setSuccess(false); }}>
-                <Bi name="x-circle" size={13} /> Limpar
+                <Bi name="x-circle" size={13} /> {t.clear}
               </button>
             )}
             <span style={{ fontSize: 12, color: "var(--tx3)", marginLeft: "auto" }}>{text.trim() ? `${text.length.toLocaleString()} chars` : ""}</span>
@@ -115,11 +117,11 @@ export function JsonImportModal({ onClose, onImport }) {
             spellCheck={false}
           />
           {error   && <div className="json-error"><Bi name="exclamation-triangle-fill" size={15} style={{ flexShrink: 0 }} /><span>{error}</span></div>}
-          {success && <div className="json-success"><Bi name="check-circle-fill" size={15} /><span>Importado com sucesso!</span></div>}
+          {success && <div className="json-success"><Bi name="check-circle-fill" size={15} /><span>{t.importedSuccess}</span></div>}
         </div>
 
         <div className="json-modal-footer">
-          <button onClick={onClose} className="btn-ghost" style={{ flex: 1, justifyContent: "center" }}>Cancelar</button>
+          <button onClick={onClose} className="btn-ghost" style={{ flex: 1, justifyContent: "center" }}>{t.cancel}</button>
           <button
             onClick={handleImport}
             disabled={!text.trim() || success}
@@ -127,7 +129,7 @@ export function JsonImportModal({ onClose, onImport }) {
             style={{ flex: 2, justifyContent: "center", opacity: !text.trim() ? 0.5 : 1 }}
           >
             <Bi name={success ? "check-lg" : "upload"} size={15} />
-            {success ? "Importado!" : "Importar e aplicar"}
+            {success ? t.importedBtn : t.importAndApply}
           </button>
         </div>
       </div>

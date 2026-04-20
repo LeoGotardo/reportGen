@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Bi } from "./Bi";
 import { buildBugsHtml, buildStudyHtml, buildChangelogHtml } from "../utils/exportUtils";
 import { CHANGE_TYPES } from "../constants/templates";
+import { useLang } from "../contexts/LangContext";
 
 // ─── CDN loaders ─────────────────────────────────────────────────────────────
 
@@ -68,30 +69,30 @@ function rule(primary) {
 
 // ─── PDF — Bugs ──────────────────────────────────────────────────────────────
 
-function bugsPdf(config, logo) {
+function bugsPdf(config, logo, t) {
   const primary = h(config.cores.primaria);
   const sevC = { ALTA: h(config.cores.altaSev), MÉDIA: h(config.cores.mediaSev), BAIXA: h(config.cores.baixaSev) };
   const c = [];
 
   if (logo) c.push({ image: logo, width: 120, margin: [0, 0, 0, 16] });
-  c.push({ text: "RELATÓRIO DE BUGS — ANÁLISE TÉCNICA", style: "over" });
+  c.push({ text: t.doc_bugs_overline, style: "over" });
   c.push({ text: config.titulo || "Relatório", style: "h1", color: primary });
   if (config.subtitulo) c.push({ text: config.subtitulo, style: "sub", color: h(config.cores.secundaria) });
-  c.push({ text: `Autor: ${config.autor || "—"}  |  Versão: ${config.versao}  |  ${config.formato}`, style: "meta" });
+  c.push({ text: `${t.doc_bugs_fieldAuthor}: ${config.autor || "—"}  |  ${t.doc_bugs_fieldVersion}: ${config.versao}  |  ${config.formato}`, style: "meta" });
   c.push(rule(primary));
 
-  if (config.resumoExecutivo?.some(t => t.trim())) {
-    c.push({ text: "Resumo Executivo", style: "h2", color: primary });
-    config.resumoExecutivo.filter(t => t.trim()).forEach(t => c.push({ text: t, style: "body" }));
+  if (config.resumoExecutivo?.some(v => v.trim())) {
+    c.push({ text: t.doc_bugs_execSummary, style: "h2", color: primary });
+    config.resumoExecutivo.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "body" }));
   }
 
   if (config.problemas?.length) {
-    c.push({ text: "Tabela de Problemas", style: "h2", color: primary });
+    c.push({ text: t.doc_bugs_problemsTable, style: "h2", color: primary });
     c.push({
       table: {
         headerRows: 1, widths: [30, "*", 65, "*"],
         body: [
-          ["#", "Problema", "Severidade", "Resolução"].map(t => ({ text: t, style: "th" })),
+          ["#", t.doc_bugs_thProblem, t.doc_bugs_thSeverity, t.doc_bugs_thResolution].map(v => ({ text: v, style: "th" })),
           ...config.problemas.map((p, i) => [
             { text: String(i + 1), style: "td", fillColor: i % 2 ? "#f8f8fb" : "#fff" },
             { text: p.titulo, style: "td", fillColor: i % 2 ? "#f8f8fb" : "#fff" },
@@ -104,26 +105,26 @@ function bugsPdf(config, logo) {
       margin: [0, 0, 0, 24],
     });
 
-    c.push({ text: "Detalhamento", style: "h2", color: primary });
+    c.push({ text: t.doc_bugs_problemsDetail, style: "h2", color: primary });
     config.problemas.forEach((p, i) => {
       const sc = sevC[p.severity] || sevC.ALTA;
       const d = p.detalhe || {};
       c.push({ text: `${i + 1}. ${p.titulo}`, bold: true, fontSize: 13, color: primary, margin: [0, 12, 0, 2] });
       c.push({ text: p.severity, bold: true, color: sc, fontSize: 10, margin: [0, 0, 0, 6] });
       if (p.resumo) c.push({ text: p.resumo, style: "body" });
-      const sec  = (l, arr) => { if (arr?.some(t => t.trim())) { c.push({ text: l, style: "lbl" }); arr.filter(t => t.trim()).forEach(t => c.push({ text: t, style: "body" })); } };
-      const csec = (l, arr) => { if (arr?.some(t => t.trim())) { c.push({ text: l, style: "lbl" }); arr.filter(t => t.trim()).forEach(t => c.push({ text: t, style: "code" })); } };
-      sec("ONDE OCORRE", d.ondeOcorre);
-      csec("CÓDIGO", d.codigoOnde);
-      sec("IMPACTO", d.porqueProblema);
-      sec("RESOLUÇÃO", d.textoResolucao);
-      csec("CÓDIGO CORRIGIDO", d.codigoResolucao);
+      const sec  = (l, arr) => { if (arr?.some(v => v.trim())) { c.push({ text: l, style: "lbl" }); arr.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "body" })); } };
+      const csec = (l, arr) => { if (arr?.some(v => v.trim())) { c.push({ text: l, style: "lbl" }); arr.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "code" })); } };
+      sec(t.doc_bugs_fieldWhere.toUpperCase(), d.ondeOcorre);
+      csec(t.doc_bugs_fieldCode.toUpperCase(), d.codigoOnde);
+      sec(t.doc_bugs_fieldWhy.toUpperCase(), d.porqueProblema);
+      sec(t.doc_bugs_fieldResText.toUpperCase(), d.textoResolucao);
+      csec(t.doc_bugs_fieldResCode.toUpperCase(), d.codigoResolucao);
     });
   }
 
-  if (config.conclusao?.some(t => t.trim())) {
-    c.push({ text: "Conclusão", style: "h2", color: primary });
-    config.conclusao.filter(t => t.trim()).forEach(t => c.push({ text: t, style: "body" }));
+  if (config.conclusao?.some(v => v.trim())) {
+    c.push({ text: t.doc_bugs_conclusion, style: "h2", color: primary });
+    config.conclusao.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "body" }));
   }
 
   return { content: c, styles: pdfStyles(primary), defaultStyle: { font: "Roboto" }, pageSize: config.formato === "CARTA" ? "LETTER" : "A4", pageMargins: [56, 48, 56, 48] };
@@ -131,7 +132,7 @@ function bugsPdf(config, logo) {
 
 // ─── PDF — Changelog ─────────────────────────────────────────────────────────
 
-function changelogPdf(config, logo) {
+function changelogPdf(config, logo, t) {
   const primary = h(config.cores.primaria);
   const c = [];
   const typeOrder = ["breaking", "feat", "fix", "refactor", "perf", "style", "chore"];
@@ -139,24 +140,24 @@ function changelogPdf(config, logo) {
   config.mudancas?.forEach(m => { if (!grouped[m.tipo]) grouped[m.tipo] = []; grouped[m.tipo].push(m); });
 
   if (logo) c.push({ image: logo, width: 120, margin: [0, 0, 0, 16] });
-  c.push({ text: "CHANGELOG — REGISTRO DE MUDANÇAS", style: "over" });
+  c.push({ text: t.doc_changelog_overline, style: "over" });
   c.push({ text: config.titulo || "Changelog", style: "h1", color: primary });
   if (config.subtitulo) c.push({ text: config.subtitulo, style: "sub", color: h(config.cores.secundaria) });
-  c.push({ text: [config.projeto && `Projeto: ${config.projeto}`, config.autor && `Autor: ${config.autor}`, `Versão: ${config.versao}`].filter(Boolean).join("  |  "), style: "meta" });
+  c.push({ text: [config.projeto && `${t.doc_changelog_fieldProject}: ${config.projeto}`, config.autor && `${t.doc_changelog_fieldAuthor}: ${config.autor}`, `${t.doc_changelog_fieldVersion}: ${config.versao}`].filter(Boolean).join("  |  "), style: "meta" });
   c.push(rule(primary));
 
-  if (config.descricao?.some(t => t.trim())) {
-    c.push({ text: "Visão Geral", style: "h2", color: primary });
-    config.descricao.filter(t => t.trim()).forEach(t => c.push({ text: t, style: "body" }));
+  if (config.descricao?.some(v => v.trim())) {
+    c.push({ text: t.doc_changelog_overview, style: "h2", color: primary });
+    config.descricao.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "body" }));
   }
 
   if (config.mudancas?.length) {
-    c.push({ text: "Tabela de Mudanças", style: "h2", color: primary });
+    c.push({ text: t.doc_changelog_table, style: "h2", color: primary });
     c.push({
       table: {
         headerRows: 1, widths: [25, 55, "*", 100, 70],
         body: [
-          ["#", "Tipo", "Mudança", "Arquivo(s)", "Impacto"].map(t => ({ text: t, style: "th" })),
+          ["#", t.doc_changelog_thType, t.doc_changelog_thChange, t.doc_changelog_thFile, t.doc_changelog_thImpact].map(v => ({ text: v, style: "th" })),
           ...config.mudancas.map((m, i) => {
             const info = CHANGE_TYPES[m.tipo] || CHANGE_TYPES.feat;
             return [
@@ -173,26 +174,26 @@ function changelogPdf(config, logo) {
       margin: [0, 0, 0, 24],
     });
 
-    c.push({ text: "Detalhamento", style: "h2", color: primary });
-    typeOrder.filter(t => grouped[t]?.length).forEach(tipo => {
+    c.push({ text: t.doc_changelog_detail, style: "h2", color: primary });
+    typeOrder.filter(tp => grouped[tp]?.length).forEach(tipo => {
       const info = CHANGE_TYPES[tipo];
       c.push({ text: `${info.label} (${grouped[tipo].length})`, bold: true, color: info.color, margin: [0, 10, 0, 6] });
       grouped[tipo].forEach(m => {
         c.push({ text: m.titulo, bold: true, fontSize: 12, margin: [0, 4, 0, 2] });
         if (m.arquivo)             c.push({ text: m.arquivo, style: "code", fontSize: 9 });
         if (m.descricao?.trim())   c.push({ text: m.descricao, style: "body" });
-        if (m.motivacao?.trim())   c.push({ text: `Motivação: ${m.motivacao}`, style: "body", italics: true });
-        if (m.impacto?.trim())     c.push({ text: `Impacto: ${m.impacto}`, style: "body", italics: true });
-        if (m.codigoAntes?.trim()) c.push({ text: `ANTES:\n${m.codigoAntes}`, style: "code" });
-        if (m.codigoDepois?.trim())c.push({ text: `DEPOIS:\n${m.codigoDepois}`, style: "code" });
-        if (m.notas?.trim())       c.push({ text: `⚠ ${m.notas}`, style: "body", color: "#D97706" });
+        if (m.motivacao?.trim())   c.push({ text: `${t.doc_changelog_fieldMotiv}: ${m.motivacao}`, style: "body", italics: true });
+        if (m.impacto?.trim())     c.push({ text: `${t.doc_changelog_fieldImpact}: ${m.impacto}`, style: "body", italics: true });
+        if (m.codigoAntes?.trim()) c.push({ text: `${t.doc_changelog_fieldBefore}:\n${m.codigoAntes}`, style: "code" });
+        if (m.codigoDepois?.trim())c.push({ text: `${t.doc_changelog_fieldAfter}:\n${m.codigoDepois}`, style: "code" });
+        if (m.notas?.trim())       c.push({ text: `${t.doc_docx_notePrefix}${m.notas}`, style: "body", color: "#D97706" });
       });
     });
   }
 
-  if (config.resumo?.some(t => t.trim())) {
-    c.push({ text: "Resumo Final", style: "h2", color: primary });
-    config.resumo.filter(t => t.trim()).forEach(t => c.push({ text: t, style: "body" }));
+  if (config.resumo?.some(v => v.trim())) {
+    c.push({ text: t.doc_changelog_summary, style: "h2", color: primary });
+    config.resumo.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "body" }));
   }
 
   return { content: c, styles: pdfStyles(primary), defaultStyle: { font: "Roboto" }, pageSize: config.formato === "CARTA" ? "LETTER" : "A4", pageMargins: [56, 48, 56, 48] };
@@ -200,30 +201,30 @@ function changelogPdf(config, logo) {
 
 // ─── PDF — Study ─────────────────────────────────────────────────────────────
 
-function studyPdf(config, logo) {
+function studyPdf(config, logo, t) {
   const primary = h(config.cores.primaria);
   const tC = { CONCEITO: h(config.cores.concept), PRÁTICA: h(config.cores.practice), RESUMO: h(config.cores.summary) };
   const c = [];
 
   if (logo) c.push({ image: logo, width: 120, margin: [0, 0, 0, 16] });
-  c.push({ text: "RELATÓRIO DE ESTUDO — APRENDIZADO TÉCNICO", style: "over" });
+  c.push({ text: t.doc_study_overline, style: "over" });
   c.push({ text: config.titulo || "Estudo", style: "h1", color: primary });
   if (config.subtitulo) c.push({ text: config.subtitulo, style: "sub", color: h(config.cores.secundaria) });
-  c.push({ text: `Estudante: ${config.autor || "—"}  |  Versão: ${config.versao}`, style: "meta" });
+  c.push({ text: `${t.doc_study_fieldStudent}: ${config.autor || "—"}  |  ${t.doc_study_fieldVersion}: ${config.versao}`, style: "meta" });
   c.push(rule(primary));
 
-  if (config.introducao?.some(t => t.trim())) {
-    c.push({ text: "Introdução", style: "h2", color: primary });
-    config.introducao.filter(t => t.trim()).forEach(t => c.push({ text: t, style: "body" }));
+  if (config.introducao?.some(v => v.trim())) {
+    c.push({ text: t.doc_study_intro, style: "h2", color: primary });
+    config.introducao.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "body" }));
   }
 
   if (config.topicos?.length) {
-    c.push({ text: "Resumo dos Tópicos", style: "h2", color: primary });
+    c.push({ text: t.doc_study_topicsTable, style: "h2", color: primary });
     c.push({
       table: {
         headerRows: 1, widths: [25, "*", 65, "*"],
         body: [
-          ["#", "Tópico", "Tipo", "Resumo"].map(t => ({ text: t, style: "th" })),
+          ["#", t.doc_study_thTopic, t.doc_study_thType, t.doc_study_thSummary].map(v => ({ text: v, style: "th" })),
           ...config.topicos.map((p, i) => {
             const tc = tC[p.tipo] || tC.CONCEITO;
             return [
@@ -239,21 +240,21 @@ function studyPdf(config, logo) {
       margin: [0, 0, 0, 24],
     });
 
-    c.push({ text: "Desenvolvimento", style: "h2", color: primary });
+    c.push({ text: t.doc_study_topicsDetail, style: "h2", color: primary });
     config.topicos.forEach((p, i) => {
       const tc = tC[p.tipo] || tC.CONCEITO;
       const d = p.detalhe || {};
       c.push({ text: `${i + 1}. ${p.titulo}`, bold: true, fontSize: 13, color: primary, margin: [0, 12, 0, 2] });
       c.push({ text: p.tipo, bold: true, color: tc, fontSize: 10, margin: [0, 0, 0, 6] });
-      if (d.explicacao?.some(t => t.trim())) { c.push({ text: "EXPLICAÇÃO", style: "lbl" }); d.explicacao.filter(t => t.trim()).forEach(t => c.push({ text: t, style: "body" })); }
-      if (d.exemplos?.some(t => t.trim()))   { c.push({ text: "EXEMPLOS", style: "lbl" }); d.exemplos.filter(t => t.trim()).forEach(t => c.push({ text: `• ${t}`, style: "body" })); }
-      if (d.codigo?.some(t => t.trim()))     { c.push({ text: "CÓDIGO", style: "lbl" }); d.codigo.filter(t => t.trim()).forEach(t => c.push({ text: t, style: "code" })); }
+      if (d.explicacao?.some(v => v.trim())) { c.push({ text: t.doc_study_fieldExplanation.toUpperCase(), style: "lbl" }); d.explicacao.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "body" })); }
+      if (d.exemplos?.some(v => v.trim()))   { c.push({ text: t.doc_study_fieldExamples.toUpperCase(), style: "lbl" }); d.exemplos.filter(v => v.trim()).forEach(v => c.push({ text: `• ${v}`, style: "body" })); }
+      if (d.codigo?.some(v => v.trim()))     { c.push({ text: t.doc_study_fieldCode.toUpperCase(), style: "lbl" }); d.codigo.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "code" })); }
     });
   }
 
-  if (config.conclusao?.some(t => t.trim())) {
-    c.push({ text: "Conclusão", style: "h2", color: primary });
-    config.conclusao.filter(t => t.trim()).forEach(t => c.push({ text: t, style: "body" }));
+  if (config.conclusao?.some(v => v.trim())) {
+    c.push({ text: t.doc_study_conclusion, style: "h2", color: primary });
+    config.conclusao.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "body" }));
   }
 
   return { content: c, styles: pdfStyles(primary), defaultStyle: { font: "Roboto" }, pageSize: config.formato === "CARTA" ? "LETTER" : "A4", pageMargins: [56, 48, 56, 48] };
@@ -278,7 +279,7 @@ function makeDocxTableBorders(color = "CCCCCC") {
 
 // ─── DOCX builder — main ─────────────────────────────────────────────────────
 
-async function buildDocxBlob(config, activeTemplate) {
+async function buildDocxBlob(config, activeTemplate, t) {
   const docx = await getDocx();
   const {
     Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
@@ -432,9 +433,9 @@ async function buildDocxBlob(config, activeTemplate) {
         tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
         children: [
           new TextRun({ text: config.autor || "", size: 16, color: "AAAAAA", font: "Arial" }),
-          new TextRun({ text: "\tPágina ", size: 16, color: "AAAAAA", font: "Arial" }),
+          new TextRun({ text: `\t${t.doc_docx_page} `, size: 16, color: "AAAAAA", font: "Arial" }),
           new TextRun({ children: [PageNumber.CURRENT], size: 16, color: "AAAAAA", font: "Arial" }),
-          new TextRun({ text: " de ", size: 16, color: "AAAAAA", font: "Arial" }),
+          new TextRun({ text: t.doc_docx_of, size: 16, color: "AAAAAA", font: "Arial" }),
           new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 16, color: "AAAAAA", font: "Arial" }),
         ],
       }),
@@ -449,7 +450,7 @@ async function buildDocxBlob(config, activeTemplate) {
   for (let i = 0; i < 6; i++) coverChildren.push(Br());
 
   // Template label
-  const templateLabels = { bugs: "RELATÓRIO DE BUGS — ANÁLISE TÉCNICA", study: "RELATÓRIO DE ESTUDO — APRENDIZADO TÉCNICO", changelog: "CHANGELOG — REGISTRO DE MUDANÇAS" };
+  const templateLabels = { bugs: t.doc_cover_bugs, study: t.doc_cover_study, changelog: t.doc_cover_changelog };
   coverChildren.push(new Paragraph({
     alignment: AlignmentType.CENTER,
     spacing: { after: 160 },
@@ -509,15 +510,15 @@ async function buildDocxBlob(config, activeTemplate) {
     };
 
     // Resumo Executivo
-    if (config.resumoExecutivo?.some(t => t.trim())) {
-      contentChildren.push(SectionTitle("Resumo Executivo"));
-      config.resumoExecutivo.filter(t => t.trim()).forEach(t => contentChildren.push(BodyText(t)));
+    if (config.resumoExecutivo?.some(v => v.trim())) {
+      contentChildren.push(SectionTitle(t.doc_bugs_execSummary));
+      config.resumoExecutivo.filter(v => v.trim()).forEach(v => contentChildren.push(BodyText(v)));
       contentChildren.push(Br());
     }
 
     // Tabela de problemas
     if (config.problemas?.length) {
-      contentChildren.push(SectionTitle("Tabela de Problemas"));
+      contentChildren.push(SectionTitle(t.doc_bugs_problemsTable));
 
       const colW = [
         Math.round(contentW * 0.05),  // #
@@ -530,9 +531,9 @@ async function buildDocxBlob(config, activeTemplate) {
         tableHeader: true,
         children: [
           HeaderCell("#", colW[0], primary),
-          HeaderCell("Problema", colW[1], primary),
-          HeaderCell("Severidade", colW[2], primary),
-          HeaderCell("Resolução", colW[3], primary),
+          HeaderCell(t.doc_bugs_thProblem, colW[1], primary),
+          HeaderCell(t.doc_bugs_thSeverity, colW[2], primary),
+          HeaderCell(t.doc_bugs_thResolution, colW[3], primary),
         ],
       });
 
@@ -558,7 +559,7 @@ async function buildDocxBlob(config, activeTemplate) {
       contentChildren.push(Br());
 
       // Detalhamento
-      contentChildren.push(SectionTitle("Detalhamento dos Problemas"));
+      contentChildren.push(SectionTitle(t.doc_bugs_problemsDetail));
 
       config.problemas.forEach((p, i) => {
         const sc = sevColors[p.severity] || sevColors.ALTA;
@@ -571,46 +572,45 @@ async function buildDocxBlob(config, activeTemplate) {
           indent: { left: 200 },
           children: [
             new TextRun({ text: `${i + 1}.  `, bold: true, size: 22, color: sc, font: "Arial" }),
-            new TextRun({ text: p.titulo || "Sem título", bold: true, size: 22, color: "1A1A2E", font: "Arial" }),
+            new TextRun({ text: p.titulo || t.noTitle, bold: true, size: 22, color: "1A1A2E", font: "Arial" }),
           ],
         }));
 
         contentChildren.push(SeverityBadge(p.severity));
 
         if (p.resumo?.trim()) {
-          contentChildren.push(FieldLabel("Descrição"));
+          contentChildren.push(FieldLabel(t.doc_bugs_fieldDesc));
           contentChildren.push(BodyText(p.resumo));
         }
 
         const sec  = (label, arr) => {
-          if (!arr?.some(t => t.trim())) return;
+          if (!arr?.some(v => v.trim())) return;
           contentChildren.push(FieldLabel(label));
-          arr.filter(t => t.trim()).forEach(t => contentChildren.push(BodyText(t)));
+          arr.filter(v => v.trim()).forEach(v => contentChildren.push(BodyText(v)));
         };
         const codeSec = (label, arr) => {
-          if (!arr?.some(t => t.trim())) return;
+          if (!arr?.some(v => v.trim())) return;
           contentChildren.push(FieldLabel(label));
-          // Split multi-line code into separate paragraphs
-          arr.filter(t => t.trim()).forEach(block =>
+          arr.filter(v => v.trim()).forEach(block =>
             block.split("\n").forEach(line => contentChildren.push(CodeBlock(line)))
           );
           contentChildren.push(Br());
         };
 
-        sec("Onde Ocorre", d.ondeOcorre);
-        codeSec("Código Vulnerável", d.codigoOnde);
-        sec("Por Que É um Problema", d.porqueProblema);
-        sec("Resolução", d.textoResolucao);
-        codeSec("Código Corrigido", d.codigoResolucao);
+        sec(t.doc_bugs_fieldWhere, d.ondeOcorre);
+        codeSec(t.doc_bugs_fieldCode, d.codigoOnde);
+        sec(t.doc_bugs_fieldWhy, d.porqueProblema);
+        sec(t.doc_bugs_fieldResText, d.textoResolucao);
+        codeSec(t.doc_bugs_fieldResCode, d.codigoResolucao);
 
         contentChildren.push(Br());
       });
     }
 
     // Conclusão
-    if (config.conclusao?.some(t => t.trim())) {
-      contentChildren.push(SectionTitle("Conclusão"));
-      config.conclusao.filter(t => t.trim()).forEach(t => contentChildren.push(BodyText(t)));
+    if (config.conclusao?.some(v => v.trim())) {
+      contentChildren.push(SectionTitle(t.doc_bugs_conclusion));
+      config.conclusao.filter(v => v.trim()).forEach(v => contentChildren.push(BodyText(v)));
     }
   }
 
@@ -621,15 +621,15 @@ async function buildDocxBlob(config, activeTemplate) {
     config.mudancas?.forEach(m => { if (!grouped[m.tipo]) grouped[m.tipo] = []; grouped[m.tipo].push(m); });
 
     // Visão Geral
-    if (config.descricao?.some(t => t.trim())) {
-      contentChildren.push(SectionTitle("Visão Geral"));
-      config.descricao.filter(t => t.trim()).forEach(t => contentChildren.push(BodyText(t)));
+    if (config.descricao?.some(v => v.trim())) {
+      contentChildren.push(SectionTitle(t.doc_changelog_overview));
+      config.descricao.filter(v => v.trim()).forEach(v => contentChildren.push(BodyText(v)));
       contentChildren.push(Br());
     }
 
     // Tabela de mudanças
     if (config.mudancas?.length) {
-      contentChildren.push(SectionTitle("Tabela de Mudanças"));
+      contentChildren.push(SectionTitle(t.doc_changelog_table));
 
       const colW = [
         Math.round(contentW * 0.05),
@@ -643,10 +643,10 @@ async function buildDocxBlob(config, activeTemplate) {
         tableHeader: true,
         children: [
           HeaderCell("#", colW[0], primary),
-          HeaderCell("Tipo", colW[1], primary),
-          HeaderCell("Mudança", colW[2], primary),
-          HeaderCell("Arquivo(s)", colW[3], primary),
-          HeaderCell("Impacto", colW[4], primary),
+          HeaderCell(t.doc_changelog_thType, colW[1], primary),
+          HeaderCell(t.doc_changelog_thChange, colW[2], primary),
+          HeaderCell(t.doc_changelog_thFile, colW[3], primary),
+          HeaderCell(t.doc_changelog_thImpact, colW[4], primary),
         ],
       });
 
@@ -674,9 +674,9 @@ async function buildDocxBlob(config, activeTemplate) {
       contentChildren.push(Br());
 
       // Detalhamento por tipo
-      contentChildren.push(SectionTitle("Detalhamento das Mudanças"));
+      contentChildren.push(SectionTitle(t.doc_changelog_detail));
 
-      typeOrder.filter(t => grouped[t]?.length).forEach(tipo => {
+      typeOrder.filter(tp => grouped[tp]?.length).forEach(tipo => {
         const info = CHANGE_TYPES[tipo];
         const tc   = hexToDocxColor(info.color);
 
@@ -694,7 +694,7 @@ async function buildDocxBlob(config, activeTemplate) {
             spacing: { before: 160, after: 60 },
             border: { left: { style: BorderStyle.SINGLE, size: 12, color: tc, space: 8 } },
             indent: { left: 200 },
-            children: [new TextRun({ text: m.titulo || "Sem título", bold: true, size: 22, color: "1A1A2E", font: "Arial" })],
+            children: [new TextRun({ text: m.titulo || t.noTitle, bold: true, size: 22, color: "1A1A2E", font: "Arial" })],
           }));
 
           if (m.arquivo) {
@@ -708,23 +708,23 @@ async function buildDocxBlob(config, activeTemplate) {
           if (m.descricao?.trim()) contentChildren.push(BodyText(m.descricao));
 
           if (m.motivacao?.trim()) {
-            contentChildren.push(FieldLabel("Motivação"));
+            contentChildren.push(FieldLabel(t.doc_changelog_fieldMotiv));
             contentChildren.push(BodyText(m.motivacao));
           }
 
           if (m.impacto?.trim()) {
-            contentChildren.push(FieldLabel("Impacto"));
+            contentChildren.push(FieldLabel(t.doc_changelog_fieldImpact));
             contentChildren.push(BodyText(m.impacto));
           }
 
           if (m.codigoAntes?.trim()) {
-            contentChildren.push(FieldLabel("Código ANTES"));
+            contentChildren.push(FieldLabel(t.doc_changelog_fieldBefore));
             m.codigoAntes.split("\n").forEach(line => contentChildren.push(CodeBlock(line)));
             contentChildren.push(Br());
           }
 
           if (m.codigoDepois?.trim()) {
-            contentChildren.push(FieldLabel("Código DEPOIS"));
+            contentChildren.push(FieldLabel(t.doc_changelog_fieldAfter));
             m.codigoDepois.split("\n").forEach(line => contentChildren.push(CodeBlock(line)));
             contentChildren.push(Br());
           }
@@ -735,7 +735,7 @@ async function buildDocxBlob(config, activeTemplate) {
               shading: { fill: "FFFBEB", type: ShadingType.CLEAR },
               indent: { left: 200 },
               children: [
-                new TextRun({ text: "⚠ Nota: ", bold: true, size: 20, color: "D97706", font: "Arial" }),
+                new TextRun({ text: t.doc_docx_notePrefix, bold: true, size: 20, color: "D97706", font: "Arial" }),
                 new TextRun({ text: m.notas, size: 20, color: "555555", font: "Arial" }),
               ],
             }));
@@ -747,9 +747,9 @@ async function buildDocxBlob(config, activeTemplate) {
     }
 
     // Resumo final
-    if (config.resumo?.some(t => t.trim())) {
-      contentChildren.push(SectionTitle("Resumo Final"));
-      config.resumo.filter(t => t.trim()).forEach(t => contentChildren.push(BodyText(t)));
+    if (config.resumo?.some(v => v.trim())) {
+      contentChildren.push(SectionTitle(t.doc_changelog_summary));
+      config.resumo.filter(v => v.trim()).forEach(v => contentChildren.push(BodyText(v)));
     }
   }
 
@@ -762,15 +762,15 @@ async function buildDocxBlob(config, activeTemplate) {
     };
 
     // Introdução
-    if (config.introducao?.some(t => t.trim())) {
-      contentChildren.push(SectionTitle("Introdução e Objetivos"));
-      config.introducao.filter(t => t.trim()).forEach(t => contentChildren.push(BodyText(t)));
+    if (config.introducao?.some(v => v.trim())) {
+      contentChildren.push(SectionTitle(t.doc_study_intro));
+      config.introducao.filter(v => v.trim()).forEach(v => contentChildren.push(BodyText(v)));
       contentChildren.push(Br());
     }
 
     // Tabela de tópicos
     if (config.topicos?.length) {
-      contentChildren.push(SectionTitle("Resumo dos Tópicos"));
+      contentChildren.push(SectionTitle(t.doc_study_topicsTable));
 
       const colW = [
         Math.round(contentW * 0.05),
@@ -783,9 +783,9 @@ async function buildDocxBlob(config, activeTemplate) {
         tableHeader: true,
         children: [
           HeaderCell("#", colW[0], primary),
-          HeaderCell("Tópico", colW[1], primary),
-          HeaderCell("Tipo", colW[2], primary),
-          HeaderCell("Resumo", colW[3], primary),
+          HeaderCell(t.doc_study_thTopic, colW[1], primary),
+          HeaderCell(t.doc_study_thType, colW[2], primary),
+          HeaderCell(t.doc_study_thSummary, colW[3], primary),
         ],
       });
 
@@ -811,7 +811,7 @@ async function buildDocxBlob(config, activeTemplate) {
       contentChildren.push(Br());
 
       // Desenvolvimento
-      contentChildren.push(SectionTitle("Desenvolvimento do Estudo"));
+      contentChildren.push(SectionTitle(t.doc_study_topicsDetail));
 
       config.topicos.forEach((tp, i) => {
         const tc = typeColors[tp.tipo] || typeColors.CONCEITO;
@@ -824,7 +824,7 @@ async function buildDocxBlob(config, activeTemplate) {
           indent: { left: 200 },
           children: [
             new TextRun({ text: `${i + 1}.  `, bold: true, size: 22, color: tc, font: "Arial" }),
-            new TextRun({ text: tp.titulo || "Sem título", bold: true, size: 22, color: "1A1A2E", font: "Arial" }),
+            new TextRun({ text: tp.titulo || t.noTitle, bold: true, size: 22, color: "1A1A2E", font: "Arial" }),
           ],
         }));
 
@@ -833,20 +833,20 @@ async function buildDocxBlob(config, activeTemplate) {
           children: [new TextRun({ text: `  ${tp.tipo}  `, bold: true, size: 18, color: tc, font: "Arial" })],
         }));
 
-        if (d.explicacao?.some(t => t.trim())) {
-          contentChildren.push(FieldLabel("Explicação"));
-          d.explicacao.filter(t => t.trim()).forEach(t => contentChildren.push(BodyText(t)));
+        if (d.explicacao?.some(v => v.trim())) {
+          contentChildren.push(FieldLabel(t.doc_study_fieldExplanation));
+          d.explicacao.filter(v => v.trim()).forEach(v => contentChildren.push(BodyText(v)));
         }
 
-        if (d.exemplos?.some(t => t.trim())) {
-          contentChildren.push(FieldLabel("Exemplos / Casos de Uso"));
-          d.exemplos.filter(t => t.trim()).forEach(t => contentChildren.push(BulletItem(t)));
+        if (d.exemplos?.some(v => v.trim())) {
+          contentChildren.push(FieldLabel(t.doc_study_fieldExamples));
+          d.exemplos.filter(v => v.trim()).forEach(v => contentChildren.push(BulletItem(v)));
           contentChildren.push(Br());
         }
 
-        if (d.codigo?.some(t => t.trim())) {
-          contentChildren.push(FieldLabel("Código de Exemplo"));
-          d.codigo.filter(t => t.trim()).forEach(block =>
+        if (d.codigo?.some(v => v.trim())) {
+          contentChildren.push(FieldLabel(t.doc_study_fieldCode));
+          d.codigo.filter(v => v.trim()).forEach(block =>
             block.split("\n").forEach(line => contentChildren.push(CodeBlock(line)))
           );
           contentChildren.push(Br());
@@ -857,9 +857,9 @@ async function buildDocxBlob(config, activeTemplate) {
     }
 
     // Conclusão
-    if (config.conclusao?.some(t => t.trim())) {
-      contentChildren.push(SectionTitle("Conclusão e Próximos Passos"));
-      config.conclusao.filter(t => t.trim()).forEach(t => contentChildren.push(BodyText(t)));
+    if (config.conclusao?.some(v => v.trim())) {
+      contentChildren.push(SectionTitle(t.doc_study_conclusion));
+      config.conclusao.filter(v => v.trim()).forEach(v => contentChildren.push(BodyText(v)));
     }
   }
 
@@ -920,63 +920,64 @@ async function buildDocxBlob(config, activeTemplate) {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-const LABEL = { bugs: "Bugs", changelog: "Changelog", study: "Estudo" };
-
 export function ExportPanel({ config, activeTemplate }) {
+  const { t } = useLang();
   const [status, setStatus]       = useState(null);
   const [statusMsg, setStatusMsg] = useState("");
 
   const getHtml = () =>
-    activeTemplate === "study"     ? buildStudyHtml(config) :
-    activeTemplate === "changelog" ? buildChangelogHtml(config) :
-                                     buildBugsHtml(config);
+    activeTemplate === "study"     ? buildStudyHtml(config, t) :
+    activeTemplate === "changelog" ? buildChangelogHtml(config, t) :
+                                     buildBugsHtml(config, t);
 
   const run = async (label, fn) => {
     setStatus("loading"); setStatusMsg(label);
     try {
       await fn();
-      setStatus("done"); setStatusMsg("Concluído!");
+      setStatus("done"); setStatusMsg(t.done);
       setTimeout(() => setStatus(null), 2200);
     } catch (e) {
       console.error(e);
-      setStatus("error"); setStatusMsg(e.message || "Erro inesperado");
+      setStatus("error"); setStatusMsg(e.message || t.unexpectedError);
       setTimeout(() => setStatus(null), 3500);
     }
   };
 
-  const handlePdf = () => run("Carregando pdfmake...", async () => {
+  const handlePdf = () => run(t.loadingPdfmake, async () => {
     const pm = await getPdfMake();
-    setStatusMsg("Gerando PDF...");
+    setStatusMsg(t.generatingPdf);
     const logo = await logoToDataUrl(config.logo);
     const def  =
-      activeTemplate === "study"     ? studyPdf(config, logo) :
-      activeTemplate === "changelog" ? changelogPdf(config, logo) :
-                                       bugsPdf(config, logo);
+      activeTemplate === "study"     ? studyPdf(config, logo, t) :
+      activeTemplate === "changelog" ? changelogPdf(config, logo, t) :
+                                       bugsPdf(config, logo, t);
     pm.createPdf(def).download(`relatorio-${activeTemplate}-v${config.versao || "1"}.pdf`);
   });
 
-  const handleDocx = () => run("Carregando docx.js...", async () => {
-    setStatusMsg("Gerando DOCX...");
-    const blob = await buildDocxBlob(config, activeTemplate);
+  const handleDocx = () => run(t.loadingDocx, async () => {
+    setStatusMsg(t.generatingDocx);
+    const blob = await buildDocxBlob(config, activeTemplate, t);
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `relatorio-${activeTemplate}-v${config.versao || "1"}.docx`;
     a.click(); URL.revokeObjectURL(a.href);
   });
 
-  const handleHtml = () => run("Abrindo...", async () => {
+  const handleHtml = () => run(t.opening, async () => {
     const w = window.open("", "_blank");
-    if (!w) throw new Error("Popup bloqueado — habilite popups para este site.");
+    if (!w) throw new Error(t.popupBlocked);
     w.document.write(getHtml()); w.document.close();
   });
 
-  const handleDownloadHtml = () => run("Preparando HTML...", async () => {
+  const handleDownloadHtml = () => run(t.preparingHtml, async () => {
     const blob = new Blob([getHtml()], { type: "text/html;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `relatorio-${activeTemplate}-v${config.versao || "1"}.html`;
     a.click(); URL.revokeObjectURL(a.href);
   });
+
+  const templateLabel = t[`tmpl_${activeTemplate}_label`] || activeTemplate;
 
   return (
     <div style={{ padding: "44px 40px", maxWidth: 520, margin: "0 auto" }}>
@@ -985,7 +986,7 @@ export function ExportPanel({ config, activeTemplate }) {
         <div className="export-overlay">
           <div className="export-spinner" />
           <div style={{ fontSize: 18, fontWeight: 800, color: "#fff", fontFamily: "var(--disp)" }}>{statusMsg}</div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,.5)" }}>Aguarde...</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,.5)" }}>{t.waitMsg}</div>
         </div>
       )}
 
@@ -994,39 +995,39 @@ export function ExportPanel({ config, activeTemplate }) {
           <Bi name="file-earmark-richtext-fill" size={38} style={{ color: "var(--ac)" }} />
         </div>
         <h2 style={{ fontSize: 22, fontWeight: 900, fontFamily: "var(--disp)", marginBottom: 10, letterSpacing: -.4 }}>
-          Exportar — {LABEL[activeTemplate] || "Relatório"}
+          {t.exportHeading} — {templateLabel}
         </h2>
-        <p style={{ fontSize: 14, color: "var(--tx3)", lineHeight: 1.7 }}>Escolha o formato de exportação.</p>
+        <p style={{ fontSize: 14, color: "var(--tx3)", lineHeight: 1.7 }}>{t.exportChoose}</p>
         {status === "done"  && <div style={{ marginTop: 12, color: "#22c55e", fontWeight: 700, fontSize: 13 }}>✓ {statusMsg}</div>}
         {status === "error" && <div style={{ marginTop: 12, color: "#ef4444", fontWeight: 700, fontSize: 13 }}>✗ {statusMsg}</div>}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <button onClick={handlePdf} className="btn-primary full" style={{ padding: "16px 28px", fontSize: 15, background: "linear-gradient(135deg,#6271f5,#8b97ff)" }}>
-          <Bi name="file-earmark-pdf-fill" size={17} /> Baixar PDF
+          <Bi name="file-earmark-pdf-fill" size={17} /> {t.downloadPdf}
         </button>
         <button onClick={handleDocx} className="btn-primary full" style={{ padding: "16px 28px", fontSize: 15, background: "linear-gradient(135deg,#2563EB,#60a5fa)" }}>
-          <Bi name="file-earmark-word-fill" size={17} /> Baixar DOCX
+          <Bi name="file-earmark-word-fill" size={17} /> {t.downloadDocx}
         </button>
 
         <div style={{ height: 1, background: "var(--b2)", margin: "4px 0" }} />
 
         <button onClick={handleHtml} className="btn-ghost" style={{ width: "100%", justifyContent: "center", padding: "13px 20px" }}>
-          <Bi name="box-arrow-up-right" size={15} /> Abrir HTML (imprimir como PDF)
+          <Bi name="box-arrow-up-right" size={15} /> {t.openHtml}
         </button>
         <button onClick={handleDownloadHtml} className="btn-ghost" style={{ width: "100%", justifyContent: "center", padding: "13px 20px" }}>
-          <Bi name="download" size={15} /> Baixar arquivo .html
+          <Bi name="download" size={15} /> {t.downloadHtml}
         </button>
       </div>
 
       <div style={{ marginTop: 36, padding: "22px 24px", background: "var(--bg2)", borderRadius: 16, border: "1px solid var(--b2)" }}>
         <div style={{ fontSize: 11, fontWeight: 800, color: "var(--tx3)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-          <Bi name="info-circle-fill" size={12} style={{ color: "var(--ac)" }} /> Dicas
+          <Bi name="info-circle-fill" size={12} style={{ color: "var(--ac)" }} /> {t.tips}
         </div>
         {[
-          ["file-earmark-pdf-fill",  "PDF via pdfmake — download direto, pronto para envio"],
-          ["file-earmark-word-fill", "DOCX profissional — capa, header/footer, tabelas, código. Editável no Word / LibreOffice"],
-          ["printer-fill",           "HTML em nova aba → Ctrl+P → ative 'Gráficos de segundo plano'"],
+          ["file-earmark-pdf-fill",  t.tipPdf],
+          ["file-earmark-word-fill", t.tipDocx],
+          ["printer-fill",           t.tipHtml],
         ].map(([icon, text], i) => (
           <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
             <Bi name={icon} size={13} style={{ color: "var(--ac)", marginTop: 2, flexShrink: 0 }} />

@@ -1,3 +1,10 @@
+export const emptyTable = () => ({
+  id: Date.now() + Math.random(),
+  titulo: "",
+  cabecalhos: ["Coluna 1", "Coluna 2"],
+  linhas: [["", ""]],
+});
+
 export const emptyBugProblem = () => ({
   id: Date.now() + Math.random(),
   titulo: "",
@@ -54,6 +61,7 @@ export const initialBugsConfig = {
   versao: "1.0",
   resumoExecutivo: [""],
   problemas: [],
+  tabelas: [],
   conclusao: [""],
 };
 
@@ -77,6 +85,7 @@ export const initialStudyConfig = {
   versao: "1.0",
   introducao: [""],
   topicos: [],
+  tabelas: [],
   conclusao: [""],
 };
 
@@ -108,5 +117,6 @@ export const initialChangelogConfig = {
   dataFim: "",
   descricao: [""],
   mudancas: [],
+  tabelas: [],
   resumo: [""],
 };

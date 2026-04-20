@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Bi } from "./Bi";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { CHANGE_TYPES } from "../constants/templates";
+import { useLang } from "../contexts/LangContext";
 
 function TypeIcon({ type, color }) {
   const s = { flexShrink: 0 };
@@ -16,6 +17,7 @@ function TypeIcon({ type, color }) {
 }
 
 export function ChangeCard({ change, idx, onChange, onRemove }) {
+  const { t: i18n } = useLang();
   const [open, setOpen] = useState(false);
   const isMob = useIsMobile();
   const t = CHANGE_TYPES[change.tipo] || CHANGE_TYPES.feat;
@@ -28,7 +30,7 @@ export function ChangeCard({ change, idx, onChange, onRemove }) {
           <TypeIcon type={change.tipo} color="#fff" />
         </div>
         <span style={{ padding: "3px 11px", borderRadius: 20, fontSize: 10, fontWeight: 800, background: `${t.color}22`, color: t.color, flexShrink: 0, letterSpacing: .8, border: `1px solid ${t.color}40` }}>{t.label}</span>
-        <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: change.titulo ? "var(--tx)" : "var(--tx3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{change.titulo || "Sem título"}</span>
+        <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: change.titulo ? "var(--tx)" : "var(--tx3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{change.titulo || i18n.noTitle}</span>
         {change.arquivo && (
           <span style={{ fontSize: 11, fontFamily: "var(--mono)", color: "var(--tx3)", background: "var(--s2)", padding: "3px 9px", borderRadius: 6, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{change.arquivo}</span>
         )}
@@ -40,7 +42,7 @@ export function ChangeCard({ change, idx, onChange, onRemove }) {
         <div className="anim" style={{ padding: "24px 24px 28px", borderTop: "1px solid var(--b1)" }}>
 
           <div style={{ marginBottom: 20 }}>
-            <label className="lbl">Tipo de Mudança</label>
+            <label className="lbl">{i18n.changeTypeLabel}</label>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               {Object.entries(CHANGE_TYPES).map(([k, v]) => {
                 const active = change.tipo === k;
@@ -67,47 +69,47 @@ export function ChangeCard({ change, idx, onChange, onRemove }) {
           </div>
 
           <div style={{ marginBottom: 18 }}>
-            <label className="lbl">Título da mudança</label>
-            <input className="inp" value={change.titulo} onChange={e => upd("titulo", e.target.value)} placeholder="Ex: Refatorar sistema de autenticação JWT" />
+            <label className="lbl">{i18n.changeTitleLabel}</label>
+            <input className="inp" value={change.titulo} onChange={e => upd("titulo", e.target.value)} placeholder={i18n.changeTitlePh} />
           </div>
 
           <div style={{ marginBottom: 18 }}>
-            <label className="lbl">Arquivo(s) modificado(s)</label>
-            <input className="inp" value={change.arquivo} onChange={e => upd("arquivo", e.target.value)} placeholder="src/auth/jwt.service.ts, src/middleware/auth.ts" />
+            <label className="lbl">{i18n.changeFileLabel}</label>
+            <input className="inp" value={change.arquivo} onChange={e => upd("arquivo", e.target.value)} placeholder={i18n.changeFilePh} />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: isMob ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 18 }}>
             <div>
-              <label className="lbl">Descrição da mudança</label>
-              <textarea className="inp" rows={3} value={change.descricao} onChange={e => upd("descricao", e.target.value)} placeholder="O que foi alterado e como..." />
+              <label className="lbl">{i18n.changeDescLabel}</label>
+              <textarea className="inp" rows={3} value={change.descricao} onChange={e => upd("descricao", e.target.value)} placeholder={i18n.changeDescPh} />
             </div>
             <div>
-              <label className="lbl">Motivação / Contexto</label>
-              <textarea className="inp" rows={3} value={change.motivacao} onChange={e => upd("motivacao", e.target.value)} placeholder="Por que essa mudança foi feita..." />
+              <label className="lbl">{i18n.changeMotivLabel}</label>
+              <textarea className="inp" rows={3} value={change.motivacao} onChange={e => upd("motivacao", e.target.value)} placeholder={i18n.changeMotivPh} />
             </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: isMob ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 18 }}>
             <div>
-              <label className="lbl">Impacto técnico</label>
-              <textarea className="inp" rows={3} value={change.impacto} onChange={e => upd("impacto", e.target.value)} placeholder="Como isso afeta o sistema..." />
+              <label className="lbl">{i18n.changeImpactLabel}</label>
+              <textarea className="inp" rows={3} value={change.impacto} onChange={e => upd("impacto", e.target.value)} placeholder={i18n.changeImpactPh} />
             </div>
             <div>
-              <label className="lbl">Notas adicionais</label>
-              <textarea className="inp" rows={3} value={change.notas} onChange={e => upd("notas", e.target.value)} placeholder="Observações importantes..." />
+              <label className="lbl">{i18n.changeNotesLabel}</label>
+              <textarea className="inp" rows={3} value={change.notas} onChange={e => upd("notas", e.target.value)} placeholder={i18n.changeNotesPh} />
             </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: isMob ? "1fr" : "1fr 1fr", gap: 16 }}>
             <div>
-              <label className="lbl">Código ANTES (opcional)</label>
+              <label className="lbl">{i18n.changeBeforeLabel}</label>
               <textarea className="inp" rows={5} value={change.codigoAntes} onChange={e => upd("codigoAntes", e.target.value)}
-                style={{ fontFamily: "var(--mono)", fontSize: 12 }} placeholder="// trecho antigo" />
+                style={{ fontFamily: "var(--mono)", fontSize: 12 }} placeholder={i18n.changeBeforePh} />
             </div>
             <div>
-              <label className="lbl">Código DEPOIS (opcional)</label>
+              <label className="lbl">{i18n.changeAfterLabel}</label>
               <textarea className="inp" rows={5} value={change.codigoDepois} onChange={e => upd("codigoDepois", e.target.value)}
-                style={{ fontFamily: "var(--mono)", fontSize: 12 }} placeholder="// trecho novo" />
+                style={{ fontFamily: "var(--mono)", fontSize: 12 }} placeholder={i18n.changeAfterPh} />
             </div>
           </div>
 
