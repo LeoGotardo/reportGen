@@ -21,6 +21,13 @@ const pt = {
   tmpl_changelog_label: "Changelog / Mudanças",
   tmpl_changelog_desc: "Registro de alterações, refatorações e melhorias de código",
 
+  // Clear report
+  clearReport: "Limpar relatório",
+  clearConfirmTitle: "Limpar relatório atual?",
+  clearConfirmMsg: "Todos os dados do template atual serão apagados. Esta ação não pode ser desfeita.",
+  clearConfirmYes: "Sim, limpar",
+  clearConfirmNo: "Cancelar",
+
   // JSON modal
   importTitle: "Importar JSON",
   importSub: "Cole ou carregue um arquivo exportado anteriormente",
@@ -289,6 +296,13 @@ const en = {
   tmpl_study_desc: "Learning log, concepts and practices on a topic",
   tmpl_changelog_label: "Changelog / Changes",
   tmpl_changelog_desc: "Log of code changes, refactors and improvements",
+
+  // Clear report
+  clearReport: "Clear report",
+  clearConfirmTitle: "Clear current report?",
+  clearConfirmMsg: "All data in the current template will be erased. This action cannot be undone.",
+  clearConfirmYes: "Yes, clear",
+  clearConfirmNo: "Cancel",
 
   // JSON modal
   importTitle: "Import JSON",

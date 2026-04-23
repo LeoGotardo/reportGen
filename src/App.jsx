@@ -13,6 +13,7 @@ import { BugsPreview, ChangelogPreview, StudyPreview } from "./components/Previe
 // Hooks
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useLang } from "./contexts/LangContext";
+import { useLocalStorageState } from "./hooks/useLocalStorageState";
 
 // Constants
 import { TEMPLATES } from "./constants/templates";
@@ -142,15 +143,16 @@ export default function App() {
   useBootstrapIcons();
   const { t, lang, setLang } = useLang();
 
-  const [activeTemplate, setActiveTemplate] = useState("bugs");
-  const [studyConfig,     setStudyConfig]     = useState(initialStudyConfig);
-  const [bugsConfig,      setBugsConfig]      = useState(initialBugsConfig);
-  const [changelogConfig, setChangelogConfig] = useState(initialChangelogConfig);
+  const [activeTemplate, setActiveTemplate] = useLocalStorageState("rg_activeTemplate", "bugs");
+  const [studyConfig,     setStudyConfig]     = useLocalStorageState("rg_studyConfig",     initialStudyConfig);
+  const [bugsConfig,      setBugsConfig]      = useLocalStorageState("rg_bugsConfig",      initialBugsConfig);
+  const [changelogConfig, setChangelogConfig] = useLocalStorageState("rg_changelogConfig", initialChangelogConfig);
   const [rightTab,  setRightTab]  = useState("preview");
   const [mobTab,    setMobTab]    = useState("editor");
   const [editorWidth, setEditorWidth] = useState(48);
   const [showImport,   setShowImport]   = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const bodyRef  = useRef(null);
   const isMobile = useIsMobile();
 
@@ -174,6 +176,13 @@ export default function App() {
   const handleSelectTemplate = id => {
     setActiveTemplate(id);
     setRightTab("preview");
+  };
+
+  const handleClearReport = () => {
+    if      (activeTemplate === "study")     setStudyConfig(initialStudyConfig);
+    else if (activeTemplate === "changelog") setChangelogConfig(initialChangelogConfig);
+    else                                     setBugsConfig(initialBugsConfig);
+    setShowClearConfirm(false);
   };
 
   const handleImport = merged => {
@@ -214,6 +223,32 @@ export default function App() {
           onClose={() => setShowImport(false)}
           onImport={handleImport}
         />
+      )}
+
+      {showClearConfirm && (
+        <div className="json-modal-backdrop" onClick={() => setShowClearConfirm(false)}>
+          <div className="json-modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+            <div className="json-modal-header">
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(239,68,68,.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Bi name="trash3-fill" size={17} style={{ color: "#f87171" }} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 15 }}>{t.clearConfirmTitle}</div>
+                <div style={{ fontSize: 12, color: "var(--tx2)", marginTop: 3 }}>{t.clearConfirmMsg}</div>
+              </div>
+            </div>
+            <div className="json-modal-footer" style={{ justifyContent: "flex-end" }}>
+              <button className="btn-ghost" onClick={() => setShowClearConfirm(false)}>{t.clearConfirmNo}</button>
+              <button
+                onClick={handleClearReport}
+                style={{ padding: "9px 20px", borderRadius: "var(--r-sm)", background: "linear-gradient(135deg,#ef4444,#dc2626)", color: "#fff", fontSize: 13, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 7 }}
+              >
+                <Bi name="trash3-fill" size={13} />
+                {t.clearConfirmYes}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <header className="app-header">
@@ -267,6 +302,15 @@ export default function App() {
           <button onClick={() => setShowImport(true)} className="btn-ghost" style={{ fontSize: 12, padding: "7px 14px", gap: 6 }}>
             <Bi name="upload" size={13} />
             <span style={{ display: isMobile ? "none" : "inline" }}>{t.importJson}</span>
+          </button>
+          <button
+            onClick={() => setShowClearConfirm(true)}
+            className="btn-ghost"
+            style={{ fontSize: 12, padding: "7px 14px", gap: 6, borderColor: "rgba(239,68,68,.3)", color: "#f87171" }}
+            title={t.clearReport}
+          >
+            <Bi name="trash3" size={13} />
+            <span style={{ display: isMobile ? "none" : "inline" }}>{t.clearReport}</span>
           </button>
           <span style={{ fontSize: 12, color: "var(--tx3)", fontFamily: "var(--mono)", background: "var(--surf)", padding: "4px 10px", borderRadius: 7, border: "1px solid var(--b2)" }}>
             v{config.versao}
