@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Bi } from "./Bi";
 import { useLang } from "../contexts/LangContext";
 
-export function ArrayField({ label, values, onChange, mono = false, placeholder = "" }) {
+export function ArrayField({ label, values = [], onChange, mono = false, placeholder = "" }) {
   const { t } = useLang();
   return (
     <div style={{ marginBottom: 24 }}>

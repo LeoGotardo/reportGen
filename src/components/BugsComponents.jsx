@@ -78,7 +78,7 @@ export function BugProblemCard({ prob, idx, onChange, onRemove }) {
           </div>
           <div style={{ marginBottom: 18 }}>
             <label className="lbl">{t.bugHowToReproduceLabel}</label>
-            <textarea className="inp" rows={3} value={prob.comoReproduzir} onChange={e => upd("comoReproduzir", e.target.value)} placeholder={t.bugHowToReproducePh} />
+            <textarea className="inp" rows={3} value={prob.comoReproduzir ?? ""} onChange={e => upd("comoReproduzir", e.target.value)} placeholder={t.bugHowToReproducePh} />
           </div>
           <div className="div" />
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
@@ -90,7 +90,7 @@ export function BugProblemCard({ prob, idx, onChange, onRemove }) {
           <ArrayField label={t.bugWhyProblem} values={prob.detalhe.porqueProblema} onChange={v => updD("porqueProblema", v)} placeholder={t.bugWhyPh} />
           <ArrayField label={t.bugResolutionText} values={prob.detalhe.textoResolucao} onChange={v => updD("textoResolucao", v)} placeholder={t.bugResolutionTextPh} />
           <ArrayField label={t.bugCodeFix} values={prob.detalhe.codigoResolucao} onChange={v => updD("codigoResolucao", v)} mono placeholder={t.bugCodeFixPh} />
-          <ArrayField label={t.bugTestsPass} values={prob.detalhe.testesPassam} onChange={v => updD("testesPassam", v)} mono placeholder={t.bugTestsPassPh} />
+          <ArrayField label={t.bugTestsPass} values={prob.detalhe.testesPassam ?? [""]} onChange={v => updD("testesPassam", v)} mono placeholder={t.bugTestsPassPh} />
         </div>
       )}
     </div>
