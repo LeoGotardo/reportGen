@@ -36,7 +36,7 @@ function mergeConfig(incoming) {
           ...emptyBugProblem(), ...p, id: Date.now() + Math.random(),
           detalhe: {
             ondeOcorre: [""], codigoOnde: [""], porqueProblema: [""],
-            textoResolucao: [""], codigoResolucao: [""],
+            textoResolucao: [""], codigoResolucao: [""], testesPassam: [""],
             ...(p.detalhe || {}),
           },
         }))

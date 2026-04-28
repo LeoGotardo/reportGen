@@ -112,6 +112,7 @@ function bugsPdf(config, logo, t) {
       c.push({ text: `${i + 1}. ${p.titulo}`, bold: true, fontSize: 13, color: primary, margin: [0, 12, 0, 2] });
       c.push({ text: p.severity, bold: true, color: sc, fontSize: 10, margin: [0, 0, 0, 6] });
       if (p.resumo) c.push({ text: p.resumo, style: "body" });
+      if (p.comoReproduzir?.trim()) { c.push({ text: t.doc_bugs_fieldHowToReproduce.toUpperCase(), style: "lbl" }); c.push({ text: p.comoReproduzir, style: "body" }); }
       const sec  = (l, arr) => { if (arr?.some(v => v.trim())) { c.push({ text: l, style: "lbl" }); arr.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "body" })); } };
       const csec = (l, arr) => { if (arr?.some(v => v.trim())) { c.push({ text: l, style: "lbl" }); arr.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "code" })); } };
       sec(t.doc_bugs_fieldWhere.toUpperCase(), d.ondeOcorre);
@@ -119,6 +120,7 @@ function bugsPdf(config, logo, t) {
       sec(t.doc_bugs_fieldWhy.toUpperCase(), d.porqueProblema);
       sec(t.doc_bugs_fieldResText.toUpperCase(), d.textoResolucao);
       csec(t.doc_bugs_fieldResCode.toUpperCase(), d.codigoResolucao);
+      if (d.testesPassam?.some(v => v.trim())) { c.push({ text: t.doc_bugs_fieldTestsPass.toUpperCase(), style: "lbl", color: "#22c55e" }); d.testesPassam.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "code", color: "#86efac" })); }
     });
   }
 
@@ -583,6 +585,11 @@ async function buildDocxBlob(config, activeTemplate, t) {
           contentChildren.push(BodyText(p.resumo));
         }
 
+        if (p.comoReproduzir?.trim()) {
+          contentChildren.push(FieldLabel(t.doc_bugs_fieldHowToReproduce));
+          contentChildren.push(BodyText(p.comoReproduzir));
+        }
+
         const sec  = (label, arr) => {
           if (!arr?.some(v => v.trim())) return;
           contentChildren.push(FieldLabel(label));
@@ -602,6 +609,7 @@ async function buildDocxBlob(config, activeTemplate, t) {
         sec(t.doc_bugs_fieldWhy, d.porqueProblema);
         sec(t.doc_bugs_fieldResText, d.textoResolucao);
         codeSec(t.doc_bugs_fieldResCode, d.codigoResolucao);
+        codeSec(t.doc_bugs_fieldTestsPass, d.testesPassam);
 
         contentChildren.push(Br());
       });
