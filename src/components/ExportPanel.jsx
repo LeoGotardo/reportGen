@@ -124,6 +124,37 @@ function bugsPdf(config, logo, t) {
     });
   }
 
+  if (config.testes?.length) {
+    c.push({ text: t.doc_bugs_testsSection, style: "h2", color: "#16a34a" });
+    config.testes.forEach((ts, i) => {
+      c.push({ text: `${i + 1}. ${ts.titulo}`, bold: true, fontSize: 12, color: "#16a34a", margin: [0, 8, 0, 2] });
+      if (ts.descricao?.trim()) { c.push({ text: t.doc_bugs_testFieldWhat.toUpperCase(), style: "lbl" }); c.push({ text: ts.descricao, style: "body" }); }
+      if (ts.como?.trim())      { c.push({ text: t.doc_bugs_testFieldHow.toUpperCase(), style: "lbl" }); c.push({ text: ts.como, style: "body" }); }
+      if (ts.codigo?.some(v => v.trim())) ts.codigo.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "code" }));
+    });
+  }
+
+  if (config.tabelas?.length) {
+    c.push({ text: t.doc_common_tables, style: "h2", color: primary });
+    config.tabelas.forEach(tb => {
+      if (tb.titulo) c.push({ text: tb.titulo, bold: true, fontSize: 12, margin: [0, 8, 0, 4] });
+      if (tb.cabecalhos?.length) {
+        c.push({
+          table: {
+            headerRows: 1,
+            widths: tb.cabecalhos.map(() => "*"),
+            body: [
+              tb.cabecalhos.map(h => ({ text: h, style: "th" })),
+              ...tb.linhas.map((row, ri) => row.map(cell => ({ text: cell || "—", style: "td", fillColor: ri % 2 ? "#f8f8fb" : "#fff" }))),
+            ],
+          },
+          layout: { hLineColor: () => "#eee", vLineColor: () => "#eee" },
+          margin: [0, 0, 0, 16],
+        });
+      }
+    });
+  }
+
   if (config.conclusao?.some(v => v.trim())) {
     c.push({ text: t.doc_bugs_conclusion, style: "h2", color: primary });
     config.conclusao.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "body" }));
@@ -612,6 +643,47 @@ async function buildDocxBlob(config, activeTemplate, t) {
         codeSec(t.doc_bugs_fieldTestsPass, d.testesPassam);
 
         contentChildren.push(Br());
+      });
+    }
+
+    // Testes que passam
+    if (config.testes?.length) {
+      contentChildren.push(SectionTitle(t.doc_bugs_testsSection, "16A34A"));
+      config.testes.forEach((ts, i) => {
+        contentChildren.push(new Paragraph({
+          spacing: { before: 200, after: 60 },
+          border: { left: { style: BorderStyle.SINGLE, size: 12, color: "22C55E", space: 8 } },
+          indent: { left: 200 },
+          children: [new TextRun({ text: `${i + 1}.  ${ts.titulo || t.noTitle}`, bold: true, size: 22, color: "16A34A", font: "Arial" })],
+        }));
+        if (ts.descricao?.trim()) { contentChildren.push(FieldLabel(t.doc_bugs_testFieldWhat)); contentChildren.push(BodyText(ts.descricao)); }
+        if (ts.como?.trim())      { contentChildren.push(FieldLabel(t.doc_bugs_testFieldHow));  contentChildren.push(BodyText(ts.como)); }
+        if (ts.codigo?.some(v => v.trim())) {
+          ts.codigo.filter(v => v.trim()).forEach(block =>
+            block.split("\n").forEach(line => contentChildren.push(CodeBlock(line)))
+          );
+        }
+        contentChildren.push(Br());
+      });
+    }
+
+    // Tabelas
+    if (config.tabelas?.length) {
+      contentChildren.push(SectionTitle(t.doc_common_tables));
+      config.tabelas.forEach(tb => {
+        if (tb.titulo) contentChildren.push(new Paragraph({ spacing: { before: 160, after: 60 }, children: [new TextRun({ text: tb.titulo, bold: true, size: 22, font: "Arial", color: primary })] }));
+        if (tb.cabecalhos?.length) {
+          const colW = tb.cabecalhos.map(() => Math.round(contentW / tb.cabecalhos.length));
+          contentChildren.push(new Table({
+            width: { size: contentW, type: WidthType.DXA },
+            columnWidths: colW,
+            rows: [
+              new TableRow({ tableHeader: true, children: tb.cabecalhos.map((h, ci) => HeaderCell(h, colW[ci], primary)) }),
+              ...tb.linhas.map((row, ri) => new TableRow({ children: row.map((cell, ci) => DataCell(cell || "—", colW[ci], { fill: ri % 2 ? "F8F8FB" : "FFFFFF" })) })),
+            ],
+          }));
+          contentChildren.push(Br());
+        }
       });
     }
 
