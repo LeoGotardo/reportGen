@@ -88,11 +88,13 @@ export function buildBugsHtml(config, tObj) {
         <span style="background:${c}18;color:${c};padding:2px 10px;border-radius:12px;font-size:10px;font-weight:800">${esc(p.severity)}</span>
       </div>
       ${p.resumo?.trim() ? `<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${t.doc_bugs_fieldDesc}</div><p style="font-size:12px;color:#333;line-height:1.7">${esc(p.resumo)}</p></div>` : ""}
+      ${p.comoReproduzir?.trim() ? `<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${t.doc_bugs_fieldHowToReproduce}</div><p style="font-size:12px;color:#333;line-height:1.7">${esc(p.comoReproduzir)}</p></div>` : ""}
       ${field(t.doc_bugs_fieldWhere, d.ondeOcorre)}
       ${code(t.doc_bugs_fieldCode, d.codigoOnde)}
       ${field(t.doc_bugs_fieldWhy, d.porqueProblema)}
       ${field(t.doc_bugs_fieldResText, d.textoResolucao)}
       ${code(t.doc_bugs_fieldResCode, d.codigoResolucao)}
+      ${d.testesPassam?.some(v => v.trim()) ? `<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#22c55e;margin-bottom:6px">${t.doc_bugs_fieldTestsPass}</div>${d.testesPassam.filter(v => v.trim()).map(v => `<pre style="background:${codeBg};color:#86efac;padding:12px 16px;border-radius:8px;font-size:11px;font-family:monospace;line-height:1.6;overflow-x:auto;margin-bottom:8px;white-space:pre-wrap;word-break:break-all;border-left:3px solid #22c55e">${esc(v)}</pre>`).join("")}</div>` : ""}
     </div>`;
   }).join("");
 
@@ -121,6 +123,8 @@ ${config.resumoExecutivo.some(v => v.trim()) ? `
   ${config.resumoExecutivo.filter(v => v.trim()).map(v => `<p style="font-size:13px;color:#333;margin-bottom:12px">${esc(v)}</p>`).join("")}
 </div>` : ""}
 
+${buildCustomTablesHtml(config.tabelas, primary, t.doc_common_tables)}
+
 ${config.problemas.length ? `
 <div style="padding:38px 48px 0">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
@@ -147,7 +151,26 @@ ${config.problemas.length ? `
   ${details}
 </div>` : ""}
 
-${buildCustomTablesHtml(config.tabelas, primary, t.doc_common_tables)}
+${(config.testes || []).length ? `
+<div style="padding:38px 48px 0">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+    <div style="width:5px;height:24px;background:#22c55e;border-radius:3px"></div>
+    <div style="font-size:18px;font-weight:800;color:${primary}">${t.doc_bugs_testsSection}</div>
+  </div>
+  ${config.testes.map((ts, i) => `
+  <div style="margin-bottom:32px;border-left:4px solid #22c55e;padding-left:20px;page-break-inside:avoid">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <div style="width:28px;height:28px;border-radius:7px;background:#22c55e;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <span style="font-size:11px;font-weight:800;color:#fff;font-family:monospace">${i + 1}</span>
+      </div>
+      <div style="font-size:14px;font-weight:800;color:#1a1a2e;flex:1">${esc(ts.titulo)}</div>
+      <span style="background:#22c55e22;color:#16a34a;padding:2px 10px;border-radius:12px;font-size:10px;font-weight:800">PASS</span>
+    </div>
+    ${ts.descricao?.trim() ? `<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${t.doc_bugs_testFieldWhat}</div><p style="font-size:12px;color:#333;line-height:1.7">${esc(ts.descricao)}</p></div>` : ""}
+    ${ts.como?.trim() ? `<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${t.doc_bugs_testFieldHow}</div><p style="font-size:12px;color:#333;line-height:1.7">${esc(ts.como)}</p></div>` : ""}
+    ${ts.codigo?.some(v => v.trim()) ? ts.codigo.filter(v => v.trim()).map(v => `<pre style="background:${codeBg};color:#86efac;padding:12px 16px;border-radius:8px;font-size:11px;font-family:monospace;line-height:1.6;overflow-x:auto;margin-bottom:8px;white-space:pre-wrap;word-break:break-all;border-left:3px solid #22c55e">${esc(v)}</pre>`).join("") : ""}
+  </div>`).join("")}
+</div>` : ""}
 
 ${config.conclusao.some(v => v.trim()) ? `
 <div style="padding:38px 48px 56px">

@@ -11,13 +11,23 @@ export const emptyBugProblem = () => ({
   severity: "ALTA",
   resumo: "",
   resolucao: "",
+  comoReproduzir: "",
   detalhe: {
     ondeOcorre: [""],
     codigoOnde: [""],
     porqueProblema: [""],
     textoResolucao: [""],
     codigoResolucao: [""],
+    testesPassam: [""],
   },
+});
+
+export const emptyBugTest = () => ({
+  id: Date.now() + Math.random(),
+  titulo: "",
+  descricao: "",
+  como: "",
+  codigo: [""],
 });
 
 export const emptyStudyTopic = () => ({
@@ -61,6 +71,7 @@ export const initialBugsConfig = {
   versao: "1.0",
   resumoExecutivo: [""],
   problemas: [],
+  testes: [],
   tabelas: [],
   conclusao: [""],
 };

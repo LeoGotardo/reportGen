@@ -71,6 +71,8 @@ export function BugsPreview({ config }) {
         </div>
       )}
 
+      <CustomTables tabelas={config.tabelas} primary={primary} label={t.doc_common_tables} />
+
       {config.problemas.length > 0 && (
         <div style={{ padding: "38px 48px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
@@ -123,18 +125,41 @@ export function BugsPreview({ config }) {
                   <span style={{ background: `${c}18`, color: c, padding: "2px 10px", borderRadius: 12, fontSize: 10, fontWeight: 800, letterSpacing: .5, marginLeft: "auto" }}>{p.severity}</span>
                 </div>
                 {p.resumo?.trim() && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>{t.doc_bugs_fieldDesc}</div><p style={{ fontSize: 12, color: "#333", lineHeight: 1.7 }}>{p.resumo}</p></div>}
+                {p.comoReproduzir?.trim() && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>{t.doc_bugs_fieldHowToReproduce}</div><p style={{ fontSize: 12, color: "#333", lineHeight: 1.7 }}>{p.comoReproduzir}</p></div>}
                 {d.ondeOcorre?.some(v => v.trim()) && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>{t.doc_bugs_fieldWhere}</div>{d.ondeOcorre.filter(v => v.trim()).map((v, j) => <p key={j} style={{ fontSize: 12, color: "#333", lineHeight: 1.7, marginBottom: 6 }}>{v}</p>)}</div>}
                 {d.codigoOnde?.some(v => v.trim()) && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>{t.doc_bugs_fieldCode}</div>{d.codigoOnde.filter(v => v.trim()).map((v, j) => <pre key={j} style={{ background: `#${config.cores.codeBg}`, color: `#${config.cores.codeText}`, padding: "12px 16px", borderRadius: 8, fontSize: 11, fontFamily: "monospace", lineHeight: 1.6, overflowX: "auto", marginBottom: 8, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{v}</pre>)}</div>}
                 {d.porqueProblema?.some(v => v.trim()) && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>{t.doc_bugs_fieldWhy}</div>{d.porqueProblema.filter(v => v.trim()).map((v, j) => <p key={j} style={{ fontSize: 12, color: "#333", lineHeight: 1.7, marginBottom: 6 }}>{v}</p>)}</div>}
                 {d.textoResolucao?.some(v => v.trim()) && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>{t.doc_bugs_fieldResText}</div>{d.textoResolucao.filter(v => v.trim()).map((v, j) => <p key={j} style={{ fontSize: 12, color: "#333", lineHeight: 1.7, marginBottom: 6 }}>{v}</p>)}</div>}
                 {d.codigoResolucao?.some(v => v.trim()) && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>{t.doc_bugs_fieldResCode}</div>{d.codigoResolucao.filter(v => v.trim()).map((v, j) => <pre key={j} style={{ background: `#${config.cores.codeBg}`, color: `#${config.cores.codeText}`, padding: "12px 16px", borderRadius: 8, fontSize: 11, fontFamily: "monospace", lineHeight: 1.6, overflowX: "auto", marginBottom: 8, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{v}</pre>)}</div>}
+                {d.testesPassam?.some(v => v.trim()) && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#22c55e", marginBottom: 6 }}>{t.doc_bugs_fieldTestsPass}</div>{d.testesPassam.filter(v => v.trim()).map((v, j) => <pre key={j} style={{ background: `#${config.cores.codeBg}`, color: "#86efac", padding: "12px 16px", borderRadius: 8, fontSize: 11, fontFamily: "monospace", lineHeight: 1.6, overflowX: "auto", marginBottom: 8, whiteSpace: "pre-wrap", wordBreak: "break-all", borderLeft: "3px solid #22c55e" }}>{v}</pre>)}</div>}
               </div>
             );
           })}
         </div>
       )}
 
-      <CustomTables tabelas={config.tabelas} primary={primary} label={t.doc_common_tables} />
+      {(config.testes || []).length > 0 && (
+        <div style={{ padding: "38px 48px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+            <div style={{ width: 5, height: 24, background: "#22c55e", borderRadius: 3 }} />
+            <div style={{ fontSize: 18, fontWeight: 800, color: primary }}>{t.doc_bugs_testsSection}</div>
+          </div>
+          {config.testes.map((ts, i) => (
+            <div key={i} style={{ marginBottom: 32, borderLeft: "4px solid #22c55e", paddingLeft: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                <div style={{ width: 28, height: 28, borderRadius: 7, background: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", fontFamily: "monospace" }}>{i + 1}</span>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#1a1a2e", flex: 1 }}>{ts.titulo || t.bugTestNoTitle}</div>
+                <span style={{ background: "#22c55e22", color: "#16a34a", padding: "2px 10px", borderRadius: 12, fontSize: 10, fontWeight: 800, letterSpacing: .5 }}>PASS</span>
+              </div>
+              {ts.descricao?.trim() && <div style={{ marginBottom: 12 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>{t.doc_bugs_testFieldWhat}</div><p style={{ fontSize: 12, color: "#333", lineHeight: 1.7 }}>{ts.descricao}</p></div>}
+              {ts.como?.trim() && <div style={{ marginBottom: 12 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>{t.doc_bugs_testFieldHow}</div><p style={{ fontSize: 12, color: "#333", lineHeight: 1.7 }}>{ts.como}</p></div>}
+              {ts.codigo?.some(v => v.trim()) && <div>{ts.codigo.filter(v => v.trim()).map((v, j) => <pre key={j} style={{ background: `#${config.cores.codeBg}`, color: "#86efac", padding: "12px 16px", borderRadius: 8, fontSize: 11, fontFamily: "monospace", lineHeight: 1.6, overflowX: "auto", marginBottom: 8, whiteSpace: "pre-wrap", wordBreak: "break-all", borderLeft: "3px solid #22c55e" }}>{v}</pre>)}</div>}
+            </div>
+          ))}
+        </div>
+      )}
 
       {config.conclusao.some(v => v.trim()) && (
         <div style={{ padding: "38px 48px 56px" }}>

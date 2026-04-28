@@ -1,12 +1,12 @@
 import React, { useCallback } from "react";
 import { Bi } from "./Bi";
 import { ArrayField, ColorField, LogoField, SectionHeader } from "./UI";
-import { BugProblemCard } from "./BugsComponents";
+import { BugProblemCard, BugTestCard } from "./BugsComponents";
 import { ChangeCard } from "./ChangelogComponents";
 import { StudyTopicCard } from "./StudyComponents";
 import { TableCard } from "./TableComponents";
 import { useIsMobile } from "../hooks/useIsMobile";
-import { emptyBugProblem, emptyChange, emptyStudyTopic, emptyTable } from "../constants/initialConfigs";
+import { emptyBugProblem, emptyBugTest, emptyChange, emptyStudyTopic, emptyTable } from "../constants/initialConfigs";
 import { useLang } from "../contexts/LangContext";
 
 export function StudyEditor({ config, setConfig }) {
@@ -107,6 +107,9 @@ export function BugsEditor({ config, setConfig }) {
   const addProblem    = () => setConfig(c => ({ ...c, problemas: [...c.problemas, emptyBugProblem()] }));
   const updateProblem = (id, p) => setConfig(c => ({ ...c, problemas: c.problemas.map(x => x.id === id ? p : x) }));
   const removeProblem = id      => setConfig(c => ({ ...c, problemas: c.problemas.filter(x => x.id !== id) }));
+  const addTest    = () => setConfig(c => ({ ...c, testes: [...(c.testes || []), emptyBugTest()] }));
+  const updateTest = (id, ts) => setConfig(c => ({ ...c, testes: c.testes.map(x => x.id === id ? ts : x) }));
+  const removeTest = id      => setConfig(c => ({ ...c, testes: c.testes.filter(x => x.id !== id) }));
   const addTable    = () => setConfig(c => ({ ...c, tabelas: [...(c.tabelas || []), emptyTable()] }));
   const updateTable = (id, tbl) => setConfig(c => ({ ...c, tabelas: c.tabelas.map(x => x.id === id ? tbl : x) }));
   const removeTable = id      => setConfig(c => ({ ...c, tabelas: c.tabelas.filter(x => x.id !== id) }));
@@ -143,6 +146,22 @@ export function BugsEditor({ config, setConfig }) {
         </div>
       </div>
       <div style={{ marginBottom: 48 }}>
+        <SectionHeader icon={<Bi name="table" size={22} />} title={t.tablesSection} subtitle={t.tablesSectionDesc} badge={(config.tabelas || []).length} />
+        {(config.tabelas || []).length === 0 ? (
+          <div className="card" style={{ padding: "40px 36px", textAlign: "center", border: "2px dashed var(--b2)" }}>
+            <div style={{ fontSize: 14, color: "var(--tx3)", marginBottom: 16 }}>{t.noTables}</div>
+            <button onClick={addTable} className="btn-ghost"><Bi name="plus-lg" size={13} /> {t.addTable}</button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {(config.tabelas || []).map((tbl, i) => (
+              <TableCard key={tbl.id} table={tbl} idx={i} onChange={updated => updateTable(tbl.id, updated)} onRemove={() => removeTable(tbl.id)} />
+            ))}
+            <button onClick={addTable} className="btn-ghost" style={{ marginTop: 4 }}><Bi name="plus-lg" size={13} /> {t.addTable}</button>
+          </div>
+        )}
+      </div>
+      <div style={{ marginBottom: 48 }}>
         <SectionHeader icon={<Bi name="bug-fill" size={22} />} title={t.bugsProblems} subtitle={t.bugsProblemsDesc} badge={config.problemas.length} />
         {config.problemas.length === 0 ? (
           <div className="card" style={{ padding: "56px 36px", textAlign: "center", border: "2px dashed var(--b2)" }}>
@@ -163,18 +182,22 @@ export function BugsEditor({ config, setConfig }) {
         )}
       </div>
       <div style={{ marginBottom: 48 }}>
-        <SectionHeader icon={<Bi name="table" size={22} />} title={t.tablesSection} subtitle={t.tablesSectionDesc} badge={(config.tabelas || []).length} />
-        {(config.tabelas || []).length === 0 ? (
-          <div className="card" style={{ padding: "40px 36px", textAlign: "center", border: "2px dashed var(--b2)" }}>
-            <div style={{ fontSize: 14, color: "var(--tx3)", marginBottom: 16 }}>{t.noTables}</div>
-            <button onClick={addTable} className="btn-ghost"><Bi name="plus-lg" size={13} /> {t.addTable}</button>
+        <SectionHeader icon={<Bi name="check2-all" size={22} />} title={t.bugTestsSection} subtitle={t.bugTestsSectionDesc} badge={(config.testes || []).length} />
+        {(config.testes || []).length === 0 ? (
+          <div className="card" style={{ padding: "56px 36px", textAlign: "center", border: "2px dashed #22c55e40" }}>
+            <div style={{ width: 72, height: 72, borderRadius: 22, background: "#22c55e12", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+              <Bi name="check2-square" size={32} style={{ color: "#22c55e" }} />
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--tx2)", marginBottom: 10 }}>{t.noTests}</div>
+            <div style={{ fontSize: 14, color: "var(--tx3)", marginBottom: 28 }}>{t.noTestsDesc}</div>
+            <button onClick={addTest} className="btn-primary" style={{ background: "linear-gradient(135deg,#22c55e,#16a34a)" }}><Bi name="plus-circle-fill" size={16} /> {t.addTest}</button>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {(config.tabelas || []).map((tbl, i) => (
-              <TableCard key={tbl.id} table={tbl} idx={i} onChange={updated => updateTable(tbl.id, updated)} onRemove={() => removeTable(tbl.id)} />
+            {(config.testes || []).map((ts, i) => (
+              <BugTestCard key={ts.id} test={ts} idx={i} onChange={p => updateTest(ts.id, p)} onRemove={() => removeTest(ts.id)} />
             ))}
-            <button onClick={addTable} className="btn-ghost" style={{ marginTop: 4 }}><Bi name="plus-lg" size={13} /> {t.addTable}</button>
+            <button onClick={addTest} className="btn-primary full" style={{ marginTop: 4, background: "linear-gradient(135deg,#22c55e,#16a34a)" }}><Bi name="plus-circle-fill" size={16} /> {t.addTest}</button>
           </div>
         )}
       </div>
