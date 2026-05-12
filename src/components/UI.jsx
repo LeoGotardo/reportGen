@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Bi } from "./Bi";
 import { useLang } from "../contexts/LangContext";
 
@@ -89,6 +89,63 @@ export function LogoField({ value, nome, onChange }) {
           <input type="file" accept="image/*" onChange={e => handleFile(e.target.files[0])} style={{ display: "none" }} />
         </label>
       )}
+    </div>
+  );
+}
+
+export function DragList({ items, onReorder, renderItem }) {
+  const [dragging, setDragging] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
+  const canDrag = useRef(false);
+  const overIdx = useRef(null);
+
+  const handleDrop = () => {
+    if (dragging !== null && overIdx.current !== null && dragging !== overIdx.current) {
+      const arr = [...items];
+      const [removed] = arr.splice(dragging, 1);
+      arr.splice(overIdx.current, 0, removed);
+      onReorder(arr);
+    }
+    setDragging(null);
+    setDragOver(null);
+    overIdx.current = null;
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {items.map((item, i) => (
+        <div
+          key={item.id}
+          draggable
+          onDragStart={e => {
+            if (!canDrag.current) { e.preventDefault(); return; }
+            setDragging(i);
+          }}
+          onDragEnd={() => {
+            canDrag.current = false;
+            setDragging(null);
+            setDragOver(null);
+            overIdx.current = null;
+          }}
+          onDragOver={e => {
+            e.preventDefault();
+            if (overIdx.current !== i) { overIdx.current = i; setDragOver(i); }
+          }}
+          onDrop={handleDrop}
+          style={{
+            opacity: dragging === i ? 0.4 : 1,
+            transition: "opacity .15s",
+            borderRadius: "var(--r)",
+            outline: dragOver === i && dragging !== i ? "2px solid var(--ac)" : "none",
+            outlineOffset: 2,
+          }}
+        >
+          {renderItem(item, i, {
+            onMouseDown: () => { canDrag.current = true; },
+            onMouseUp: () => { canDrag.current = false; },
+          })}
+        </div>
+      ))}
     </div>
   );
 }

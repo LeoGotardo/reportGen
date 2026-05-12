@@ -1,6 +1,6 @@
 import React, { useCallback } from "react";
 import { Bi } from "./Bi";
-import { ArrayField, ColorField, LogoField, SectionHeader } from "./UI";
+import { ArrayField, ColorField, DragList, LogoField, SectionHeader } from "./UI";
 import { BugProblemCard, BugTestCard } from "./BugsComponents";
 import { ChangeCard } from "./ChangelogComponents";
 import { StudyTopicCard } from "./StudyComponents";
@@ -15,12 +15,14 @@ export function StudyEditor({ config, setConfig }) {
   const upd     = useCallback((f, v) => setConfig(c => ({ ...c, [f]: v })), [setConfig]);
   const updCore = useCallback((f, v) => setConfig(c => ({ ...c, cores: { ...c.cores, [f]: v } })), [setConfig]);
   const updLogo = useCallback((url, nome) => setConfig(c => ({ ...c, logo: url, logoNome: nome })), [setConfig]);
-  const addTopic    = () => setConfig(c => ({ ...c, topicos: [...c.topicos, emptyStudyTopic()] }));
-  const updateTopic = (id, p) => setConfig(c => ({ ...c, topicos: c.topicos.map(x => x.id === id ? p : x) }));
-  const removeTopic = id      => setConfig(c => ({ ...c, topicos: c.topicos.filter(x => x.id !== id) }));
-  const addTable    = () => setConfig(c => ({ ...c, tabelas: [...(c.tabelas || []), emptyTable()] }));
-  const updateTable = (id, tbl) => setConfig(c => ({ ...c, tabelas: c.tabelas.map(x => x.id === id ? tbl : x) }));
-  const removeTable = id      => setConfig(c => ({ ...c, tabelas: c.tabelas.filter(x => x.id !== id) }));
+  const addTopic      = () => setConfig(c => ({ ...c, topicos: [...c.topicos, emptyStudyTopic()] }));
+  const updateTopic   = (id, p) => setConfig(c => ({ ...c, topicos: c.topicos.map(x => x.id === id ? p : x) }));
+  const removeTopic   = id      => setConfig(c => ({ ...c, topicos: c.topicos.filter(x => x.id !== id) }));
+  const reorderTopics = arr     => setConfig(c => ({ ...c, topicos: arr }));
+  const addTable      = () => setConfig(c => ({ ...c, tabelas: [...(c.tabelas || []), emptyTable()] }));
+  const updateTable   = (id, tbl) => setConfig(c => ({ ...c, tabelas: c.tabelas.map(x => x.id === id ? tbl : x) }));
+  const removeTable   = id      => setConfig(c => ({ ...c, tabelas: c.tabelas.filter(x => x.id !== id) }));
+  const reorderTables = arr     => setConfig(c => ({ ...c, tabelas: arr }));
 
   return (
     <div className="editor-inner">
@@ -64,12 +66,16 @@ export function StudyEditor({ config, setConfig }) {
             <button onClick={addTopic} className="btn-primary"><Bi name="plus-circle-fill" size={16} /> {t.addTopic}</button>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {config.topicos.map((topic, i) => (
-              <StudyTopicCard key={topic.id} topic={topic} idx={i} onChange={p => updateTopic(topic.id, p)} onRemove={() => removeTopic(topic.id)} />
-            ))}
-            <button onClick={addTopic} className="btn-primary full" style={{ marginTop: 4 }}><Bi name="plus-circle-fill" size={16} /> {t.addTopic}</button>
-          </div>
+          <>
+            <DragList
+              items={config.topicos}
+              onReorder={reorderTopics}
+              renderItem={(topic, i, dragHandleProps) => (
+                <StudyTopicCard topic={topic} idx={i} onChange={p => updateTopic(topic.id, p)} onRemove={() => removeTopic(topic.id)} dragHandleProps={dragHandleProps} />
+              )}
+            />
+            <button onClick={addTopic} className="btn-primary full" style={{ marginTop: 14 }}><Bi name="plus-circle-fill" size={16} /> {t.addTopic}</button>
+          </>
         )}
       </div>
       <div style={{ marginBottom: 48 }}>
@@ -80,12 +86,16 @@ export function StudyEditor({ config, setConfig }) {
             <button onClick={addTable} className="btn-ghost"><Bi name="plus-lg" size={13} /> {t.addTable}</button>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {(config.tabelas || []).map((tbl, i) => (
-              <TableCard key={tbl.id} table={tbl} idx={i} onChange={updated => updateTable(tbl.id, updated)} onRemove={() => removeTable(tbl.id)} />
-            ))}
-            <button onClick={addTable} className="btn-ghost" style={{ marginTop: 4 }}><Bi name="plus-lg" size={13} /> {t.addTable}</button>
-          </div>
+          <>
+            <DragList
+              items={config.tabelas || []}
+              onReorder={reorderTables}
+              renderItem={(tbl, i, dragHandleProps) => (
+                <TableCard table={tbl} idx={i} onChange={updated => updateTable(tbl.id, updated)} onRemove={() => removeTable(tbl.id)} dragHandleProps={dragHandleProps} />
+              )}
+            />
+            <button onClick={addTable} className="btn-ghost" style={{ marginTop: 14 }}><Bi name="plus-lg" size={13} /> {t.addTable}</button>
+          </>
         )}
       </div>
       <div>
@@ -104,15 +114,18 @@ export function BugsEditor({ config, setConfig }) {
   const upd     = useCallback((f, v) => setConfig(c => ({ ...c, [f]: v })), [setConfig]);
   const updCore = useCallback((f, v) => setConfig(c => ({ ...c, cores: { ...c.cores, [f]: v } })), [setConfig]);
   const updLogo = useCallback((url, nome) => setConfig(c => ({ ...c, logo: url, logoNome: nome })), [setConfig]);
-  const addProblem    = () => setConfig(c => ({ ...c, problemas: [...c.problemas, emptyBugProblem()] }));
-  const updateProblem = (id, p) => setConfig(c => ({ ...c, problemas: c.problemas.map(x => x.id === id ? p : x) }));
-  const removeProblem = id      => setConfig(c => ({ ...c, problemas: c.problemas.filter(x => x.id !== id) }));
-  const addTest    = () => setConfig(c => ({ ...c, testes: [...(c.testes || []), emptyBugTest()] }));
-  const updateTest = (id, ts) => setConfig(c => ({ ...c, testes: c.testes.map(x => x.id === id ? ts : x) }));
-  const removeTest = id      => setConfig(c => ({ ...c, testes: c.testes.filter(x => x.id !== id) }));
-  const addTable    = () => setConfig(c => ({ ...c, tabelas: [...(c.tabelas || []), emptyTable()] }));
-  const updateTable = (id, tbl) => setConfig(c => ({ ...c, tabelas: c.tabelas.map(x => x.id === id ? tbl : x) }));
-  const removeTable = id      => setConfig(c => ({ ...c, tabelas: c.tabelas.filter(x => x.id !== id) }));
+  const addProblem      = () => setConfig(c => ({ ...c, problemas: [...c.problemas, emptyBugProblem()] }));
+  const updateProblem   = (id, p) => setConfig(c => ({ ...c, problemas: c.problemas.map(x => x.id === id ? p : x) }));
+  const removeProblem   = id      => setConfig(c => ({ ...c, problemas: c.problemas.filter(x => x.id !== id) }));
+  const reorderProblems = arr     => setConfig(c => ({ ...c, problemas: arr }));
+  const addTest      = () => setConfig(c => ({ ...c, testes: [...(c.testes || []), emptyBugTest()] }));
+  const updateTest   = (id, ts) => setConfig(c => ({ ...c, testes: c.testes.map(x => x.id === id ? ts : x) }));
+  const removeTest   = id      => setConfig(c => ({ ...c, testes: c.testes.filter(x => x.id !== id) }));
+  const reorderTests = arr     => setConfig(c => ({ ...c, testes: arr }));
+  const addTable      = () => setConfig(c => ({ ...c, tabelas: [...(c.tabelas || []), emptyTable()] }));
+  const updateTable   = (id, tbl) => setConfig(c => ({ ...c, tabelas: c.tabelas.map(x => x.id === id ? tbl : x) }));
+  const removeTable   = id      => setConfig(c => ({ ...c, tabelas: c.tabelas.filter(x => x.id !== id) }));
+  const reorderTables = arr     => setConfig(c => ({ ...c, tabelas: arr }));
 
   return (
     <div className="editor-inner">
@@ -153,12 +166,16 @@ export function BugsEditor({ config, setConfig }) {
             <button onClick={addTable} className="btn-ghost"><Bi name="plus-lg" size={13} /> {t.addTable}</button>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {(config.tabelas || []).map((tbl, i) => (
-              <TableCard key={tbl.id} table={tbl} idx={i} onChange={updated => updateTable(tbl.id, updated)} onRemove={() => removeTable(tbl.id)} />
-            ))}
-            <button onClick={addTable} className="btn-ghost" style={{ marginTop: 4 }}><Bi name="plus-lg" size={13} /> {t.addTable}</button>
-          </div>
+          <>
+            <DragList
+              items={config.tabelas || []}
+              onReorder={reorderTables}
+              renderItem={(tbl, i, dragHandleProps) => (
+                <TableCard table={tbl} idx={i} onChange={updated => updateTable(tbl.id, updated)} onRemove={() => removeTable(tbl.id)} dragHandleProps={dragHandleProps} />
+              )}
+            />
+            <button onClick={addTable} className="btn-ghost" style={{ marginTop: 14 }}><Bi name="plus-lg" size={13} /> {t.addTable}</button>
+          </>
         )}
       </div>
       <div style={{ marginBottom: 48 }}>
@@ -173,12 +190,16 @@ export function BugsEditor({ config, setConfig }) {
             <button onClick={addProblem} className="btn-primary"><Bi name="plus-circle-fill" size={16} /> {t.addProblem}</button>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {config.problemas.map((prob, i) => (
-              <BugProblemCard key={prob.id} prob={prob} idx={i} onChange={p => updateProblem(prob.id, p)} onRemove={() => removeProblem(prob.id)} />
-            ))}
-            <button onClick={addProblem} className="btn-primary full" style={{ marginTop: 4 }}><Bi name="plus-circle-fill" size={16} /> {t.addProblem}</button>
-          </div>
+          <>
+            <DragList
+              items={config.problemas}
+              onReorder={reorderProblems}
+              renderItem={(prob, i, dragHandleProps) => (
+                <BugProblemCard prob={prob} idx={i} onChange={p => updateProblem(prob.id, p)} onRemove={() => removeProblem(prob.id)} dragHandleProps={dragHandleProps} />
+              )}
+            />
+            <button onClick={addProblem} className="btn-primary full" style={{ marginTop: 14 }}><Bi name="plus-circle-fill" size={16} /> {t.addProblem}</button>
+          </>
         )}
       </div>
       <div style={{ marginBottom: 48 }}>
@@ -193,12 +214,16 @@ export function BugsEditor({ config, setConfig }) {
             <button onClick={addTest} className="btn-primary" style={{ background: "linear-gradient(135deg,#22c55e,#16a34a)" }}><Bi name="plus-circle-fill" size={16} /> {t.addTest}</button>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {(config.testes || []).map((ts, i) => (
-              <BugTestCard key={ts.id} test={ts} idx={i} onChange={p => updateTest(ts.id, p)} onRemove={() => removeTest(ts.id)} />
-            ))}
-            <button onClick={addTest} className="btn-primary full" style={{ marginTop: 4, background: "linear-gradient(135deg,#22c55e,#16a34a)" }}><Bi name="plus-circle-fill" size={16} /> {t.addTest}</button>
-          </div>
+          <>
+            <DragList
+              items={config.testes || []}
+              onReorder={reorderTests}
+              renderItem={(ts, i, dragHandleProps) => (
+                <BugTestCard test={ts} idx={i} onChange={p => updateTest(ts.id, p)} onRemove={() => removeTest(ts.id)} dragHandleProps={dragHandleProps} />
+              )}
+            />
+            <button onClick={addTest} className="btn-primary full" style={{ marginTop: 14, background: "linear-gradient(135deg,#22c55e,#16a34a)" }}><Bi name="plus-circle-fill" size={16} /> {t.addTest}</button>
+          </>
         )}
       </div>
       <div>
@@ -217,12 +242,14 @@ export function ChangelogEditor({ config, setConfig }) {
   const upd     = useCallback((f, v) => setConfig(c => ({ ...c, [f]: v })), [setConfig]);
   const updCore = useCallback((f, v) => setConfig(c => ({ ...c, cores: { ...c.cores, [f]: v } })), [setConfig]);
   const updLogo = useCallback((url, nome) => setConfig(c => ({ ...c, logo: url, logoNome: nome })), [setConfig]);
-  const addChange    = () => setConfig(c => ({ ...c, mudancas: [...c.mudancas, emptyChange()] }));
-  const updateChange = (id, m) => setConfig(c => ({ ...c, mudancas: c.mudancas.map(x => x.id === id ? m : x) }));
-  const removeChange = id      => setConfig(c => ({ ...c, mudancas: c.mudancas.filter(x => x.id !== id) }));
-  const addTable    = () => setConfig(c => ({ ...c, tabelas: [...(c.tabelas || []), emptyTable()] }));
-  const updateTable = (id, tbl) => setConfig(c => ({ ...c, tabelas: c.tabelas.map(x => x.id === id ? tbl : x) }));
-  const removeTable = id      => setConfig(c => ({ ...c, tabelas: c.tabelas.filter(x => x.id !== id) }));
+  const addChange      = () => setConfig(c => ({ ...c, mudancas: [...c.mudancas, emptyChange()] }));
+  const updateChange   = (id, m) => setConfig(c => ({ ...c, mudancas: c.mudancas.map(x => x.id === id ? m : x) }));
+  const removeChange   = id      => setConfig(c => ({ ...c, mudancas: c.mudancas.filter(x => x.id !== id) }));
+  const reorderChanges = arr     => setConfig(c => ({ ...c, mudancas: arr }));
+  const addTable      = () => setConfig(c => ({ ...c, tabelas: [...(c.tabelas || []), emptyTable()] }));
+  const updateTable   = (id, tbl) => setConfig(c => ({ ...c, tabelas: c.tabelas.map(x => x.id === id ? tbl : x) }));
+  const removeTable   = id      => setConfig(c => ({ ...c, tabelas: c.tabelas.filter(x => x.id !== id) }));
+  const reorderTables = arr     => setConfig(c => ({ ...c, tabelas: arr }));
 
   return (
     <div className="editor-inner">
@@ -280,14 +307,18 @@ export function ChangelogEditor({ config, setConfig }) {
             </button>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {config.mudancas.map((change, i) => (
-              <ChangeCard key={change.id} change={change} idx={i} onChange={m => updateChange(change.id, m)} onRemove={() => removeChange(change.id)} />
-            ))}
-            <button onClick={addChange} className="btn-primary full" style={{ marginTop: 4, background: "linear-gradient(135deg,#10b981,#059669)" }}>
+          <>
+            <DragList
+              items={config.mudancas}
+              onReorder={reorderChanges}
+              renderItem={(change, i, dragHandleProps) => (
+                <ChangeCard change={change} idx={i} onChange={m => updateChange(change.id, m)} onRemove={() => removeChange(change.id)} dragHandleProps={dragHandleProps} />
+              )}
+            />
+            <button onClick={addChange} className="btn-primary full" style={{ marginTop: 14, background: "linear-gradient(135deg,#10b981,#059669)" }}>
               <Bi name="plus-circle-fill" size={16} /> {t.addChange}
             </button>
-          </div>
+          </>
         )}
       </div>
 
@@ -299,12 +330,16 @@ export function ChangelogEditor({ config, setConfig }) {
             <button onClick={addTable} className="btn-ghost"><Bi name="plus-lg" size={13} /> {t.addTable}</button>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {(config.tabelas || []).map((tbl, i) => (
-              <TableCard key={tbl.id} table={tbl} idx={i} onChange={updated => updateTable(tbl.id, updated)} onRemove={() => removeTable(tbl.id)} />
-            ))}
-            <button onClick={addTable} className="btn-ghost" style={{ marginTop: 4 }}><Bi name="plus-lg" size={13} /> {t.addTable}</button>
-          </div>
+          <>
+            <DragList
+              items={config.tabelas || []}
+              onReorder={reorderTables}
+              renderItem={(tbl, i, dragHandleProps) => (
+                <TableCard table={tbl} idx={i} onChange={updated => updateTable(tbl.id, updated)} onRemove={() => removeTable(tbl.id)} dragHandleProps={dragHandleProps} />
+              )}
+            />
+            <button onClick={addTable} className="btn-ghost" style={{ marginTop: 14 }}><Bi name="plus-lg" size={13} /> {t.addTable}</button>
+          </>
         )}
       </div>
       <div>

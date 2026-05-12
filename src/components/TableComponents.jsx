@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Bi } from "./Bi";
 import { useLang } from "../contexts/LangContext";
 
-export function TableCard({ table, idx, onChange, onRemove }) {
+export function TableCard({ table, idx, onChange, onRemove, dragHandleProps }) {
   const { t } = useLang();
   const [open, setOpen] = useState(false);
 
@@ -40,6 +40,11 @@ export function TableCard({ table, idx, onChange, onRemove }) {
   return (
     <div className="card anim" style={{ border: `1px solid ${open ? "var(--ac)70" : "var(--b2)"}`, overflow: "hidden", transition: "border-color .2s" }}>
       <div onClick={() => setOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "18px 22px", cursor: "pointer", userSelect: "none", background: open ? "rgba(98,113,245,0.05)" : "transparent", transition: "background .2s" }}>
+        {dragHandleProps && (
+          <div {...dragHandleProps} onClick={e => e.stopPropagation()} style={{ cursor: "grab", color: "var(--tx3)", display: "flex", alignItems: "center", flexShrink: 0, marginLeft: -4 }}>
+            <Bi name="grip-vertical" size={16} />
+          </div>
+        )}
         <div style={{ width: 32, height: 32, borderRadius: 9, background: "var(--ac)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <Bi name="table" size={15} style={{ color: "#fff" }} />
         </div>

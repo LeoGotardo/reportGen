@@ -16,7 +16,7 @@ function TypeIcon({ type, color }) {
   return <svg viewBox="0 0 14 14" width="14" height="14" style={s}><circle cx="7" cy="7" r="5" style={{ fill: color }} opacity="0.5"/></svg>;
 }
 
-export function ChangeCard({ change, idx, onChange, onRemove }) {
+export function ChangeCard({ change, idx, onChange, onRemove, dragHandleProps }) {
   const { t: i18n } = useLang();
   const [open, setOpen] = useState(false);
   const isMob = useIsMobile();
@@ -26,6 +26,11 @@ export function ChangeCard({ change, idx, onChange, onRemove }) {
   return (
     <div className="card anim" style={{ border: `1px solid ${open ? t.color + "70" : "var(--b2)"}`, overflow: "hidden", transition: "border-color .2s" }}>
       <div onClick={() => setOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "18px 22px", cursor: "pointer", userSelect: "none", background: open ? t.bg : "transparent", transition: "background .2s" }}>
+        {dragHandleProps && (
+          <div {...dragHandleProps} onClick={e => e.stopPropagation()} style={{ cursor: "grab", color: "var(--tx3)", display: "flex", alignItems: "center", flexShrink: 0, marginLeft: -4 }}>
+            <Bi name="grip-vertical" size={16} />
+          </div>
+        )}
         <div style={{ width: 32, height: 32, borderRadius: 9, background: t.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <TypeIcon type={change.tipo} color="#fff" />
         </div>
