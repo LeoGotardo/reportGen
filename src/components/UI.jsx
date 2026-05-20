@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { Bi } from "./Bi";
 import { useLang } from "../contexts/LangContext";
+import { useAssets } from "../contexts/AssetsContext";
 
 export function ArrayField({ label, values = [], onChange, mono = false, placeholder = "" }) {
   const { t } = useLang();
@@ -16,7 +17,7 @@ export function ArrayField({ label, values = [], onChange, mono = false, placeho
             <textarea value={v} onChange={e => { const n = [...values]; n[i] = e.target.value; onChange(n); }}
               rows={mono ? 3 : 2} placeholder={placeholder} className="inp"
               style={{ fontFamily: mono ? "var(--mono)" : "var(--fn)", fontSize: mono ? 12.5 : 14, flex: 1 }} />
-            <button onClick={() => onChange(values.filter((_, j) => j !== i))} className="btn-icon" style={{ marginTop: 4 }} title="Remover">
+            <button onClick={() => onChange(values.filter((_, j) => j !== i))} className="btn-icon" style={{ marginTop: 4 }} aria-label={t.removeItem || "Remover"}>
               <Bi name="trash3" size={13} />
             </button>
           </div>
@@ -48,14 +49,21 @@ export function ColorField({ label, value, onChange }) {
 }
 
 export function LogoField({ value, nome, onChange }) {
-  const { t } = useLang();
-  const [drag, setDrag] = useState(false);
+  const { t }    = useLang();
+  const { assets } = useAssets();
+  const [drag, setDrag]     = useState(false);
+  const [picker, setPicker] = useState(false);
+
   const handleFile = f => {
     if (!f || !f.type.startsWith("image/")) return;
+    if (f.size > 512 * 1024) { alert(t.logoTooLarge); return; }
     const r = new FileReader();
     r.onload = e => onChange(e.target.result, f.name);
     r.readAsDataURL(f);
   };
+
+  const hasLibrary = assets?.logos?.length > 0;
+
   return (
     <div>
       <label className="lbl">{t.logoLabel}</label>
@@ -74,20 +82,44 @@ export function LogoField({ value, nome, onChange }) {
           <button className="btn-icon" onClick={() => onChange(null, "")} style={{ borderColor: "rgba(239,68,68,.3)", color: "#ef4444" }}><Bi name="trash3" size={13} /></button>
         </div>
       ) : (
-        <label onDragOver={e => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
-          onDrop={e => { e.preventDefault(); setDrag(false); handleFile(e.dataTransfer.files[0]); }}
-          style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "44px 24px", cursor: "pointer",
-            border: `2px dashed ${drag ? "var(--ac)" : "var(--b2)"}`, borderRadius: "var(--r)",
-            background: drag ? "rgba(98,113,245,.07)" : "var(--bg2)", transition: "all .2s" }}>
-          <div style={{ width: 60, height: 60, borderRadius: 16, background: drag ? "var(--glow)" : "var(--surf)", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s" }}>
-            <Bi name="cloud-arrow-up" size={28} style={{ color: drag ? "var(--ac)" : "var(--tx3)" }} />
-          </div>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: drag ? "var(--ac)" : "var(--tx2)" }}>{t.logoDrag}</div>
-            <div style={{ fontSize: 12, color: "var(--tx3)", marginTop: 5 }}>{t.logoDragSub}</div>
-          </div>
-          <input type="file" accept="image/*" onChange={e => handleFile(e.target.files[0])} style={{ display: "none" }} />
-        </label>
+        <>
+          <label onDragOver={e => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
+            onDrop={e => { e.preventDefault(); setDrag(false); handleFile(e.dataTransfer.files[0]); }}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "44px 24px", cursor: "pointer",
+              border: `2px dashed ${drag ? "var(--ac)" : "var(--b2)"}`, borderRadius: "var(--r)",
+              background: drag ? "rgba(98,113,245,.07)" : "var(--bg2)", transition: "all .2s" }}>
+            <div style={{ width: 60, height: 60, borderRadius: 16, background: drag ? "var(--glow)" : "var(--surf)", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s" }}>
+              <Bi name="cloud-arrow-up" size={28} style={{ color: drag ? "var(--ac)" : "var(--tx3)" }} />
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: drag ? "var(--ac)" : "var(--tx2)" }}>{t.logoDrag}</div>
+              <div style={{ fontSize: 12, color: "var(--tx3)", marginTop: 5 }}>{t.logoDragSub}</div>
+            </div>
+            <input type="file" accept="image/*" onChange={e => handleFile(e.target.files[0])} style={{ display: "none" }} />
+          </label>
+          {hasLibrary && (
+            <div style={{ marginTop: 10 }}>
+              <button className="btn-ghost" style={{ width: "100%", justifyContent: "center", fontSize: 13 }} onClick={() => setPicker(p => !p)}>
+                <Bi name="collection" size={13} /> {t.logoFromLibrary || "Da biblioteca"}
+                <Bi name={picker ? "chevron-up" : "chevron-down"} size={11} style={{ marginLeft: "auto" }} />
+              </button>
+              {picker && (
+                <div className="anim" style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10, padding: "12px 14px", background: "var(--bg2)", borderRadius: "var(--r-sm)", border: "1px solid var(--b2)" }}>
+                  {assets.logos.map(logo => (
+                    <button key={logo.id} onClick={() => { onChange(logo.dataUrl, logo.name); setPicker(false); }}
+                      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "10px 12px", background: "var(--surf)", border: "1.5px solid var(--b2)", borderRadius: 10, cursor: "pointer", transition: "border-color .15s" }}
+                      onMouseEnter={e => e.currentTarget.style.borderColor = "var(--ac)"}
+                      onMouseLeave={e => e.currentTarget.style.borderColor = "var(--b2)"}
+                    >
+                      <img src={logo.dataUrl} alt={logo.name} style={{ width: 48, height: 48, objectFit: "contain", borderRadius: 6 }} />
+                      <span style={{ fontSize: 10, color: "var(--tx2)", maxWidth: 64, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{logo.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

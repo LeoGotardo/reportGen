@@ -1,0 +1,5 @@
+.card { background: var(--surf); border: 1px solid var(--b2); border-radius: var(--r); }
+.div { height: 1px; background: var(--b1); margin: 24px 0; }
+.sec-title { font-family: var(--disp); font-size: 21px; font-weight: 800; color: var(--tx); letter-spacing: -.3px; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.anim { animation: fadeUp .22s ease; }

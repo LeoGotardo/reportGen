@@ -1,12 +1,12 @@
 export const emptyTable = () => ({
-  id: Date.now() + Math.random(),
+  id: crypto.randomUUID(),
   titulo: "",
   cabecalhos: ["Coluna 1", "Coluna 2"],
   linhas: [["", ""]],
 });
 
 export const emptyBugProblem = () => ({
-  id: Date.now() + Math.random(),
+  id: crypto.randomUUID(),
   titulo: "",
   severity: "ALTA",
   resumo: "",
@@ -23,7 +23,7 @@ export const emptyBugProblem = () => ({
 });
 
 export const emptyBugTest = () => ({
-  id: Date.now() + Math.random(),
+  id: crypto.randomUUID(),
   titulo: "",
   descricao: "",
   como: "",
@@ -31,7 +31,7 @@ export const emptyBugTest = () => ({
 });
 
 export const emptyStudyTopic = () => ({
-  id: Date.now() + Math.random(),
+  id: crypto.randomUUID(),
   titulo: "",
   tipo: "CONCEITO",
   resumo: "",
@@ -39,7 +39,7 @@ export const emptyStudyTopic = () => ({
 });
 
 export const emptyChange = () => ({
-  id: Date.now() + Math.random(),
+  id: crypto.randomUUID(),
   tipo: "feat",
   titulo: "",
   arquivo: "",
