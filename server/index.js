@@ -1,33 +1,24 @@
 import express from "express";
-import cors from "cors";
 import puppeteer from "puppeteer";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 import { buildBugsHtml, buildStudyHtml, buildChangelogHtml } from "./utils/exportUtils.js";
 import { getT } from "./utils/i18n.js";
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
 
-const ALLOWED_ORIGIN = "https://reportgen.vercel.app";
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const distPath  = join(__dirname, "..", "dist");
 
-app.use(cors({
-  origin: (origin, cb) => {
-    if (origin === ALLOWED_ORIGIN) cb(null, true);
-    else cb(new Error("Not allowed by CORS"));
-  },
-}));
 app.use(express.json({ limit: "4mb" }));
+app.use(express.static(distPath));
 
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  const referer = req.headers.referer;
-  const originOk = origin === ALLOWED_ORIGIN || referer?.startsWith(ALLOWED_ORIGIN);
-  if (!originOk) return res.status(403).json({ error: "Forbidden" });
-
+app.use("/export", (req, res, next) => {
   const apiKey = process.env.API_KEY;
   if (apiKey && req.headers["x-api-key"] !== apiKey) {
     return res.status(401).json({ error: "Unauthorized" });
   }
-
   next();
 });
 
@@ -77,5 +68,7 @@ app.post("/export", async (req, res) => {
     await browser?.close();
   }
 });
+
+app.get("*", (_req, res) => res.sendFile(join(distPath, "index.html")));
 
 app.listen(PORT, () => console.log(`reportgen-api running on :${PORT}`));
