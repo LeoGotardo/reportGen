@@ -1,0 +1,20 @@
+:root {
+  --bg:   #0c0e18;
+  --bg2:  #131525;
+  --bg3:  #181a2e;
+  --surf: #1e2138;
+  --s2:   #252944;
+  --b1:   rgba(255,255,255,0.06);
+  --b2:   rgba(255,255,255,0.11);
+  --tx:   #dde1f5;
+  --tx2:  #8890bc;
+  --tx3:  #525880;
+  --ac:   #6271f5;
+  --ac2:  #8b97ff;
+  --glow: rgba(98,113,245,0.28);
+  --fn:   'Plus Jakarta Sans', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+  --disp: 'Syne', sans-serif;
+  --r:    13px;
+  --r-sm: 9px;
+}

@@ -114,7 +114,7 @@ ${PRINT_BAR(t.doc_common_footerTechReport, "#6271f5", config.formato, config.ver
   </div>
 </div>
 
-${config.resumoExecutivo.some(v => v.trim()) ? `
+${config.resumoExecutivo?.some(v => v.trim()) ? `
 <div style="padding:38px 48px 0">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
     <div style="width:5px;height:24px;background:${primary};border-radius:3px"></div>
@@ -172,7 +172,7 @@ ${(config.testes || []).length ? `
   </div>`).join("")}
 </div>` : ""}
 
-${config.conclusao.some(v => v.trim()) ? `
+${config.conclusao?.some(v => v.trim()) ? `
 <div style="padding:38px 48px 56px">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
     <div style="width:5px;height:24px;background:#${config.cores.baixaSev};border-radius:3px"></div>
@@ -244,7 +244,7 @@ ${PRINT_BAR(t.doc_common_footerStudy, "#f59e0b", config.formato, config.versao, 
   </div>
 </div>
 
-${config.introducao.some(v => v.trim()) ? `
+${config.introducao?.some(v => v.trim()) ? `
 <div style="padding:38px 48px 0">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
     <div style="width:5px;height:24px;background:${primary};border-radius:3px"></div>
@@ -281,7 +281,7 @@ ${config.topicos.length ? `
 
 ${buildCustomTablesHtml(config.tabelas, primary, t.doc_common_tables)}
 
-${config.conclusao.some(v => v.trim()) ? `
+${config.conclusao?.some(v => v.trim()) ? `
 <div style="padding:38px 48px 56px">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
     <div style="width:5px;height:24px;background:${typeColors.RESUMO};border-radius:3px"></div>
@@ -314,7 +314,7 @@ export function buildChangelogHtml(config, tObj) {
   const typeOrder = ["breaking", "feat", "fix", "refactor", "perf", "style", "chore"];
 
   const grouped = {};
-  config.mudancas.forEach(m => { if (!grouped[m.tipo]) grouped[m.tipo] = []; grouped[m.tipo].push(m); });
+  config.mudancas?.forEach(m => { if (!grouped[m.tipo]) grouped[m.tipo] = []; grouped[m.tipo].push(m); });
 
   const tableRows = config.mudancas.map((m, i) => {
     const c = typeColors[m.tipo] || typeColors.feat;
@@ -384,7 +384,7 @@ ${config.mudancas.length ? `
   }).join("")}
 </div>` : ""}
 
-${config.descricao.some(v => v.trim()) ? `
+${config.descricao?.some(v => v.trim()) ? `
 <div style="padding:32px 48px 0">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
     <div style="width:5px;height:24px;background:${primary};border-radius:3px"></div>
@@ -420,7 +420,7 @@ ${config.mudancas.length ? `
 
 ${buildCustomTablesHtml(config.tabelas, primary, t.doc_common_tables)}
 
-${config.resumo.some(v => v.trim()) ? `
+${config.resumo?.some(v => v.trim()) ? `
 <div style="padding:32px 48px 48px">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
     <div style="width:5px;height:24px;background:#${config.cores.chore};border-radius:3px"></div>

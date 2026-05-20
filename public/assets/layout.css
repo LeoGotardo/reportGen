@@ -1,0 +1,16 @@
+.app-shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+.app-header { display: flex; align-items: center; gap: 18px; padding: 0 28px; height: 62px; background: var(--bg2); border-bottom: 1px solid var(--b2); flex-shrink: 0; }
+.app-body { display: flex; flex: 1; overflow: hidden; }
+.pane-editor { min-width: 280px; max-width: 75%; border-right: none; overflow-y: auto; flex-shrink: 0; }
+.editor-inner { padding: 36px 36px 80px; }
+.resize-handle { width: 5px; flex-shrink: 0; background: var(--b1); cursor: col-resize; position: relative; transition: background .15s; border-left: 1px solid var(--b2); border-right: 1px solid var(--b2); }
+.resize-handle:hover, .resize-handle.dragging { background: var(--ac); border-color: var(--ac); }
+.resize-handle::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 3px; height: 40px; border-radius: 99px; background: var(--b2); transition: background .15s; }
+.resize-handle:hover::after, .resize-handle.dragging::after { background: var(--ac2); }
+.pane-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg3); }
+.right-tabs { display: flex; background: var(--bg2); border-bottom: 1px solid var(--b2); flex-shrink: 0; }
+.right-tab { flex: 1; padding: 16px; font-size: 13px; font-weight: 600; color: var(--tx3); background: transparent; border: none; border-bottom: 2.5px solid transparent; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .15s; }
+.right-tab.active { color: var(--ac); border-bottom-color: var(--ac); background: rgba(98,113,245,.05); }
+.right-tab:hover:not(.active) { color: var(--tx2); background: var(--b1); }
+.right-body { flex: 1; overflow: hidden; }
+.right-body.scrollable { overflow-y: auto; }
