@@ -1,7 +1,6 @@
 import React, { useCallback } from "react";
 import { Bi } from "./Bi";
 import { ArrayField, ColorField, DragList, LogoField, SectionHeader } from "./UI";
-import { PaletteBar } from "./PaletteBar";
 import { BugProblemCard } from "./BugProblemCard";
 import { BugTestCard } from "./BugTestCard";
 import { TableCard } from "./TableComponents";
@@ -46,7 +45,6 @@ export function BugsEditor({ config, setConfig }) {
       <div style={{ marginBottom: 48 }}>
         <SectionHeader icon={<Bi name="palette2" size={22} />} title={t.colorsSection} subtitle={t.colorsDesc} />
         <div className="card" style={{ padding: 30 }}>
-          <PaletteBar config={config} setConfig={setConfig} />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 18 }}>
             {[["primaria","Cor Primária"],["secundaria","Cor Secundária"],["altaSev","Alta Sev."],["mediaSev","Média Sev."],["baixaSev","Baixa Sev."],["codeBg","Código BG"],["codeText","Código Texto"]].map(([k, label]) => (
               <ColorField key={k} label={label} value={config.cores[k]} onChange={v => updCore(k, v)} />

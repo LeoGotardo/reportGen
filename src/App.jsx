@@ -7,7 +7,6 @@ import { TemplateSelector } from "./components/TemplateSelector";
 import { JsonImportModal } from "./components/JsonImportModal";
 import { JsonOutput } from "./components/JsonOutput";
 import { ExportPanel } from "./components/ExportPanel";
-import { AssetsPage } from "./components/AssetsPage";
 import { ResizeHandle, Stats } from "./components/LayoutComponents";
 import { BugsEditor } from "./components/BugsEditor";
 import { StudyEditor } from "./components/StudyEditor";
@@ -19,7 +18,6 @@ import { ChangelogPreview } from "./components/ChangelogPreview";
 // Hooks
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useLang } from "./contexts/LangContext";
-import { AssetsProvider } from "./contexts/AssetsContext";
 import { useLocalStorageState } from "./hooks/useLocalStorageState";
 
 // Constants
@@ -96,7 +94,6 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-    <AssetsProvider>
     <div className="app-shell">
       {showTemplateSelector && (
         <TemplateSelector
@@ -223,8 +220,7 @@ export default function App() {
               ["preview", "eye-fill",        t.tabPreview],
               ["json",    "braces-asterisk", t.tabJson],
               ["export",  "box-arrow-up",    t.tabExport],
-              ["assets",  "collection-fill", t.tabAssets || "Assets"],
-            ].map(([id, icon, label]) => (
+                    ].map(([id, icon, label]) => (
               <button
                 key={id}
                 className={`right-tab${rightTab === id ? " active" : ""}`}
@@ -273,9 +269,6 @@ export default function App() {
               <ExportPanel config={config} activeTemplate={activeTemplate} />
             )}
 
-            {rightTab === "assets" && (
-              <AssetsPage config={config} setConfig={setConfig} />
-            )}
           </div>
         </div>
       </div>
@@ -287,7 +280,6 @@ export default function App() {
           ["preview", "eye-fill",        t.navPreview],
           ["json",    "braces",          t.navJson],
           ["export",  "box-arrow-up",    t.navExport],
-          ["assets",  "collection-fill", t.tabAssets || "Assets"],
         ].map(([id, icon, label]) => (
           <button
             key={id}
@@ -300,7 +292,6 @@ export default function App() {
         ))}
       </nav>
     </div>
-    </AssetsProvider>
     </ErrorBoundary>
   );
 }

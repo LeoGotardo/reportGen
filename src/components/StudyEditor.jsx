@@ -1,7 +1,6 @@
 import React, { useCallback } from "react";
 import { Bi } from "./Bi";
 import { ArrayField, ColorField, DragList, LogoField, SectionHeader } from "./UI";
-import { PaletteBar } from "./PaletteBar";
 import { StudyTopicCard } from "./StudyComponents";
 import { TableCard } from "./TableComponents";
 import { useIsMobile } from "../hooks/useIsMobile";
@@ -41,7 +40,6 @@ export function StudyEditor({ config, setConfig }) {
       <div style={{ marginBottom: 48 }}>
         <SectionHeader icon={<Bi name="palette2" size={22} />} title={t.colorsSection} subtitle={t.colorsDesc} />
         <div className="card" style={{ padding: 30 }}>
-          <PaletteBar config={config} setConfig={setConfig} />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 18 }}>
             {[["primaria","Cor Primária"],["secundaria","Cor Secundária"],["concept","Conceito"],["practice","Prática"],["summary","Resumo"],["codeBg","Código BG"],["codeText","Código Texto"]].map(([k, label]) => (
               <ColorField key={k} label={label} value={config.cores[k]} onChange={v => updCore(k, v)} />
