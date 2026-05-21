@@ -25,10 +25,11 @@ app.use("/export", (req, res, next) => {
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
 app.post("/export", async (req, res) => {
-  const { template, lang = "pt", data } = req.body;
+  const data = req.body;
+  const { template, lang = "pt" } = data;
 
-  if (!template || !data) {
-    return res.status(400).json({ error: "template and data are required" });
+  if (!template) {
+    return res.status(400).json({ error: "template is required" });
   }
 
   const t = getT(lang);
