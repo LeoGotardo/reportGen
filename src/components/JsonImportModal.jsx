@@ -17,14 +17,14 @@ function mergeConfig(incoming) {
 
   if (template === "changelog") {
     merged.mudancas = Array.isArray(incoming.mudancas)
-      ? incoming.mudancas.map(m => ({ ...emptyChange(), ...m, id: Date.now() + Math.random() }))
+      ? incoming.mudancas.map((m, i) => ({ ...emptyChange(), ...m, id: i + 1 }))
       : [];
     if (!Array.isArray(merged.descricao) || !merged.descricao.length) merged.descricao = [""];
     if (!Array.isArray(merged.resumo)    || !merged.resumo.length)    merged.resumo    = [""];
   } else if (template === "study") {
     merged.topicos = Array.isArray(incoming.topicos)
-      ? incoming.topicos.map(t => ({
-          ...emptyStudyTopic(), ...t, id: Date.now() + Math.random(),
+      ? incoming.topicos.map((t, i) => ({
+          ...emptyStudyTopic(), ...t, id: i + 1,
           detalhe: { explicacao: [""], exemplos: [""], codigo: [""], ...(t.detalhe || {}) },
         }))
       : [];
@@ -32,8 +32,8 @@ function mergeConfig(incoming) {
     if (!Array.isArray(merged.conclusao)  || !merged.conclusao.length)  merged.conclusao  = [""];
   } else {
     merged.problemas = Array.isArray(incoming.problemas)
-      ? incoming.problemas.map(p => ({
-          ...emptyBugProblem(), ...p, id: Date.now() + Math.random(),
+      ? incoming.problemas.map((p, i) => ({
+          ...emptyBugProblem(), ...p, id: i + 1,
           detalhe: {
             ondeOcorre: [""], codigoOnde: [""], porqueProblema: [""],
             textoResolucao: [""], codigoResolucao: [""], testesPassam: [""],
