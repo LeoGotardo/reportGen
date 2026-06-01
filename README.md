@@ -1,115 +1,122 @@
-# ReportGen 🚀
+# ReportGen
 
-**ReportGen** é uma ferramenta web moderna e intuitiva desenvolvida em **React** para a criação de relatórios técnicos profissionais. Focada em segurança da informação e desenvolvimento de software, a ferramenta permite gerar documentos estruturados como Relatórios de Bugs e Changelogs de forma rápida e padronizada.
+Web tool for building structured technical reports. Fill a form on the left, see a live preview on the right, export as PDF or DOCX.
 
-![Screenshot Principal do ReportGen](./public/assets/main_screenshot.webp)
+## Templates
 
----
+| Template | Use case |
+|----------|----------|
+| **Bug Report** | Security findings and vulnerabilities — severity levels (High/Medium/Low), reproduction steps, code blocks, executive summary |
+| **Study Report** | Learning records — topics typed as Concept, Practice, or Summary; tables; references |
+| **Changelog** | Version history — change entries typed as feat / fix / breaking / refactor / perf / style / chore; before/after code diffs |
 
-## ✨ Funcionalidades Principais
+## Export formats
 
-O ReportGen oferece dois templates principais, cada um com campos específicos e personalização visual:
+- **PDF** — server-rendered via Puppeteer (A4 or Letter)
+- **DOCX** — client-side via docx.js
+- **Print** — browser native print on the preview HTML
+- **JSON** — save and reload any report state
 
-### 🛡️ Relatório de Bugs (Security Report)
+## Stack
 
-Ideal para profissionais de segurança e QA documentarem vulnerabilidades e achados técnicos de segurança. Permite a criação de relatórios detalhados com formatação ABNT, classificação de severidade (Alta, Média, Baixa) e inclusão de blocos de código para contextualização técnica.
+- **Frontend:** React 19, Vite, Bootstrap Icons, CSS custom properties
+- **Backend:** Express, Puppeteer
+- **i18n:** PT / EN (switchable in the UI)
 
-![Template de Relatório de Bugs](./public/assets/reportgen_bugs_template.webp)
+## Getting started
 
-### 📝 Changelog / Mudanças
-
-Perfeito para equipes de desenvolvimento registrarem a evolução de seus projetos. Este template facilita a categorização de mudanças (feat, fix, breaking, refactor, perf, style, chore), o controle de versão e a documentação do impacto e motivação de cada alteração, incluindo diferenciais de código (antes e depois).
-
-![Template de Changelog](./public/assets/changelog_screenshot.webp)
-
----
-
-## 🛠️ Tecnologias Utilizadas
-
-O projeto foi construído utilizando as melhores práticas do ecossistema React moderno:
-
-*   **[React 19](https://react.dev/):** Biblioteca principal para construção da interface de usuário.
-*   **[Vite](https://vitejs.dev/):** Ferramenta de build ultra-rápida para o desenvolvimento frontend, garantindo uma experiência de desenvolvimento ágil.
-*   **[Bootstrap Icons](https://icons.getbootstrap.com/):** Conjunto de ícones consistente e leve, utilizado para enriquecer a interface visual.
-*   **CSS Custom Properties:** Implementação de um sistema de temas dinâmico, incluindo um Dark Mode nativo, para personalização visual.
-*   **JSON Import/Export:** Funcionalidade que oferece portabilidade total dos dados do relatório, permitindo salvar e carregar configurações facilmente.
-
----
-
-## 🚀 Como Começar
-
-### Pré-requisitos
-
-Certifique-se de ter o [Node.js](https://nodejs.org/) instalado em sua máquina, que inclui o npm (Node Package Manager).
-
-### Instalação
-
-1.  Clone o repositório:
-    ```bash
-    git clone https://github.com/LeoGotardo/reportGen.git
-    ```
-2.  Acesse o diretório do projeto:
-    ```bash
-    cd reportGen
-    ```
-3.  Instale as dependências:
-    ```bash
-    npm install
-    ```
-
-### Desenvolvimento
-
-Para rodar o projeto localmente em modo de desenvolvimento:
+Install dependencies for both packages:
 
 ```bash
+npm install
+cd server && npm install
+```
+
+Run in development (two terminals):
+
+```bash
+# terminal 1 — frontend at localhost:5173
 npm run dev
+
+# terminal 2 — backend at localhost:3001
+cd server && npm run dev
 ```
 
-O aplicativo estará disponível em `http://localhost:5173` (ou outra porta disponível, caso a 5173 esteja em uso).
-
-### Build
-
-Para gerar a versão de produção do aplicativo:
+Build for production:
 
 ```bash
-npm run build
+npm run build        # outputs to dist/
+node server/index.js # serves dist/ and handles /export
 ```
 
+## API
+
+### `GET /health`
+
+Returns `{ "ok": true }`. Use for uptime checks.
+
+### `POST /export`
+
+Generates and streams a PDF for any report template.
+
+**Headers**
+
+| Header | Description |
+|--------|-------------|
+| `Content-Type` | `application/json` |
+| `x-api-key` | Required only if `API_KEY` env var is set |
+
+**Body fields**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `template` | `"bugs" \| "study" \| "changelog"` | Required |
+| `lang` | `"pt" \| "en"` | Language for generated PDF (default `"pt"`) |
+| `formato` | `"CARTA" \| anything` | Page size — `"CARTA"` = Letter, otherwise A4 |
+| `versao` | string | Version string used in the filename |
+| + template fields | — | See template-specific shapes below |
+
+**Response:** `application/pdf` stream, filename `relatorio-{template}-v{versao}.pdf`.
+
+**Error responses**
+
+| Status | Meaning |
+|--------|---------|
+| `400` | Missing/unknown template or validation failure |
+| `401` | Invalid or missing `x-api-key` |
+| `429` | Rate limit exceeded |
+| `500` | Puppeteer PDF generation failed |
+
+### Rate limiting
+
+`POST /export` is limited to **20 requests per 15 minutes** per IP.
+
+### Validation limits
+
+| Field | Limit |
+|-------|-------|
+| Request body | 1 MB |
+| Text fields | 8 000 characters |
+| `problemas` / `topicos` | 60 items |
+| `mudancas` | 100 items |
+| `testes` | 60 items |
+| `tabelas` | 15 tables |
+| Columns per table | 10 |
+| Rows per table | 100 |
+| `resumoExecutivo` | 20 items |
+| PDF render timeout | 25 s |
+
+## Environment variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `API_KEY` | No | If set, `/export` requires `x-api-key: <value>` header |
+| `PORT` | No | Server port (default `3001`) |
+
+## Deployment
+
+Configured for [Render](https://render.com) via `render.yaml`. The build step installs both packages and runs `npx puppeteer browsers install chrome`. Set `API_KEY` in the Render dashboard under environment variables.
+
 ---
 
-## 📂 Estrutura do Projeto
-
-```text
-reportGen/
-├── public/          # Ativos estáticos (imagens, ícones, etc.)
-├── src/             # Código fonte da aplicação React
-│   ├── assets/      # Imagens e SVGs específicos da aplicação
-│   ├── App.jsx      # Componente principal da aplicação e lógica de negócio
-│   ├── App.css      # Estilização global e variáveis CSS
-│   └── main.jsx     # Ponto de entrada da aplicação (renderização do React)
-├── .eslintrc.js     # Configuração do ESLint para padronização de código
-├── index.html       # Template HTML principal da aplicação
-├── package.json     # Metadados do projeto, scripts e lista de dependências
-├── package-lock.json# Bloqueio de versões das dependências
-└── vite.config.js   # Configuração do Vite para o processo de build
-```
-
----
-
-## 💡 Como Usar
-
-1.  **Selecione o Template:** No cabeçalho da aplicação, escolha entre "Relatório de Bugs" ou "Changelog" para iniciar.
-2.  **Preencha as Informações:** Utilize o painel de edição à esquerda para inserir todos os dados relevantes do seu relatório.
-3.  **Visualize em Tempo Real:** O painel à direita exibe uma pré-visualização dinâmica do relatório, mostrando como ele ficará após a exportação.
-4.  **Personalize:** Altere cores, adicione logotipos e ajuste títulos conforme a necessidade do seu documento.
-5.  **Exporte:** Salve seu progresso a qualquer momento exportando o JSON do relatório. Utilize a função de impressão/exportação para gerar o documento final em PDF ou outros formatos suportados pelo navegador.
-
----
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Para mais detalhes, consulte o arquivo [LICENSE](LICENSE) (se disponível no repositório).
-
----
-
-Desenvolvido com ❤️ por [Leo Gotardo](https://github.com/LeoGotardo)
+Made by [Leo Gotardo](https://github.com/LeoGotardo)
