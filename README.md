@@ -55,6 +55,10 @@ node server/index.js # serves dist/ and handles /export
 
 Returns `{ "ok": true }`. Use for uptime checks.
 
+### `GET /schema`
+
+Returns `report-schema.json` — a machine-readable description of **every** field of every template (types, enums, defaults, limits) plus a full example payload per template. Built for LLMs/integrations composing `POST /export` bodies. No auth, no rate limit.
+
 ### `POST /export`
 
 Generates and streams a PDF for any report template.

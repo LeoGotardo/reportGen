@@ -55,7 +55,7 @@ export function BugsEditor({ config, setConfig }) {
       <div style={{ marginBottom: 48 }}>
         <SectionHeader icon={<Bi name="journal-richtext" size={22} />} title={t.bugsExecSummary} />
         <div className="card" style={{ padding: 30 }}>
-          <ArrayField values={config.resumoExecutivo} onChange={v => upd("resumoExecutivo", v)} placeholder={t.bugsExecSummaryPh} />
+          <ArrayField values={config.resumoExecutivo} onChange={v => upd("resumoExecutivo", v)} placeholder={t.bugsExecSummaryPh} rows={8} />
         </div>
       </div>
       <div style={{ marginBottom: 48 }}>
@@ -129,7 +129,7 @@ export function BugsEditor({ config, setConfig }) {
       <div>
         <SectionHeader icon={<Bi name="check2-circle" size={22} />} title={t.bugConclusion} />
         <div className="card" style={{ padding: 30 }}>
-          <ArrayField values={config.conclusao} onChange={v => upd("conclusao", v)} placeholder={t.bugConclusionPh} />
+          <ArrayField values={config.conclusao} onChange={v => upd("conclusao", v)} placeholder={t.bugConclusionPh} rows={8} />
         </div>
       </div>
     </div>

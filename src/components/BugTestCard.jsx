@@ -32,11 +32,11 @@ export function BugTestCard({ test, idx, onChange, onRemove, dragHandleProps }) 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 18 }}>
             <div>
               <label className="lbl">{t.bugTestDescLabel}</label>
-              <textarea className="inp" rows={3} value={test.descricao} onChange={e => upd("descricao", e.target.value)} placeholder={t.bugTestDescPh} />
+              <textarea className="inp lg" rows={5} value={test.descricao} onChange={e => upd("descricao", e.target.value)} placeholder={t.bugTestDescPh} />
             </div>
             <div>
               <label className="lbl">{t.bugTestHowLabel}</label>
-              <textarea className="inp" rows={3} value={test.como} onChange={e => upd("como", e.target.value)} placeholder={t.bugTestHowPh} />
+              <textarea className="inp lg" rows={5} value={test.como} onChange={e => upd("como", e.target.value)} placeholder={t.bugTestHowPh} />
             </div>
           </div>
           <ArrayField label={t.bugTestCodeLabel} values={test.codigo} onChange={v => upd("codigo", v)} mono placeholder={t.bugTestCodePh} />

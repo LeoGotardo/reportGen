@@ -99,7 +99,7 @@ export function StudyEditor({ config, setConfig }) {
       <div>
         <SectionHeader icon={<Bi name="check2-circle" size={22} />} title={t.studyConclusion} />
         <div className="card" style={{ padding: 30 }}>
-          <ArrayField values={config.conclusao} onChange={v => upd("conclusao", v)} placeholder={t.studyConclusionPh} />
+          <ArrayField values={config.conclusao} onChange={v => upd("conclusao", v)} placeholder={t.studyConclusionPh} rows={8} />
         </div>
       </div>
     </div>

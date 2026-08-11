@@ -19,6 +19,7 @@ import { ChangelogPreview } from "./components/ChangelogPreview";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useLang } from "./contexts/LangContext";
 import { useLocalStorageState } from "./hooks/useLocalStorageState";
+import { useScrollSync } from "./hooks/useScrollSync";
 
 // Constants
 import { TEMPLATES } from "./constants/templates";
@@ -39,7 +40,12 @@ export default function App() {
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const bodyRef  = useRef(null);
+  const editorPaneRef = useRef(null);
+  const rightBodyRef  = useRef(null);
   const isMobile = useIsMobile();
+
+  // Scroll do editor acompanha o do preview (só no desktop, só na aba preview)
+  useScrollSync(editorPaneRef, rightBodyRef, !isMobile && rightTab === "preview");
 
   const config =
     activeTemplate === "study"     ? studyConfig :
@@ -205,6 +211,7 @@ export default function App() {
       <div className="app-body" ref={bodyRef}>
         {/* Editor pane */}
         <div
+          ref={editorPaneRef}
           className={`pane-editor${mobTab === "editor" ? " mob-active" : ""}`}
           style={{ width: `${editorWidth}%` }}
         >
@@ -232,6 +239,7 @@ export default function App() {
           </div>
 
           <div
+            ref={rightBodyRef}
             className={rightBodyClass}
             style={{
               background:

@@ -40,7 +40,7 @@ export function StudyTopicCard({ topic, onChange, onRemove, dragHandleProps }) {
               </select>
             </div>
           </div>
-          <div style={{ marginBottom: 18 }}><label className="lbl">{t.topicSummaryLabel}</label><textarea className="inp" rows={2} value={topic.resumo} onChange={e => upd("resumo", e.target.value)} placeholder={t.topicSummaryPh} /></div>
+          <div style={{ marginBottom: 18 }}><label className="lbl">{t.topicSummaryLabel}</label><textarea className="inp lg" rows={5} value={topic.resumo} onChange={e => upd("resumo", e.target.value)} placeholder={t.topicSummaryPh} /></div>
           <div className="div" />
           <ArrayField label={t.topicExplanation} values={topic.detalhe.explicacao} onChange={v => updD("explicacao", v)} placeholder={t.topicExplanationPh} />
           <ArrayField label={t.topicExamples} values={topic.detalhe.exemplos} onChange={v => updD("exemplos", v)} placeholder={t.topicExamplesPh} />

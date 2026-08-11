@@ -86,34 +86,34 @@ export function ChangeCard({ change, idx, onChange, onRemove, dragHandleProps })
           <div style={{ display: "grid", gridTemplateColumns: isMob ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 18 }}>
             <div>
               <label className="lbl">{i18n.changeDescLabel}</label>
-              <textarea className="inp" rows={3} value={change.descricao} onChange={e => upd("descricao", e.target.value)} placeholder={i18n.changeDescPh} />
+              <textarea className="inp lg" rows={5} value={change.descricao} onChange={e => upd("descricao", e.target.value)} placeholder={i18n.changeDescPh} />
             </div>
             <div>
               <label className="lbl">{i18n.changeMotivLabel}</label>
-              <textarea className="inp" rows={3} value={change.motivacao} onChange={e => upd("motivacao", e.target.value)} placeholder={i18n.changeMotivPh} />
+              <textarea className="inp lg" rows={5} value={change.motivacao} onChange={e => upd("motivacao", e.target.value)} placeholder={i18n.changeMotivPh} />
             </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: isMob ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 18 }}>
             <div>
               <label className="lbl">{i18n.changeImpactLabel}</label>
-              <textarea className="inp" rows={3} value={change.impacto} onChange={e => upd("impacto", e.target.value)} placeholder={i18n.changeImpactPh} />
+              <textarea className="inp lg" rows={5} value={change.impacto} onChange={e => upd("impacto", e.target.value)} placeholder={i18n.changeImpactPh} />
             </div>
             <div>
               <label className="lbl">{i18n.changeNotesLabel}</label>
-              <textarea className="inp" rows={3} value={change.notas} onChange={e => upd("notas", e.target.value)} placeholder={i18n.changeNotesPh} />
+              <textarea className="inp lg" rows={5} value={change.notas} onChange={e => upd("notas", e.target.value)} placeholder={i18n.changeNotesPh} />
             </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: isMob ? "1fr" : "1fr 1fr", gap: 16 }}>
             <div>
               <label className="lbl">{i18n.changeBeforeLabel}</label>
-              <textarea className="inp" rows={5} value={change.codigoAntes} onChange={e => upd("codigoAntes", e.target.value)}
+              <textarea className="inp code" rows={12} spellCheck={false} value={change.codigoAntes} onChange={e => upd("codigoAntes", e.target.value)}
                 style={{ fontFamily: "var(--mono)", fontSize: 12 }} placeholder={i18n.changeBeforePh} />
             </div>
             <div>
               <label className="lbl">{i18n.changeAfterLabel}</label>
-              <textarea className="inp" rows={5} value={change.codigoDepois} onChange={e => upd("codigoDepois", e.target.value)}
+              <textarea className="inp code" rows={12} spellCheck={false} value={change.codigoDepois} onChange={e => upd("codigoDepois", e.target.value)}
                 style={{ fontFamily: "var(--mono)", fontSize: 12 }} placeholder={i18n.changeAfterPh} />
             </div>
           </div>

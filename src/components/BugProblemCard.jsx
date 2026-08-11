@@ -40,12 +40,12 @@ export function BugProblemCard({ prob, idx, onChange, onRemove, dragHandleProps 
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: isMob ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 18 }}>
-            <div><label className="lbl">{t.bugSummaryLabel}</label><textarea className="inp" rows={3} value={prob.resumo} onChange={e => upd("resumo", e.target.value)} placeholder={t.bugSummaryPh} /></div>
-            <div><label className="lbl">{t.bugResolutionLabel}</label><textarea className="inp" rows={3} value={prob.resolucao} onChange={e => upd("resolucao", e.target.value)} placeholder={t.bugResolutionPh} /></div>
+            <div><label className="lbl">{t.bugSummaryLabel}</label><textarea className="inp lg" rows={5} value={prob.resumo} onChange={e => upd("resumo", e.target.value)} placeholder={t.bugSummaryPh} /></div>
+            <div><label className="lbl">{t.bugResolutionLabel}</label><textarea className="inp lg" rows={5} value={prob.resolucao} onChange={e => upd("resolucao", e.target.value)} placeholder={t.bugResolutionPh} /></div>
           </div>
           <div style={{ marginBottom: 18 }}>
             <label className="lbl">{t.bugHowToReproduceLabel}</label>
-            <textarea className="inp" rows={3} value={prob.comoReproduzir ?? ""} onChange={e => upd("comoReproduzir", e.target.value)} placeholder={t.bugHowToReproducePh} />
+            <textarea className="inp lg" rows={5} value={prob.comoReproduzir ?? ""} onChange={e => upd("comoReproduzir", e.target.value)} placeholder={t.bugHowToReproducePh} />
           </div>
           <div className="div" />
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>

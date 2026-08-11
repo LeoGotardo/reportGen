@@ -116,7 +116,7 @@ export function ChangelogEditor({ config, setConfig }) {
       <div>
         <SectionHeader icon={<Bi name="check2-circle" size={22} />} title={t.changelogSummary} subtitle={t.changelogSummaryDesc} />
         <div className="card" style={{ padding: 30 }}>
-          <ArrayField values={config.resumo} onChange={v => upd("resumo", v)} placeholder={t.changelogSummaryPh} />
+          <ArrayField values={config.resumo} onChange={v => upd("resumo", v)} placeholder={t.changelogSummaryPh} rows={8} />
         </div>
       </div>
     </div>

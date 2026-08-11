@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { Bi } from "./Bi";
 import { useLang } from "../contexts/LangContext";
 
-export function ArrayField({ label, values = [], onChange, mono = false, placeholder = "" }) {
+export function ArrayField({ label, values = [], onChange, mono = false, placeholder = "", rows }) {
   const { t } = useLang();
   return (
     <div style={{ marginBottom: 24 }}>
@@ -14,7 +14,7 @@ export function ArrayField({ label, values = [], onChange, mono = false, placeho
               <span style={{ fontSize: 9, fontWeight: 700, color: "var(--tx3)", fontFamily: "var(--mono)" }}>{i + 1}</span>
             </div>
             <textarea value={v} onChange={e => { const n = [...values]; n[i] = e.target.value; onChange(n); }}
-              rows={mono ? 3 : 2} placeholder={placeholder} className="inp"
+              rows={rows ?? (mono ? 6 : 4)} placeholder={placeholder} className="inp" spellCheck={!mono}
               style={{ fontFamily: mono ? "var(--mono)" : "var(--fn)", fontSize: mono ? 12.5 : 14, flex: 1 }} />
             <button onClick={() => onChange(values.filter((_, j) => j !== i))} className="btn-icon" style={{ marginTop: 4 }} aria-label={t.removeItem || "Remover"}>
               <Bi name="trash3" size={13} />

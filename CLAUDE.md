@@ -53,6 +53,7 @@ Translation strings are duplicated: `src/i18n/index.js` (frontend) and `server/u
 
 `server/index.js` — single Express app:
 - `POST /export` — receives report JSON, validates it, builds HTML via `server/utils/exportUtils.js`, renders PDF with Puppeteer, streams back as `application/pdf`
+- `GET /schema` — serves `report-schema.json` (root), the LLM-facing field reference for all three templates. Keep it in sync with `src/constants/initialConfigs.js`, the enums in `src/constants/templates.js`, and the `LIMITS` in `server/index.js`
 - `GET *` — SPA fallback to `dist/index.html`
 - Rate limit: 20 requests / 15 min on `/export`
 - Optional API key auth via `API_KEY` env var (`x-api-key` header)

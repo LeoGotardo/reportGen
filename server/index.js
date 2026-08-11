@@ -1,6 +1,7 @@
 import express from "express";
 import puppeteer from "puppeteer";
 import rateLimit from "express-rate-limit";
+import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { buildBugsHtml, buildStudyHtml, buildChangelogHtml } from "./utils/exportUtils.js";
@@ -48,6 +49,20 @@ app.use("/export", (req, res, next) => {
 });
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
+
+// Esquema explicativo dos payloads (para LLMs/integrações). Sem rate limit nem API key.
+const schemaPath = join(__dirname, "..", "report-schema.json");
+let reportSchema = null;
+try {
+  reportSchema = JSON.parse(readFileSync(schemaPath, "utf8"));
+} catch (err) {
+  console.warn("report-schema.json not loaded:", err.message);
+}
+
+app.get("/schema", (_req, res) => {
+  if (!reportSchema) return res.status(404).json({ error: "schema unavailable" });
+  res.json(reportSchema);
+});
 
 function validateText(val, field) {
   if (typeof val === "string" && val.length > LIMITS.maxTextLen) {

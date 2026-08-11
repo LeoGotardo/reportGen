@@ -1,0 +1,376 @@
+{
+  "$comment": "Esquema explicativo do payload de relatório do ReportGen. Feito para consumo por LLMs: descreve TODOS os campos possíveis de cada template, com tipos, valores aceitos, defaults e limites. Não é JSON Schema formal — é documentação legível por máquina.",
+  "schemaVersion": "1.0",
+  "api": {
+    "endpoint": "POST /export",
+    "baseUrlProd": "https://reportgen-zvz0.onrender.com",
+    "baseUrlDev": "http://localhost:3001",
+    "headers": {
+      "Content-Type": "application/json",
+      "x-api-key": "Obrigatório apenas se o servidor tiver API_KEY definida."
+    },
+    "body": "Um objeto de configuração de relatório (ver templates abaixo). O campo 'template' decide o formato.",
+    "response": "application/pdf (stream). Em erro: JSON { error: string } com status 400/401/429/500.",
+    "rateLimit": "20 requisições por 15 minutos por IP."
+  },
+
+  "limits": {
+    "bodySize": "1mb",
+    "maxTextLen": 8000,
+    "maxProblemas": 60,
+    "maxTestes": 60,
+    "maxTopicos": 60,
+    "maxMudancas": 100,
+    "maxTabelas": 15,
+    "maxColunas": 10,
+    "maxLinhas": 100,
+    "maxResumoItems": 20,
+    "puppeteerTimeoutMs": 25000
+  },
+
+  "notes": [
+    "Cores são strings hex SEM '#'. Ex.: '1F3864'.",
+    "Campos de lista de parágrafos (ex.: resumoExecutivo, conclusao) são arrays de string — cada item vira um parágrafo/bullet.",
+    "Campos de código são arrays de string (ArrayField mono) ou string única (changelog codigoAntes/codigoDepois); cada item vira um bloco de código.",
+    "'id' é gerado pela UI (crypto.randomUUID) e é opcional na API; se ausente, o PDF é gerado normalmente.",
+    "Arrays vazios são válidos: a seção correspondente é omitida do PDF.",
+    "Todo campo de texto respeita maxTextLen (8000). Estourar retorna 400.",
+    "O front persiste os três templates separadamente no localStorage (rg_bugsConfig, rg_studyConfig, rg_changelogConfig)."
+  ],
+
+  "common": {
+    "$comment": "Campos presentes em TODOS os templates.",
+    "template": {
+      "type": "string",
+      "required": true,
+      "enum": ["bugs", "study", "changelog"],
+      "description": "Define o template do relatório e quais campos específicos são lidos."
+    },
+    "lang": {
+      "type": "string",
+      "required": false,
+      "default": "pt",
+      "enum": ["pt", "en"],
+      "description": "Idioma dos rótulos fixos do PDF (títulos de seção, legendas). Não traduz o conteúdo enviado."
+    },
+    "formato": {
+      "type": "string",
+      "required": false,
+      "default": "ABNT",
+      "enum": ["ABNT", "CARTA"],
+      "description": "ABNT → página A4. CARTA → página Letter."
+    },
+    "titulo": { "type": "string", "required": false, "default": "", "description": "Título principal na capa." },
+    "subtitulo": { "type": "string", "required": false, "default": "", "description": "Subtítulo na capa." },
+    "autor": { "type": "string", "required": false, "default": "", "description": "Autor exibido na capa e no rodapé." },
+    "versao": { "type": "string", "required": false, "default": "1.0", "description": "Versão do documento; também compõe o nome do arquivo PDF (relatorio-<template>-v<versao>.pdf)." },
+    "logo": {
+      "type": "string|null",
+      "required": false,
+      "default": null,
+      "description": "Imagem embutida como data URI (ex.: 'data:image/png;base64,...'). URLs externas não são carregadas pelo Puppeteer. Aparece na capa (até 100px de altura) e no rodapé."
+    },
+    "logoNome": { "type": "string", "required": false, "default": "", "description": "Nome do arquivo de logo — apenas informativo na UI, não é renderizado no PDF." },
+    "tabelas": {
+      "type": "array<Tabela>",
+      "required": false,
+      "default": [],
+      "maxItems": 15,
+      "description": "Tabelas customizadas anexadas ao final do relatório.",
+      "item": {
+        "id": { "type": "string", "required": false, "description": "UUID opcional." },
+        "titulo": { "type": "string", "required": false, "description": "Legenda da tabela." },
+        "cabecalhos": { "type": "array<string>", "required": true, "maxItems": 10, "description": "Nomes das colunas." },
+        "linhas": { "type": "array<array<string>>", "required": true, "maxItems": 100, "description": "Cada linha é um array de células, na mesma ordem de 'cabecalhos'." }
+      }
+    }
+  },
+
+  "templates": {
+    "bugs": {
+      "description": "Relatório de bugs / vulnerabilidades: achados técnicos com severidade, reprodução, resolução e testes.",
+      "cores": {
+        "type": "object",
+        "required": false,
+        "description": "Paleta do PDF; hex sem '#'.",
+        "fields": {
+          "primaria":   { "default": "1F3864", "description": "Cor de títulos e capa." },
+          "secundaria": { "default": "2E75B6", "description": "Cor de destaques/subtítulos." },
+          "altaSev":    { "default": "C00000", "description": "Badge de severidade ALTA." },
+          "mediaSev":   { "default": "C55A11", "description": "Badge de severidade MÉDIA." },
+          "baixaSev":   { "default": "375623", "description": "Badge de severidade BAIXA." },
+          "codeBg":     { "default": "1E1E1E", "description": "Fundo dos blocos de código." },
+          "codeText":   { "default": "D4D4D4", "description": "Texto dos blocos de código." }
+        }
+      },
+      "resumoExecutivo": {
+        "type": "array<string>",
+        "required": false,
+        "default": [""],
+        "maxItems": 20,
+        "description": "Parágrafos do resumo executivo, no início do relatório."
+      },
+      "problemas": {
+        "type": "array<Problema>",
+        "required": true,
+        "default": [],
+        "maxItems": 60,
+        "description": "Lista de bugs/achados. Seção principal do relatório.",
+        "item": {
+          "id": { "type": "string", "required": false },
+          "titulo": { "type": "string", "required": false, "description": "Nome curto do problema." },
+          "severity": { "type": "string", "required": false, "default": "ALTA", "enum": ["ALTA", "MÉDIA", "BAIXA"], "description": "Severidade; controla a cor do badge. Acentuação obrigatória em 'MÉDIA'." },
+          "resumo": { "type": "string", "required": false, "description": "Descrição do problema em prosa." },
+          "resolucao": { "type": "string", "required": false, "description": "Resumo da correção aplicada/proposta." },
+          "comoReproduzir": { "type": "string", "required": false, "description": "Passos de reprodução." },
+          "detalhe": {
+            "type": "object",
+            "required": false,
+            "description": "Detalhamento técnico; cada campo é uma lista (um item = um parágrafo ou bloco de código).",
+            "fields": {
+              "ondeOcorre":      { "type": "array<string>", "description": "Arquivos/funções/rotas onde o bug ocorre (texto)." },
+              "codigoOnde":      { "type": "array<string>", "description": "Trechos de código do ponto do bug (blocos monoespaçados)." },
+              "porqueProblema":  { "type": "array<string>", "description": "Por que isso é um problema — impacto/risco (texto)." },
+              "textoResolucao":  { "type": "array<string>", "description": "Explicação da resolução (texto)." },
+              "codigoResolucao": { "type": "array<string>", "description": "Trechos de código da correção (blocos monoespaçados)." },
+              "testesPassam":    { "type": "array<string>", "description": "Evidências/comandos de teste que passam após a correção (blocos monoespaçados)." }
+            }
+          }
+        }
+      },
+      "testes": {
+        "type": "array<Teste>",
+        "required": false,
+        "default": [],
+        "maxItems": 60,
+        "description": "Testes executados/propostos, em seção própria.",
+        "item": {
+          "id": { "type": "string", "required": false },
+          "titulo": { "type": "string", "required": false, "description": "Nome do teste." },
+          "descricao": { "type": "string", "required": false, "description": "O que o teste valida." },
+          "como": { "type": "string", "required": false, "description": "Como executar o teste." },
+          "codigo": { "type": "array<string>", "required": false, "description": "Blocos de código do teste." }
+        }
+      },
+      "conclusao": {
+        "type": "array<string>",
+        "required": false,
+        "default": [""],
+        "maxItems": 20,
+        "description": "Parágrafos de conclusão, ao final do relatório."
+      }
+    },
+
+    "study": {
+      "description": "Relatório de estudo: registro de aprendizado sobre um tema, organizado em tópicos (conceito, prática, resumo).",
+      "cores": {
+        "type": "object",
+        "required": false,
+        "description": "Paleta do PDF; hex sem '#'.",
+        "fields": {
+          "primaria":   { "default": "1F3864", "description": "Cor de títulos e capa." },
+          "secundaria": { "default": "2E75B6", "description": "Cor de destaques/subtítulos." },
+          "concept":    { "default": "f59e0b", "description": "Badge de tópico tipo CONCEITO." },
+          "practice":   { "default": "10b981", "description": "Badge de tópico tipo PRÁTICA." },
+          "summary":    { "default": "6366f1", "description": "Badge de tópico tipo RESUMO." },
+          "codeBg":     { "default": "1E1E1E", "description": "Fundo dos blocos de código." },
+          "codeText":   { "default": "D4D4D4", "description": "Texto dos blocos de código." }
+        }
+      },
+      "introducao": {
+        "type": "array<string>",
+        "required": false,
+        "default": [""],
+        "maxItems": 20,
+        "description": "Parágrafos de introdução do estudo."
+      },
+      "topicos": {
+        "type": "array<Topico>",
+        "required": true,
+        "default": [],
+        "maxItems": 60,
+        "description": "Tópicos estudados. Seção principal do relatório.",
+        "item": {
+          "id": { "type": "string", "required": false },
+          "titulo": { "type": "string", "required": false, "description": "Nome do tópico." },
+          "tipo": { "type": "string", "required": false, "default": "CONCEITO", "enum": ["CONCEITO", "PRÁTICA", "RESUMO"], "description": "Classificação do tópico; controla cor/ícone do badge. Acentuação obrigatória em 'PRÁTICA'." },
+          "resumo": { "type": "string", "required": false, "description": "Resumo do tópico em uma ou poucas frases." },
+          "detalhe": {
+            "type": "object",
+            "required": false,
+            "description": "Detalhamento do tópico; cada campo é uma lista.",
+            "fields": {
+              "explicacao": { "type": "array<string>", "description": "Explicação aprofundada (texto)." },
+              "exemplos":   { "type": "array<string>", "description": "Exemplos de aplicação (texto)." },
+              "codigo":     { "type": "array<string>", "description": "Trechos de código ilustrativos (blocos monoespaçados)." }
+            }
+          }
+        }
+      },
+      "conclusao": {
+        "type": "array<string>",
+        "required": false,
+        "default": [""],
+        "maxItems": 20,
+        "description": "Parágrafos de conclusão do estudo."
+      }
+    },
+
+    "changelog": {
+      "description": "Relatório de changelog: alterações de código de um período/release, agrupadas por tipo de mudança.",
+      "cores": {
+        "type": "object",
+        "required": false,
+        "description": "Paleta do PDF; hex sem '#'. Cada tipo de mudança tem sua cor.",
+        "fields": {
+          "primaria":   { "default": "0F4C35", "description": "Cor de títulos e capa." },
+          "secundaria": { "default": "10B981", "description": "Cor de destaques/subtítulos." },
+          "breaking":   { "default": "DC2626", "description": "Badge de mudança tipo breaking." },
+          "feat":       { "default": "2563EB", "description": "Badge de mudança tipo feat." },
+          "fix":        { "default": "D97706", "description": "Badge de mudança tipo fix." },
+          "refactor":   { "default": "7C3AED", "description": "Badge de mudança tipo refactor." },
+          "perf":       { "default": "0891B2", "description": "Badge de mudança tipo perf." },
+          "style":      { "default": "DB2777", "description": "Badge de mudança tipo style." },
+          "chore":      { "default": "64748B", "description": "Badge de mudança tipo chore." },
+          "codeBg":     { "default": "0D1117", "description": "Fundo dos blocos de código." },
+          "codeText":   { "default": "E6EDF3", "description": "Texto dos blocos de código." }
+        }
+      },
+      "projeto":     { "type": "string", "required": false, "default": "", "description": "Nome do projeto." },
+      "repositorio": { "type": "string", "required": false, "default": "", "description": "URL ou slug do repositório (ex.: 'org/repo')." },
+      "dataInicio":  { "type": "string", "required": false, "default": "", "description": "Início do período coberto. Formato livre; recomendado 'YYYY-MM-DD'." },
+      "dataFim":     { "type": "string", "required": false, "default": "", "description": "Fim do período coberto. Formato livre; recomendado 'YYYY-MM-DD'." },
+      "descricao": {
+        "type": "array<string>",
+        "required": false,
+        "default": [""],
+        "maxItems": 20,
+        "description": "Parágrafos de introdução/contexto do changelog."
+      },
+      "mudancas": {
+        "type": "array<Mudanca>",
+        "required": true,
+        "default": [],
+        "maxItems": 100,
+        "description": "Lista de alterações. Seção principal do relatório.",
+        "item": {
+          "id": { "type": "string", "required": false },
+          "tipo": { "type": "string", "required": false, "default": "feat", "enum": ["feat", "fix", "breaking", "refactor", "perf", "style", "chore"], "description": "Tipo da mudança (Conventional Commits + 'breaking'); controla cor e ícone do badge." },
+          "titulo": { "type": "string", "required": false, "description": "Resumo curto da mudança." },
+          "arquivo": { "type": "string", "required": false, "description": "Arquivo ou caminho afetado (ex.: 'src/App.jsx')." },
+          "descricao": { "type": "string", "required": false, "description": "O que foi alterado." },
+          "motivacao": { "type": "string", "required": false, "description": "Por que foi alterado." },
+          "impacto": { "type": "string", "required": false, "description": "Efeito da mudança (comportamento, performance, breaking changes)." },
+          "codigoAntes": { "type": "string", "required": false, "description": "Trecho de código ANTES da mudança (string única, multilinha)." },
+          "codigoDepois": { "type": "string", "required": false, "description": "Trecho de código DEPOIS da mudança (string única, multilinha)." },
+          "notas": { "type": "string", "required": false, "description": "Observações extras (migração, follow-ups, links)." }
+        }
+      },
+      "resumo": {
+        "type": "array<string>",
+        "required": false,
+        "default": [""],
+        "maxItems": 20,
+        "description": "Parágrafos de resumo/fechamento do changelog (equivalente à conclusão dos outros templates)."
+      }
+    }
+  },
+
+  "examples": {
+    "bugs": {
+      "template": "bugs",
+      "lang": "pt",
+      "formato": "ABNT",
+      "titulo": "Auditoria de Segurança — API de Pagamentos",
+      "subtitulo": "Sprint 42",
+      "autor": "Equipe de Segurança",
+      "versao": "1.0",
+      "cores": { "primaria": "1F3864", "secundaria": "2E75B6", "altaSev": "C00000", "mediaSev": "C55A11", "baixaSev": "375623", "codeBg": "1E1E1E", "codeText": "D4D4D4" },
+      "resumoExecutivo": ["Foram identificados 1 problema crítico e 0 problemas menores na API de pagamentos."],
+      "problemas": [
+        {
+          "titulo": "Token de sessão sem verificação de expiração",
+          "severity": "ALTA",
+          "resumo": "O middleware de autenticação aceita tokens expirados por usar comparação incorreta.",
+          "resolucao": "Corrigir a comparação e adicionar teste de regressão.",
+          "comoReproduzir": "Gerar token, aguardar o TTL, chamar GET /orders — retorna 200 em vez de 401.",
+          "detalhe": {
+            "ondeOcorre": ["server/middleware/auth.js, função verifyToken"],
+            "codigoOnde": ["if (token.exp < Date.now()) return next();"],
+            "porqueProblema": ["Permite reuso indefinido de tokens vazados."],
+            "textoResolucao": ["Inverter a condição e rejeitar tokens expirados."],
+            "codigoResolucao": ["if (token.exp <= Date.now()) return res.status(401).end();"],
+            "testesPassam": ["npm test -- auth.spec.js"]
+          }
+        }
+      ],
+      "testes": [
+        {
+          "titulo": "Regressão de expiração de token",
+          "descricao": "Garante 401 para token expirado.",
+          "como": "npm test -- auth.spec.js",
+          "codigo": ["expect(res.status).toBe(401);"]
+        }
+      ],
+      "tabelas": [
+        { "titulo": "Resumo por severidade", "cabecalhos": ["Severidade", "Qtd"], "linhas": [["ALTA", "1"], ["MÉDIA", "0"], ["BAIXA", "0"]] }
+      ],
+      "conclusao": ["Após a correção, o fluxo de autenticação está conforme a política interna."]
+    },
+
+    "study": {
+      "template": "study",
+      "lang": "pt",
+      "formato": "ABNT",
+      "titulo": "Estudo — React Hooks",
+      "subtitulo": "Fundamentos e boas práticas",
+      "autor": "Leonardo",
+      "versao": "1.0",
+      "introducao": ["Este documento registra o estudo sobre hooks no React 19."],
+      "topicos": [
+        {
+          "titulo": "useEffect",
+          "tipo": "CONCEITO",
+          "resumo": "Executa efeitos colaterais após a renderização.",
+          "detalhe": {
+            "explicacao": ["O array de dependências define quando o efeito roda novamente."],
+            "exemplos": ["Sincronizar o título da aba com o estado."],
+            "codigo": ["useEffect(() => { document.title = title; }, [title]);"]
+          }
+        }
+      ],
+      "tabelas": [],
+      "conclusao": ["Hooks reduzem boilerplate frente a componentes de classe."]
+    },
+
+    "changelog": {
+      "template": "changelog",
+      "lang": "pt",
+      "formato": "ABNT",
+      "titulo": "Changelog v2.3.0",
+      "subtitulo": "Release de agosto",
+      "autor": "Time de Plataforma",
+      "versao": "2.3.0",
+      "projeto": "reportGen",
+      "repositorio": "LeoGotardo/reportGen",
+      "dataInicio": "2026-07-01",
+      "dataFim": "2026-08-11",
+      "descricao": ["Release focada em usabilidade do editor."],
+      "mudancas": [
+        {
+          "tipo": "feat",
+          "titulo": "Scroll sincronizado entre editor e preview",
+          "arquivo": "src/hooks/useScrollSync.js",
+          "descricao": "Sincroniza proporcionalmente o scroll dos dois painéis.",
+          "motivacao": "Evita perder a referência visual ao editar relatórios longos.",
+          "impacto": "Somente desktop, na aba de preview.",
+          "codigoAntes": "",
+          "codigoDepois": "useScrollSync(editorPaneRef, rightBodyRef, !isMobile && rightTab === \"preview\");",
+          "notas": "Anti-loop via ownership por frame."
+        }
+      ],
+      "tabelas": [],
+      "resumo": ["3 melhorias de editor entregues no período."]
+    }
+  }
+}
