@@ -14,7 +14,7 @@ export function BugsPreview({ config }) {
 
   return (
     <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, lineHeight: 1.75, color: "#1a1a2e", background: "#fff" }}>
-      <div style={{ padding: "56px 48px 42px", background: `linear-gradient(160deg, ${primary}08, transparent)`, borderBottom: `4px solid ${primary}` }}>
+      <div data-anchor="sec:info" style={{ padding: "56px 48px 42px", background: `linear-gradient(160deg, ${primary}08, transparent)`, borderBottom: `4px solid ${primary}` }}>
         {config.logo && <div style={{ marginBottom: 28 }}><img src={config.logo} alt="Logo" style={{ maxHeight: 100, maxWidth: 350, objectFit: "contain" }} /></div>}
         <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#aaa", textTransform: "uppercase", marginBottom: 14 }}>{t.doc_bugs_overline}</div>
         <div style={{ fontSize: 30, fontWeight: 900, color: primary, lineHeight: 1.15, marginBottom: 12, fontFamily: "Georgia, serif" }}>{config.titulo || "Título do Relatório"}</div>
@@ -27,7 +27,7 @@ export function BugsPreview({ config }) {
       </div>
 
       {config.resumoExecutivo.some(v => v.trim()) && (
-        <div style={{ padding: "38px 48px 0" }}>
+        <div data-anchor="sec:resumoExecutivo" style={{ padding: "38px 48px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
             <div style={{ width: 5, height: 24, background: primary, borderRadius: 3 }} />
             <div style={{ fontSize: 18, fontWeight: 800, color: primary }}>{t.doc_bugs_execSummary}</div>
@@ -73,7 +73,7 @@ export function BugsPreview({ config }) {
 
       {config.problemas.length > 0 && (
         <div style={{ padding: "38px 48px 0" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }} data-anchor="sec:problemas">
             <div style={{ width: 5, height: 24, background: `#${config.cores.altaSev}`, borderRadius: 3 }} />
             <div style={{ fontSize: 18, fontWeight: 800, color: primary }}>{t.doc_bugs_problemsDetail}</div>
           </div>
@@ -81,7 +81,7 @@ export function BugsPreview({ config }) {
             const c = sevColors[p.severity] || sevColors.ALTA;
             const d = p.detalhe || {};
             return (
-              <div key={p.id} style={{ marginBottom: 40, borderLeft: `4px solid ${c}`, paddingLeft: 20 }}>
+              <div key={p.id} data-anchor={`item:${p.id}`} style={{ marginBottom: 40, borderLeft: `4px solid ${c}`, paddingLeft: 20 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                   <div style={{ width: 28, height: 28, borderRadius: 7, background: c, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", fontFamily: "monospace" }}>{i + 1}</span>
@@ -104,13 +104,13 @@ export function BugsPreview({ config }) {
       )}
 
       {(config.testes || []).length > 0 && (
-        <div style={{ padding: "38px 48px 0" }}>
+        <div data-anchor="sec:testes" style={{ padding: "38px 48px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
             <div style={{ width: 5, height: 24, background: "#22c55e", borderRadius: 3 }} />
             <div style={{ fontSize: 18, fontWeight: 800, color: primary }}>{t.doc_bugs_testsSection}</div>
           </div>
           {config.testes.map((ts, i) => (
-            <div key={ts.id} style={{ marginBottom: 32, borderLeft: "4px solid #22c55e", paddingLeft: 20 }}>
+            <div key={ts.id} data-anchor={`item:${ts.id}`} style={{ marginBottom: 32, borderLeft: "4px solid #22c55e", paddingLeft: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", fontFamily: "monospace" }}>{i + 1}</span>
@@ -127,7 +127,7 @@ export function BugsPreview({ config }) {
       )}
 
       {config.conclusao.some(v => v.trim()) && (
-        <div style={{ padding: "38px 48px 56px" }}>
+        <div data-anchor="sec:conclusao" style={{ padding: "38px 48px 56px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
             <div style={{ width: 5, height: 24, background: `#${config.cores.baixaSev}`, borderRadius: 3 }} />
             <div style={{ fontSize: 18, fontWeight: 800, color: primary }}>{t.doc_bugs_conclusion}</div>

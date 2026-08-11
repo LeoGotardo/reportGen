@@ -30,7 +30,7 @@ export function BugsEditor({ config, setConfig }) {
   return (
     <div className="editor-inner">
       <div style={{ marginBottom: 48 }}>
-        <SectionHeader icon={<Bi name="file-earmark-text" size={22} />} title={t.bugsInfoSection} subtitle={t.bugsInfoDesc} />
+        <SectionHeader icon={<Bi name="file-earmark-text" size={22} />} title={t.bugsInfoSection} subtitle={t.bugsInfoDesc} anchor="sec:info" />
         <div className="card" style={{ padding: 30 }}>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, marginBottom: 18 }}>
             <div><label className="lbl">{t.formatLabel}</label><select className="inp" value={config.formato} onChange={e => upd("formato", e.target.value)}><option value="ABNT">{t.formatAbnt}</option><option value="CARTA">{t.formatLetter}</option></select></div>
@@ -53,13 +53,13 @@ export function BugsEditor({ config, setConfig }) {
         </div>
       </div>
       <div style={{ marginBottom: 48 }}>
-        <SectionHeader icon={<Bi name="journal-richtext" size={22} />} title={t.bugsExecSummary} />
+        <SectionHeader icon={<Bi name="journal-richtext" size={22} />} title={t.bugsExecSummary} anchor="sec:resumoExecutivo" />
         <div className="card" style={{ padding: 30 }}>
           <ArrayField values={config.resumoExecutivo} onChange={v => upd("resumoExecutivo", v)} placeholder={t.bugsExecSummaryPh} rows={8} />
         </div>
       </div>
       <div style={{ marginBottom: 48 }}>
-        <SectionHeader icon={<Bi name="table" size={22} />} title={t.tablesSection} subtitle={t.tablesSectionDesc} badge={(config.tabelas || []).length} />
+        <SectionHeader icon={<Bi name="table" size={22} />} title={t.tablesSection} subtitle={t.tablesSectionDesc} badge={(config.tabelas || []).length} anchor="sec:tabelas" />
         {(config.tabelas || []).length === 0 ? (
           <div className="card" style={{ padding: "40px 36px", textAlign: "center", border: "2px dashed var(--b2)" }}>
             <div style={{ fontSize: 14, color: "var(--tx3)", marginBottom: 16 }}>{t.noTables}</div>
@@ -79,7 +79,7 @@ export function BugsEditor({ config, setConfig }) {
         )}
       </div>
       <div style={{ marginBottom: 48 }}>
-        <SectionHeader icon={<Bi name="bug-fill" size={22} />} title={t.bugsProblems} subtitle={t.bugsProblemsDesc} badge={config.problemas.length} />
+        <SectionHeader icon={<Bi name="bug-fill" size={22} />} title={t.bugsProblems} subtitle={t.bugsProblemsDesc} badge={config.problemas.length} anchor="sec:problemas" />
         {config.problemas.length === 0 ? (
           <div className="card" style={{ padding: "56px 36px", textAlign: "center", border: "2px dashed var(--b2)" }}>
             <div style={{ width: 72, height: 72, borderRadius: 22, background: "var(--s2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
@@ -103,7 +103,7 @@ export function BugsEditor({ config, setConfig }) {
         )}
       </div>
       <div style={{ marginBottom: 48 }}>
-        <SectionHeader icon={<Bi name="check2-all" size={22} />} title={t.bugTestsSection} subtitle={t.bugTestsSectionDesc} badge={(config.testes || []).length} />
+        <SectionHeader icon={<Bi name="check2-all" size={22} />} title={t.bugTestsSection} subtitle={t.bugTestsSectionDesc} badge={(config.testes || []).length} anchor="sec:testes" />
         {(config.testes || []).length === 0 ? (
           <div className="card" style={{ padding: "56px 36px", textAlign: "center", border: "2px dashed #22c55e40" }}>
             <div style={{ width: 72, height: 72, borderRadius: 22, background: "#22c55e12", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
@@ -127,7 +127,7 @@ export function BugsEditor({ config, setConfig }) {
         )}
       </div>
       <div>
-        <SectionHeader icon={<Bi name="check2-circle" size={22} />} title={t.bugConclusion} />
+        <SectionHeader icon={<Bi name="check2-circle" size={22} />} title={t.bugConclusion} anchor="sec:conclusao" />
         <div className="card" style={{ padding: 30 }}>
           <ArrayField values={config.conclusao} onChange={v => upd("conclusao", v)} placeholder={t.bugConclusionPh} rows={8} />
         </div>

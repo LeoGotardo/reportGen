@@ -19,7 +19,7 @@ import { ChangelogPreview } from "./components/ChangelogPreview";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useLang } from "./contexts/LangContext";
 import { useLocalStorageState } from "./hooks/useLocalStorageState";
-import { useScrollSync } from "./hooks/useScrollSync";
+import { PreviewNavContext } from "./contexts/previewNav";
 
 // Constants
 import { TEMPLATES } from "./constants/templates";
@@ -40,12 +40,8 @@ export default function App() {
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const bodyRef  = useRef(null);
-  const editorPaneRef = useRef(null);
   const rightBodyRef  = useRef(null);
   const isMobile = useIsMobile();
-
-  // Scroll do editor acompanha o do preview (só no desktop, só na aba preview)
-  useScrollSync(editorPaneRef, rightBodyRef, !isMobile && rightTab === "preview");
 
   const config =
     activeTemplate === "study"     ? studyConfig :
@@ -62,6 +58,24 @@ export default function App() {
     const rect = bodyRef.current.getBoundingClientRect();
     const pct  = ((clientX - rect.left) / rect.width) * 100;
     setEditorWidth(Math.min(75, Math.max(20, pct)));
+  }, []);
+
+  // Rola o preview até o bloco marcado com data-anchor={anchor}.
+  const goToPreview = useCallback(anchor => {
+    setRightTab("preview");
+    setMobTab("preview");
+    // dois frames: o primeiro monta a aba de preview, o segundo já tem layout.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const box = rightBodyRef.current;
+      const el  = box?.querySelector(`[data-anchor="${CSS.escape(anchor)}"]`);
+      if (!box || !el) return;
+      const top = el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop - 24;
+      box.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      el.classList.remove("anchor-flash");
+      void el.offsetWidth; // reinicia a animação se o mesmo alvo for clicado de novo
+      el.classList.add("anchor-flash");
+      setTimeout(() => el.classList.remove("anchor-flash"), 1400);
+    }));
   }, []);
 
   const handleSelectTemplate = id => {
@@ -100,6 +114,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
+    <PreviewNavContext.Provider value={goToPreview}>
     <div className="app-shell">
       {showTemplateSelector && (
         <TemplateSelector
@@ -211,7 +226,6 @@ export default function App() {
       <div className="app-body" ref={bodyRef}>
         {/* Editor pane */}
         <div
-          ref={editorPaneRef}
           className={`pane-editor${mobTab === "editor" ? " mob-active" : ""}`}
           style={{ width: `${editorWidth}%` }}
         >
@@ -300,6 +314,7 @@ export default function App() {
         ))}
       </nav>
     </div>
+    </PreviewNavContext.Provider>
     </ErrorBoundary>
   );
 }

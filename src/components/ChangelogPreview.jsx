@@ -25,7 +25,7 @@ export function ChangelogPreview({ config }) {
 
   return (
     <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, lineHeight: 1.75, color: "#1a1a2e", background: "#fff" }}>
-      <div style={{ padding: "48px 48px 36px", borderBottom: `4px solid ${primary}` }}>
+      <div data-anchor="sec:info" style={{ padding: "48px 48px 36px", borderBottom: `4px solid ${primary}` }}>
         {config.logo && <div style={{ marginBottom: 24 }}><img src={config.logo} alt="Logo" style={{ maxHeight: 80, maxWidth: 280, objectFit: "contain" }} /></div>}
         <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#aaa", textTransform: "uppercase", marginBottom: 12 }}>{t.doc_changelog_overline}</div>
         <div style={{ fontSize: 28, fontWeight: 900, color: primary, lineHeight: 1.15, marginBottom: 10, fontFamily: "Georgia, serif" }}>{config.titulo || "Changelog do Projeto"}</div>
@@ -54,7 +54,7 @@ export function ChangelogPreview({ config }) {
       )}
 
       {config.descricao.some(v => v.trim()) && (
-        <div style={{ padding: "32px 48px 0" }}>
+        <div data-anchor="sec:descricao" style={{ padding: "32px 48px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
             <div style={{ width: 5, height: 24, background: primary, borderRadius: 3 }} />
             <div style={{ fontSize: 16, fontWeight: 800, color: primary }}>{t.doc_changelog_overview}</div>
@@ -100,7 +100,7 @@ export function ChangelogPreview({ config }) {
 
       {config.mudancas.length > 0 && (
         <div style={{ padding: "32px 48px 0" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }} data-anchor="sec:mudancas">
             <div style={{ width: 5, height: 24, background: `#${config.cores.secundaria}`, borderRadius: 3 }} />
             <div style={{ fontSize: 16, fontWeight: 800, color: primary }}>{t.doc_changelog_detail}</div>
           </div>
@@ -115,7 +115,7 @@ export function ChangelogPreview({ config }) {
                   </span>
                 </div>
                 {grouped[tipo].map((m, i) => (
-                  <div key={m.id} style={{ marginBottom: 20, borderLeft: `3px solid ${c}`, paddingLeft: 18 }}>
+                  <div key={m.id} data-anchor={`item:${m.id}`} style={{ marginBottom: 20, borderLeft: `3px solid ${c}`, paddingLeft: 18 }}>
                     <div style={{ fontSize: 14, fontWeight: 800, color: "#1a1a2e", marginBottom: 6 }}>{m.titulo || t.noTitle}</div>
                     {m.arquivo && <div style={{ fontFamily: "monospace", fontSize: 10, color: "#666", background: "#f5f5f5", padding: "3px 10px", borderRadius: 5, display: "inline-block", marginBottom: 8 }}>{m.arquivo}</div>}
                     {m.descricao?.trim() && <p style={{ fontSize: 12, color: "#333", marginBottom: 8, lineHeight: 1.7 }}>{m.descricao}</p>}
@@ -146,7 +146,7 @@ export function ChangelogPreview({ config }) {
       <CustomTables tabelas={config.tabelas} primary={primary} label={t.doc_common_tables} />
 
       {config.resumo.some(v => v.trim()) && (
-        <div style={{ padding: "32px 48px 48px" }}>
+        <div data-anchor="sec:resumo" style={{ padding: "32px 48px 48px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
             <div style={{ width: 5, height: 24, background: `#${config.cores.chore}`, borderRadius: 3 }} />
             <div style={{ fontSize: 16, fontWeight: 800, color: primary }}>{t.doc_changelog_summary}</div>

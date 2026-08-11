@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Bi } from "./Bi";
-import { ArrayField } from "./UI";
+import { ArrayField, GoToPreview } from "./UI";
 import { useLang } from "../contexts/LangContext";
 
 export function BugTestCard({ test, idx, onChange, onRemove, dragHandleProps }) {
@@ -20,6 +20,7 @@ export function BugTestCard({ test, idx, onChange, onRemove, dragHandleProps }) 
         </div>
         <span style={{ padding: "3px 12px", borderRadius: 20, fontSize: 10, fontWeight: 800, background: "#22c55e22", color: "#16a34a", flexShrink: 0, letterSpacing: .8, border: "1px solid #22c55e40" }}>PASS</span>
         <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: test.titulo ? "var(--tx)" : "var(--tx3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{test.titulo || t.bugTestNoTitle}</span>
+        <GoToPreview anchor={`item:${test.id}`} compact />
         <button onClick={e => { e.stopPropagation(); onRemove(); }} className="btn-icon" style={{ background: "transparent", border: "none", color: "var(--tx3)" }}><Bi name="trash3" size={13} /></button>
         <span style={{ color: "var(--tx3)", marginLeft: 4 }}><Bi name={open ? "chevron-up" : "chevron-down"} size={14} /></span>
       </div>

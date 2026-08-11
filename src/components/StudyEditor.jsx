@@ -25,7 +25,7 @@ export function StudyEditor({ config, setConfig }) {
   return (
     <div className="editor-inner">
       <div style={{ marginBottom: 48 }}>
-        <SectionHeader icon={<Bi name="journal-text" size={22} />} title={t.studyInfoSection} subtitle={t.studyInfoDesc} />
+        <SectionHeader icon={<Bi name="journal-text" size={22} />} title={t.studyInfoSection} subtitle={t.studyInfoDesc} anchor="sec:info" />
         <div className="card" style={{ padding: 30 }}>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, marginBottom: 18 }}>
             <div><label className="lbl">{t.formatLabel}</label><select className="inp" value={config.formato} onChange={e => upd("formato", e.target.value)}><option value="ABNT">{t.formatAbnt}</option><option value="CARTA">{t.formatLetter}</option></select></div>
@@ -48,13 +48,13 @@ export function StudyEditor({ config, setConfig }) {
         </div>
       </div>
       <div style={{ marginBottom: 48 }}>
-        <SectionHeader icon={<Bi name="info-circle" size={22} />} title={t.studyIntro} />
+        <SectionHeader icon={<Bi name="info-circle" size={22} />} title={t.studyIntro} anchor="sec:introducao" />
         <div className="card" style={{ padding: 30 }}>
           <ArrayField values={config.introducao} onChange={v => upd("introducao", v)} placeholder={t.studyIntroPh} />
         </div>
       </div>
       <div style={{ marginBottom: 48 }}>
-        <SectionHeader icon={<Bi name="journal-bookmark-fill" size={22} />} title={t.studyTopics} subtitle={t.studyTopicsDesc} badge={config.topicos.length} />
+        <SectionHeader icon={<Bi name="journal-bookmark-fill" size={22} />} title={t.studyTopics} subtitle={t.studyTopicsDesc} badge={config.topicos.length} anchor="sec:topicos" />
         {config.topicos.length === 0 ? (
           <div className="card" style={{ padding: "56px 36px", textAlign: "center", border: "2px dashed var(--b2)" }}>
             <div style={{ width: 72, height: 72, borderRadius: 22, background: "var(--s2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
@@ -77,7 +77,7 @@ export function StudyEditor({ config, setConfig }) {
         )}
       </div>
       <div style={{ marginBottom: 48 }}>
-        <SectionHeader icon={<Bi name="table" size={22} />} title={t.tablesSection} subtitle={t.tablesSectionDesc} badge={(config.tabelas || []).length} />
+        <SectionHeader icon={<Bi name="table" size={22} />} title={t.tablesSection} subtitle={t.tablesSectionDesc} badge={(config.tabelas || []).length} anchor="sec:tabelas" />
         {(config.tabelas || []).length === 0 ? (
           <div className="card" style={{ padding: "40px 36px", textAlign: "center", border: "2px dashed var(--b2)" }}>
             <div style={{ fontSize: 14, color: "var(--tx3)", marginBottom: 16 }}>{t.noTables}</div>
@@ -97,7 +97,7 @@ export function StudyEditor({ config, setConfig }) {
         )}
       </div>
       <div>
-        <SectionHeader icon={<Bi name="check2-circle" size={22} />} title={t.studyConclusion} />
+        <SectionHeader icon={<Bi name="check2-circle" size={22} />} title={t.studyConclusion} anchor="sec:conclusao" />
         <div className="card" style={{ padding: 30 }}>
           <ArrayField values={config.conclusao} onChange={v => upd("conclusao", v)} placeholder={t.studyConclusionPh} rows={8} />
         </div>

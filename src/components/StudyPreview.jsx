@@ -14,7 +14,7 @@ export function StudyPreview({ config }) {
 
   return (
     <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, lineHeight: 1.75, color: "#1a1a2e", background: "#fff" }}>
-      <div style={{ padding: "56px 48px 42px", background: `linear-gradient(160deg, ${primary}08, transparent)`, borderBottom: `4px solid ${primary}` }}>
+      <div data-anchor="sec:info" style={{ padding: "56px 48px 42px", background: `linear-gradient(160deg, ${primary}08, transparent)`, borderBottom: `4px solid ${primary}` }}>
         {config.logo && <div style={{ marginBottom: 28 }}><img src={config.logo} alt="Logo" style={{ maxHeight: 100, maxWidth: 350, objectFit: "contain" }} /></div>}
         <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#aaa", textTransform: "uppercase", marginBottom: 14 }}>{t.doc_study_overline}</div>
         <div style={{ fontSize: 30, fontWeight: 900, color: primary, lineHeight: 1.15, marginBottom: 12, fontFamily: "Georgia, serif" }}>{config.titulo || "Título do Estudo"}</div>
@@ -26,7 +26,7 @@ export function StudyPreview({ config }) {
       </div>
 
       {config.introducao.some(v => v.trim()) && (
-        <div style={{ padding: "38px 48px 0" }}>
+        <div data-anchor="sec:introducao" style={{ padding: "38px 48px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
             <div style={{ width: 5, height: 24, background: primary, borderRadius: 3 }} />
             <div style={{ fontSize: 18, fontWeight: 800, color: primary }}>{t.doc_study_intro}</div>
@@ -70,7 +70,7 @@ export function StudyPreview({ config }) {
 
       {config.topicos.length > 0 && (
         <div style={{ padding: "38px 48px 0" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }} data-anchor="sec:topicos">
             <div style={{ width: 5, height: 24, background: typeColors.PRÁTICA, borderRadius: 3 }} />
             <div style={{ fontSize: 18, fontWeight: 800, color: primary }}>{t.doc_study_topicsDetail}</div>
           </div>
@@ -78,7 +78,7 @@ export function StudyPreview({ config }) {
             const c = typeColors[p.tipo] || typeColors.CONCEITO;
             const d = p.detalhe || {};
             return (
-              <div key={p.id} style={{ marginBottom: 40, borderLeft: `4px solid ${c}`, paddingLeft: 20 }}>
+              <div key={p.id} data-anchor={`item:${p.id}`} style={{ marginBottom: 40, borderLeft: `4px solid ${c}`, paddingLeft: 20 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                   <div style={{ width: 28, height: 28, borderRadius: 7, background: c, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", fontFamily: "monospace" }}>{i + 1}</span>
@@ -98,7 +98,7 @@ export function StudyPreview({ config }) {
       <CustomTables tabelas={config.tabelas} primary={primary} label={t.doc_common_tables} />
 
       {config.conclusao.some(v => v.trim()) && (
-        <div style={{ padding: "38px 48px 56px" }}>
+        <div data-anchor="sec:conclusao" style={{ padding: "38px 48px 56px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
             <div style={{ width: 5, height: 24, background: typeColors.RESUMO, borderRadius: 3 }} />
             <div style={{ fontSize: 18, fontWeight: 800, color: primary }}>{t.doc_study_conclusion}</div>

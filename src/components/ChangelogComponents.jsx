@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Bi } from "./Bi";
+import { GoToPreview } from "./UI";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { CHANGE_TYPES } from "../constants/templates";
 import { useLang } from "../contexts/LangContext";
@@ -39,6 +40,7 @@ export function ChangeCard({ change, idx, onChange, onRemove, dragHandleProps })
         {change.arquivo && (
           <span style={{ fontSize: 11, fontFamily: "var(--mono)", color: "var(--tx3)", background: "var(--s2)", padding: "3px 9px", borderRadius: 6, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{change.arquivo}</span>
         )}
+        <GoToPreview anchor={`item:${change.id}`} compact />
         <button onClick={e => { e.stopPropagation(); onRemove(); }} className="btn-icon" style={{ background: "transparent", border: "none", color: "var(--tx3)" }}><Bi name="trash3" size={13} /></button>
         <span style={{ color: "var(--tx3)", marginLeft: 4 }}><Bi name={open ? "chevron-up" : "chevron-down"} size={14} /></span>
       </div>

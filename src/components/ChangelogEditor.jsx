@@ -25,7 +25,7 @@ export function ChangelogEditor({ config, setConfig }) {
   return (
     <div className="editor-inner">
       <div style={{ marginBottom: 48 }}>
-        <SectionHeader icon={<Bi name="git" size={22} />} title={t.changelogInfoSection} subtitle={t.changelogInfoDesc} />
+        <SectionHeader icon={<Bi name="git" size={22} />} title={t.changelogInfoSection} subtitle={t.changelogInfoDesc} anchor="sec:info" />
         <div className="card" style={{ padding: 30 }}>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, marginBottom: 18 }}>
             <div><label className="lbl">{t.formatLabel}</label><select className="inp" value={config.formato} onChange={e => upd("formato", e.target.value)}><option value="ABNT">{t.formatAbnt}</option><option value="CARTA">{t.formatLetter}</option></select></div>
@@ -58,14 +58,14 @@ export function ChangelogEditor({ config, setConfig }) {
       </div>
 
       <div style={{ marginBottom: 48 }}>
-        <SectionHeader icon={<Bi name="textarea-t" size={22} />} title={t.changelogOverview} subtitle={t.changelogOverviewDesc} />
+        <SectionHeader icon={<Bi name="textarea-t" size={22} />} title={t.changelogOverview} subtitle={t.changelogOverviewDesc} anchor="sec:descricao" />
         <div className="card" style={{ padding: 30 }}>
           <ArrayField values={config.descricao} onChange={v => upd("descricao", v)} placeholder={t.changelogOverviewPh} />
         </div>
       </div>
 
       <div style={{ marginBottom: 48 }}>
-        <SectionHeader icon={<Bi name="git" size={22} />} title={t.changelogChanges} subtitle={t.changelogChangesDesc} badge={config.mudancas.length} />
+        <SectionHeader icon={<Bi name="git" size={22} />} title={t.changelogChanges} subtitle={t.changelogChangesDesc} badge={config.mudancas.length} anchor="sec:mudancas" />
         {config.mudancas.length === 0 ? (
           <div className="card" style={{ padding: "56px 36px", textAlign: "center", border: "2px dashed var(--b2)" }}>
             <div style={{ width: 72, height: 72, borderRadius: 22, background: "var(--s2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
@@ -94,7 +94,7 @@ export function ChangelogEditor({ config, setConfig }) {
       </div>
 
       <div style={{ marginBottom: 48 }}>
-        <SectionHeader icon={<Bi name="table" size={22} />} title={t.tablesSection} subtitle={t.tablesSectionDesc} badge={(config.tabelas || []).length} />
+        <SectionHeader icon={<Bi name="table" size={22} />} title={t.tablesSection} subtitle={t.tablesSectionDesc} badge={(config.tabelas || []).length} anchor="sec:tabelas" />
         {(config.tabelas || []).length === 0 ? (
           <div className="card" style={{ padding: "40px 36px", textAlign: "center", border: "2px dashed var(--b2)" }}>
             <div style={{ fontSize: 14, color: "var(--tx3)", marginBottom: 16 }}>{t.noTables}</div>
@@ -114,7 +114,7 @@ export function ChangelogEditor({ config, setConfig }) {
         )}
       </div>
       <div>
-        <SectionHeader icon={<Bi name="check2-circle" size={22} />} title={t.changelogSummary} subtitle={t.changelogSummaryDesc} />
+        <SectionHeader icon={<Bi name="check2-circle" size={22} />} title={t.changelogSummary} subtitle={t.changelogSummaryDesc} anchor="sec:resumo" />
         <div className="card" style={{ padding: 30 }}>
           <ArrayField values={config.resumo} onChange={v => upd("resumo", v)} placeholder={t.changelogSummaryPh} rows={8} />
         </div>

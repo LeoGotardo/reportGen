@@ -44,6 +44,7 @@ const pt = {
   copy: "Copiar",
   copied: "Copiado!",
   download: "Baixar",
+  goToPreview: "Ver no preview",
   copySchema: "Modelo p/ LLM",
   copySchemaHint: "Copia o JSON com todos os campos possíveis de cada template — cole no ChatGPT/Claude para gerar relatórios.",
 
@@ -349,6 +350,7 @@ const en = {
   copy: "Copy",
   copied: "Copied!",
   download: "Download",
+  goToPreview: "Show in preview",
   copySchema: "LLM schema",
   copySchemaHint: "Copies the JSON describing every field of every template — paste it into ChatGPT/Claude to generate reports.",
 

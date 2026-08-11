@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { Bi } from "./Bi";
 import { useLang } from "../contexts/LangContext";
+import { usePreviewNav } from "../contexts/previewNav";
 
 export function ArrayField({ label, values = [], onChange, mono = false, placeholder = "", rows }) {
   const { t } = useLang();
@@ -155,7 +156,7 @@ export function DragList({ items, onReorder, renderItem }) {
   );
 }
 
-export function SectionHeader({ icon, title, subtitle, badge }) {
+export function SectionHeader({ icon, title, subtitle, badge, anchor }) {
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 20 }}>
       <div style={{ width: 50, height: 50, borderRadius: 14, background: "var(--s2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid var(--b2)" }}>
@@ -167,9 +168,30 @@ export function SectionHeader({ icon, title, subtitle, badge }) {
           {badge !== undefined && (
             <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ac)", background: "var(--glow)", padding: "2px 10px", borderRadius: 20, fontFamily: "var(--mono)" }}>{badge}</span>
           )}
+          {anchor && <GoToPreview anchor={anchor} style={{ marginLeft: "auto" }} />}
         </div>
         {subtitle && <p style={{ fontSize: 13, color: "var(--tx3)", marginTop: 5 }}>{subtitle}</p>}
       </div>
     </div>
+  );
+}
+
+/** Botão "ir até aqui": rola o preview até o bloco correspondente. */
+export function GoToPreview({ anchor, style, compact = false }) {
+  const { t } = useLang();
+  const goTo = usePreviewNav();
+  if (!goTo) return null;
+  return (
+    <button
+      type="button"
+      className="btn-goto"
+      title={t.goToPreview}
+      aria-label={t.goToPreview}
+      style={style}
+      onClick={e => { e.stopPropagation(); goTo(anchor); }}
+    >
+      <Bi name="crosshair" size={12} />
+      {!compact && <span>{t.goToPreview}</span>}
+    </button>
   );
 }

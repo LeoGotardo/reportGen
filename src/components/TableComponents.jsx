@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Bi } from "./Bi";
+import { GoToPreview } from "./UI";
 import { useLang } from "../contexts/LangContext";
 
 export function TableCard({ table, idx, onChange, onRemove, dragHandleProps }) {
@@ -55,6 +56,7 @@ export function TableCard({ table, idx, onChange, onRemove, dragHandleProps }) {
         <span style={{ fontSize: 11, color: "var(--tx3)", fontFamily: "var(--mono)", background: "var(--s2)", padding: "2px 8px", borderRadius: 6 }}>
           {table.cabecalhos.length} col · {table.linhas.length} lin
         </span>
+        <GoToPreview anchor={`item:${table.id}`} compact />
         <button onClick={e => { e.stopPropagation(); onRemove(); }} className="btn-icon" style={{ background: "transparent", border: "none", color: "var(--tx3)" }}>
           <Bi name="trash3" size={13} />
         </button>

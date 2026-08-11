@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Bi } from "./Bi";
-import { ArrayField } from "./UI";
+import { ArrayField, GoToPreview } from "./UI";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { SEV } from "../constants/templates";
 import { useLang } from "../contexts/LangContext";
@@ -25,6 +25,7 @@ export function BugProblemCard({ prob, idx, onChange, onRemove, dragHandleProps 
         </div>
         <span style={{ padding: "3px 12px", borderRadius: 20, fontSize: 10, fontWeight: 800, background: `${sev.border}22`, color: sev.text, flexShrink: 0, letterSpacing: .8, border: `1px solid ${sev.border}40` }}>{prob.severity}</span>
         <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: prob.titulo ? "var(--tx)" : "var(--tx3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{prob.titulo || t.noTitle}</span>
+        <GoToPreview anchor={`item:${prob.id}`} compact />
         <button onClick={e => { e.stopPropagation(); onRemove(); }} className="btn-icon" style={{ background: "transparent", border: "none", color: "var(--tx3)" }}><Bi name="trash3" size={13} /></button>
         <span style={{ color: "var(--tx3)", marginLeft: 4 }}><Bi name={open ? "chevron-up" : "chevron-down"} size={14} /></span>
       </div>

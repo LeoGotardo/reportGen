@@ -5,3 +5,5 @@
 .btn-primary.full { width: 100%; justify-content: center; }
 .btn-icon { width: 36px; height: 36px; border: 1.5px solid var(--b2); border-radius: var(--r-sm); background: var(--surf); color: var(--tx3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .btn-icon:hover { border-color: var(--ac); color: var(--ac); background: var(--glow); }
+.btn-goto { padding: 5px 11px; border: 1px solid var(--b2); border-radius: 20px; background: transparent; color: var(--tx3); font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; white-space: nowrap; transition: border-color .18s, color .18s, background .18s; }
+.btn-goto:hover { border-color: var(--ac); color: var(--ac); background: var(--glow); }
