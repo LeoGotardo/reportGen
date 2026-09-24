@@ -127,6 +127,18 @@ export function ExportPanel({ config, activeTemplate }) {
         ))}
       </div>
 
+      <div style={{ marginTop: 28, textAlign: "center", fontSize: 12, color: "var(--tx3)" }}>
+        {t.madeWith}{" "}
+        <a
+          href="https://leogotardo.vercel.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "var(--ac)", fontWeight: 700, textDecoration: "none" }}
+        >
+          Leo Gotardo
+        </a>
+      </div>
+
     </div>
   );
 }

@@ -23,6 +23,7 @@ const pt = {
 
   // Clear report
   clearReport: "Limpar relatório",
+  madeWith: "feito com ❤️ por",
   clearConfirmTitle: "Limpar relatório atual?",
   clearConfirmMsg: "Todos os dados do template atual serão apagados. Esta ação não pode ser desfeita.",
   clearConfirmYes: "Sim, limpar",
@@ -329,6 +330,7 @@ const en = {
 
   // Clear report
   clearReport: "Clear report",
+  madeWith: "made with ❤️ by",
   clearConfirmTitle: "Clear current report?",
   clearConfirmMsg: "All data in the current template will be erased. This action cannot be undone.",
   clearConfirmYes: "Yes, clear",
