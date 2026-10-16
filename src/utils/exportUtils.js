@@ -138,6 +138,40 @@ ${config.resumoExecutivo?.some(v => v.trim()) ? `
   ${config.resumoExecutivo.filter(v => v.trim()).map(v => `<p style="font-size:13px;color:#333;margin-bottom:12px">${esc(v)}</p>`).join("")}
 </div>` : ""}
 
+${(config.suiteTestes || []).length ? (() => {
+  const label = k => (k === "UNTESTED" ? t.doc_suite_untested : k);
+  const counts = { PASS: 0, FAIL: 0, UNTESTED: 0 };
+  config.suiteTestes.forEach(s => counts[suiteRes(s.resultado)]++);
+  const td = "padding:8px 12px;border-bottom:1px solid #eee;vertical-align:top";
+  return `
+<div style="padding:38px 48px 0">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+    <div style="width:5px;height:24px;background:${primary};border-radius:3px"></div>
+    <div style="font-size:18px;font-weight:800;color:${primary}">${t.doc_bugs_suiteSection}</div>
+  </div>
+  <div style="display:flex;gap:16px;font-size:11px;font-weight:700;margin-bottom:14px;color:#888">
+    <span>${t.doc_suite_total}: ${config.suiteTestes.length}</span>
+    ${["PASS", "FAIL", "UNTESTED"].map(k => `<span style="color:${SUITE_COLORS[k]}">${counts[k]} ${label(k)}</span>`).join("")}
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr style="background:${primary}">
+      ${[t.doc_suite_thId, t.doc_suite_thTest, t.doc_suite_thDesc, t.doc_suite_thResult].map(h => `<th style="color:#fff;padding:9px 12px;text-align:left;font-weight:700">${h}</th>`).join("")}
+    </tr></thead>
+    <tbody>
+      ${config.suiteTestes.map((s, i) => {
+        const res = suiteRes(s.resultado);
+        return `<tr style="background:${i % 2 ? "#f8f8fb" : "#fff"};page-break-inside:avoid">
+        <td style="${td};color:#555;font-family:monospace;white-space:nowrap">${esc(s.codigo) || "—"}</td>
+        <td style="${td};color:#1a1a2e;font-weight:600;white-space:pre-wrap">${esc(s.titulo) || "—"}</td>
+        <td style="${td};color:#333;white-space:pre-wrap">${esc(s.descricao) || "—"}</td>
+        <td style="${td}"><span style="background:${SUITE_COLORS[res]}1f;color:${SUITE_COLORS[res]};padding:2px 9px;border-radius:12px;font-size:10px;font-weight:800;white-space:nowrap">${label(res)}</span></td>
+      </tr>`;
+      }).join("")}
+    </tbody>
+  </table>
+</div>`;
+})() : ""}
+
 ${buildCustomTablesHtml(config.tabelas, primary, t.doc_common_tables)}
 
 ${config.problemas.length ? `
@@ -186,40 +220,6 @@ ${(config.testes || []).length ? `
     ${ts.codigo?.some(v => v.trim()) ? ts.codigo.filter(v => v.trim()).map(v => `<pre style="background:${codeBg};color:#86efac;padding:12px 16px;border-radius:8px;font-size:11px;font-family:monospace;line-height:1.6;overflow-x:auto;margin-bottom:8px;white-space:pre-wrap;word-break:break-all;border-left:3px solid #22c55e">${esc(v)}</pre>`).join("") : ""}
   </div>`).join("")}
 </div>` : ""}
-
-${(config.suiteTestes || []).length ? (() => {
-  const label = k => (k === "UNTESTED" ? t.doc_suite_untested : k);
-  const counts = { PASS: 0, FAIL: 0, UNTESTED: 0 };
-  config.suiteTestes.forEach(s => counts[suiteRes(s.resultado)]++);
-  const td = "padding:8px 12px;border-bottom:1px solid #eee;vertical-align:top";
-  return `
-<div style="padding:38px 48px 0">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-    <div style="width:5px;height:24px;background:${primary};border-radius:3px"></div>
-    <div style="font-size:18px;font-weight:800;color:${primary}">${t.doc_bugs_suiteSection}</div>
-  </div>
-  <div style="display:flex;gap:16px;font-size:11px;font-weight:700;margin-bottom:14px;color:#888">
-    <span>${t.doc_suite_total}: ${config.suiteTestes.length}</span>
-    ${["PASS", "FAIL", "UNTESTED"].map(k => `<span style="color:${SUITE_COLORS[k]}">${counts[k]} ${label(k)}</span>`).join("")}
-  </div>
-  <table style="width:100%;border-collapse:collapse;font-size:12px">
-    <thead><tr style="background:${primary}">
-      ${[t.doc_suite_thId, t.doc_suite_thTest, t.doc_suite_thDesc, t.doc_suite_thResult].map(h => `<th style="color:#fff;padding:9px 12px;text-align:left;font-weight:700">${h}</th>`).join("")}
-    </tr></thead>
-    <tbody>
-      ${config.suiteTestes.map((s, i) => {
-        const res = suiteRes(s.resultado);
-        return `<tr style="background:${i % 2 ? "#f8f8fb" : "#fff"};page-break-inside:avoid">
-        <td style="${td};color:#555;font-family:monospace;white-space:nowrap">${esc(s.codigo) || "—"}</td>
-        <td style="${td};color:#1a1a2e;font-weight:600;white-space:pre-wrap">${esc(s.titulo) || "—"}</td>
-        <td style="${td};color:#333;white-space:pre-wrap">${esc(s.descricao) || "—"}</td>
-        <td style="${td}"><span style="background:${SUITE_COLORS[res]}1f;color:${SUITE_COLORS[res]};padding:2px 9px;border-radius:12px;font-size:10px;font-weight:800;white-space:nowrap">${label(res)}</span></td>
-      </tr>`;
-      }).join("")}
-    </tbody>
-  </table>
-</div>`;
-})() : ""}
 
 ${config.conclusao?.some(v => v.trim()) ? `
 <div style="padding:38px 48px 56px">

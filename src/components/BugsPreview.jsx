@@ -39,6 +39,47 @@ export function BugsPreview({ config }) {
         </div>
       )}
 
+      {(config.suiteTestes || []).length > 0 && (() => {
+        const counts = suiteCounts(config.suiteTestes);
+        const label = k => (k === "UNTESTED" ? t.doc_suite_untested : k);
+        return (
+          <div data-anchor="sec:suiteTestes" style={{ padding: "38px 48px 0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+              <div style={{ width: 5, height: 24, background: primary, borderRadius: 3 }} />
+              <div style={{ fontSize: 18, fontWeight: 800, color: primary }}>{t.doc_bugs_suiteSection}</div>
+            </div>
+            <div style={{ display: "flex", gap: 16, fontSize: 11, fontWeight: 700, marginBottom: 14, color: "#888" }}>
+              <span>{t.doc_suite_total}: {config.suiteTestes.length}</span>
+              {["PASS", "FAIL", "UNTESTED"].map(k => <span key={k} style={{ color: SUITE_RESULT_COLORS[k] }}>{counts[k]} {label(k)}</span>)}
+            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: primary }}>
+                  {[t.doc_suite_thId, t.doc_suite_thTest, t.doc_suite_thDesc, t.doc_suite_thResult].map(h => (
+                    <th key={h} style={{ color: "#fff", padding: "9px 12px", textAlign: "left", fontWeight: 700 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {config.suiteTestes.map((s, i) => {
+                  const res = normalizeResult(s.resultado);
+                  return (
+                    <tr key={s.id ?? i} style={{ background: i % 2 ? "#f8f8fb" : "#fff" }}>
+                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #eee", color: "#555", fontFamily: "monospace", whiteSpace: "nowrap", verticalAlign: "top" }}>{s.codigo || "—"}</td>
+                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #eee", color: "#1a1a2e", fontWeight: 600, whiteSpace: "pre-wrap", verticalAlign: "top" }}>{s.titulo || "—"}</td>
+                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #eee", color: "#333", whiteSpace: "pre-wrap", verticalAlign: "top" }}>{s.descricao || "—"}</td>
+                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #eee", verticalAlign: "top" }}>
+                        <span style={{ background: `${SUITE_RESULT_COLORS[res]}1f`, color: SUITE_RESULT_COLORS[res], padding: "2px 9px", borderRadius: 12, fontSize: 10, fontWeight: 800, letterSpacing: .4, whiteSpace: "nowrap" }}>{label(res)}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
+
       <CustomTables tabelas={config.tabelas} primary={primary} label={t.doc_common_tables} />
 
       {config.problemas.length > 0 && (
@@ -128,47 +169,6 @@ export function BugsPreview({ config }) {
           ))}
         </div>
       )}
-
-      {(config.suiteTestes || []).length > 0 && (() => {
-        const counts = suiteCounts(config.suiteTestes);
-        const label = k => (k === "UNTESTED" ? t.doc_suite_untested : k);
-        return (
-          <div data-anchor="sec:suiteTestes" style={{ padding: "38px 48px 0" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-              <div style={{ width: 5, height: 24, background: primary, borderRadius: 3 }} />
-              <div style={{ fontSize: 18, fontWeight: 800, color: primary }}>{t.doc_bugs_suiteSection}</div>
-            </div>
-            <div style={{ display: "flex", gap: 16, fontSize: 11, fontWeight: 700, marginBottom: 14, color: "#888" }}>
-              <span>{t.doc_suite_total}: {config.suiteTestes.length}</span>
-              {["PASS", "FAIL", "UNTESTED"].map(k => <span key={k} style={{ color: SUITE_RESULT_COLORS[k] }}>{counts[k]} {label(k)}</span>)}
-            </div>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-              <thead>
-                <tr style={{ background: primary }}>
-                  {[t.doc_suite_thId, t.doc_suite_thTest, t.doc_suite_thDesc, t.doc_suite_thResult].map(h => (
-                    <th key={h} style={{ color: "#fff", padding: "9px 12px", textAlign: "left", fontWeight: 700 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {config.suiteTestes.map((s, i) => {
-                  const res = normalizeResult(s.resultado);
-                  return (
-                    <tr key={s.id ?? i} style={{ background: i % 2 ? "#f8f8fb" : "#fff" }}>
-                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #eee", color: "#555", fontFamily: "monospace", whiteSpace: "nowrap", verticalAlign: "top" }}>{s.codigo || "—"}</td>
-                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #eee", color: "#1a1a2e", fontWeight: 600, whiteSpace: "pre-wrap", verticalAlign: "top" }}>{s.titulo || "—"}</td>
-                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #eee", color: "#333", whiteSpace: "pre-wrap", verticalAlign: "top" }}>{s.descricao || "—"}</td>
-                      <td style={{ padding: "8px 12px", borderBottom: "1px solid #eee", verticalAlign: "top" }}>
-                        <span style={{ background: `${SUITE_RESULT_COLORS[res]}1f`, color: SUITE_RESULT_COLORS[res], padding: "2px 9px", borderRadius: 12, fontSize: 10, fontWeight: 800, letterSpacing: .4, whiteSpace: "nowrap" }}>{label(res)}</span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        );
-      })()}
 
       {config.conclusao.some(v => v.trim()) && (
         <div data-anchor="sec:conclusao" style={{ padding: "38px 48px 56px" }}>

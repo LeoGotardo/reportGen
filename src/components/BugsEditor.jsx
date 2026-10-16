@@ -63,6 +63,10 @@ export function BugsEditor({ config, setConfig }) {
         </div>
       </div>
       <div style={{ marginBottom: 48 }}>
+        <SectionHeader icon={<Bi name="list-check" size={22} />} title={t.suiteSection} subtitle={t.suiteSectionDesc} badge={(config.suiteTestes || []).length} anchor="sec:suiteTestes" />
+        <TestSuiteSection rows={config.suiteTestes || []} onChange={v => upd("suiteTestes", v)} />
+      </div>
+      <div style={{ marginBottom: 48 }}>
         <SectionHeader icon={<Bi name="table" size={22} />} title={t.tablesSection} subtitle={t.tablesSectionDesc} badge={(config.tabelas || []).length} anchor="sec:tabelas" />
         {(config.tabelas || []).length === 0 ? (
           <div className="card" style={{ padding: "40px 36px", textAlign: "center", border: "2px dashed var(--b2)" }}>
@@ -129,10 +133,6 @@ export function BugsEditor({ config, setConfig }) {
             <button onClick={addTest} className="btn-primary full" style={{ marginTop: 14, background: "linear-gradient(135deg,#22c55e,#16a34a)" }}><Bi name="plus-circle-fill" size={16} /> {t.addTest}</button>
           </>
         )}
-      </div>
-      <div style={{ marginBottom: 48 }}>
-        <SectionHeader icon={<Bi name="list-check" size={22} />} title={t.suiteSection} subtitle={t.suiteSectionDesc} badge={(config.suiteTestes || []).length} anchor="sec:suiteTestes" />
-        <TestSuiteSection rows={config.suiteTestes || []} onChange={v => upd("suiteTestes", v)} />
       </div>
       <div>
         <SectionHeader icon={<Bi name="check2-circle" size={22} />} title={t.bugConclusion} anchor="sec:conclusao" />
