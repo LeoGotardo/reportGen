@@ -4,17 +4,26 @@ import { GoToPreview } from "./UI";
 import { useLang } from "../contexts/lang";
 import { gridIsSingleCell, parseTsv, pasteGridIntoTable, readClipboardGrid, trimEmptyRows } from "../utils/parseClipboardTable";
 
-/** Textarea que cresce com o conteúdo — Enter quebra linha, como no resumo executivo. */
+/**
+ * Textarea que cresce com o conteúdo — Enter quebra linha, como no resumo executivo.
+ * A altura do conteúdo vira min-height; o CSS (height: 100% num td com height: 1px)
+ * estica a célula até a altura da linha quando uma vizinha tem mais linhas.
+ */
 function fitHeight(el) {
+  // Limpa antes de medir: com o min-height antigo a célula nunca encolheria.
+  el.style.minHeight = "";
   el.style.height = "auto";
-  el.style.height = `${el.scrollHeight}px`;
+  const h = el.scrollHeight;
+  el.style.height = "";
+  el.style.minHeight = `${h}px`;
 }
 
-export function CellTextarea({ value, onChange, onPaste, placeholder }) {
+export function CellTextarea({ value, onChange, onPaste, placeholder, singleLine = false, className = "" }) {
   const ref = useRef(null);
   useLayoutEffect(() => { if (ref.current) fitHeight(ref.current); }, [value]);
 
   // Largura muda (nova coluna, resize do painel, rotação) → texto re-quebra, refaz a altura.
+  // Só largura: a altura muda sempre que uma vizinha cresce (height: 100%) e refazer aí entraria em loop.
   useEffect(() => {
     const el = ref.current;
     if (!el || typeof ResizeObserver === "undefined") return;
@@ -30,8 +39,11 @@ export function CellTextarea({ value, onChange, onPaste, placeholder }) {
     return () => { ro.disconnect(); cancelAnimationFrame(frame); };
   }, []);
   return (
-    <textarea ref={ref} rows={1} className="tbl-cell" value={value} placeholder={placeholder}
-      onChange={e => onChange(e.target.value)} onPaste={onPaste} />
+    <textarea ref={ref} rows={1} className={`tbl-cell ${className}`.trim()} value={value} placeholder={placeholder}
+      spellCheck={singleLine ? false : undefined}
+      onChange={e => onChange(singleLine ? e.target.value.replace(/\s*\r?\n\s*/g, " ") : e.target.value)}
+      onKeyDown={singleLine ? e => { if (e.key === "Enter") e.preventDefault(); } : undefined}
+      onPaste={onPaste} />
   );
 }
 
@@ -210,7 +222,7 @@ export function TableCard({ table, idx, onChange, onRemove, dragHandleProps }) {
                   {table.linhas.map((row, ri) => (
                     <tr key={ri}>
                       {row.map((cell, ci) => (
-                        <td key={ci} style={{ border: "1px solid var(--b2)", padding: 0, verticalAlign: "top" }}>
+                        <td key={ci} className="cell-fill" style={{ border: "1px solid var(--b2)", padding: 0, verticalAlign: "top" }}>
                           <CellTextarea
                             value={cell}
                             onChange={v => setCell(ri, ci, v)}

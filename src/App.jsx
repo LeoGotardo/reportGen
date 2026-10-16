@@ -31,6 +31,7 @@ export default function App() {
   const {
     reports, active, activeTemplate, activeReport, config, setConfig,
     createReport, duplicateReport, deleteReport, openReport, selectTemplate, renameReport,
+    folders, membership, createFolder, renameFolder, deleteFolder, moveReport,
     saveError, dismissSaveError,
   } = useReports();
   const [rightTab,  setRightTab]  = useState("preview");
@@ -116,11 +117,17 @@ export default function App() {
           reports={reports}
           active={active}
           activeTemplate={activeTemplate}
+          folders={folders}
+          membership={membership}
           onOpen={openReport}
-          onCreate={template => { createReport(template); setRightTab("preview"); }}
+          onCreate={(template, folderId) => { createReport(template, undefined, folderId); setRightTab("preview"); }}
           onDuplicate={id => duplicateReport(id, t.reportCopySuffix)}
           onDelete={deleteReport}
           onRename={renameReport}
+          onCreateFolder={createFolder}
+          onRenameFolder={renameFolder}
+          onDeleteFolder={deleteFolder}
+          onMove={moveReport}
           onClose={() => setShowReports(false)}
         />
       )}

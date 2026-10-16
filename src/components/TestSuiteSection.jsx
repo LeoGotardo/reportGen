@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Bi } from "./Bi";
 import { CellTextarea } from "./TableComponents";
+import { Dropdown } from "./Dropdown";
 import { useLang } from "../contexts/lang";
 import { emptySuiteTest, SUITE_RESULTS } from "../constants/initialConfigs";
 import { nextCodigo, normalizeResult, parseSuiteGrid, serializeSuite, suiteCounts } from "../utils/testSuite";
@@ -23,6 +24,7 @@ export function TestSuiteSection({ rows, onChange }) {
 
   const resultLabel = v => ({ PASS: "PASS", FAIL: "FAIL", UNTESTED: t.suiteUntested })[normalizeResult(v)];
   const counts = suiteCounts(rows);
+  const resultOptions = SUITE_RESULTS.map(k => ({ value: k, label: resultLabel(k), color: RESULT_UI[k].color, bg: RESULT_UI[k].bg }));
 
   // Edição manual invalida o "Desfazer" da última colagem.
   const apply = next => { setNotice(null); onChange(next); };
@@ -137,16 +139,12 @@ export function TestSuiteSection({ rows, onChange }) {
                   const res = normalizeResult(r.resultado);
                   return (
                     <tr key={r.id}>
-                      <td>
-                        <input className="tbl-cell suite-id" value={r.codigo} onChange={e => upd(r.id, "codigo", e.target.value)} placeholder="TC-001" spellCheck={false} />
-                      </td>
+                      <td><CellTextarea singleLine className="suite-id" value={r.codigo} onChange={v => upd(r.id, "codigo", v)} placeholder="TC-001" /></td>
                       <td><CellTextarea value={r.titulo} onChange={v => upd(r.id, "titulo", v)} placeholder={t.suiteTitlePh} /></td>
                       <td><CellTextarea value={r.descricao} onChange={v => upd(r.id, "descricao", v)} placeholder={t.suiteDescPh} /></td>
                       <td>
-                        <select className="suite-result" value={res} onChange={e => upd(r.id, "resultado", e.target.value)}
-                          style={{ color: RESULT_UI[res].color, background: RESULT_UI[res].bg }} aria-label={t.suiteColResult}>
-                          {SUITE_RESULTS.map(k => <option key={k} value={k}>{resultLabel(k)}</option>)}
-                        </select>
+                        <Dropdown className="suite-result" value={res} onChange={v => upd(r.id, "resultado", v)}
+                          ariaLabel={`${t.suiteColResult} — ${r.codigo || r.titulo}`} options={resultOptions} />
                       </td>
                       <td style={{ textAlign: "center" }}>
                         <button onClick={() => removeRow(r.id)} className="suite-remove" aria-label={t.removeItem || "Remover"}>

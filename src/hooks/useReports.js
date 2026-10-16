@@ -10,6 +10,9 @@ import { isoFromDate, toIsoDate, todayIso } from "../utils/date";
 export const TEMPLATE_IDS = ["bugs", "study", "changelog"];
 
 const INDEX_KEY = "rg_reports_index";
+// Pastas numa chave própria: uma aba antiga que regrava o índice não apaga pastas criadas em outra aba.
+//   rg_folders → { folders: [{ id, name, createdAt }], membership: { [reportId]: folderId } }
+const FOLDERS_KEY = "rg_folders";
 const reportKey = id => `rg_report_${id}`;
 // Formato antigo (um relatório por template), migrado no primeiro carregamento.
 const LEGACY_KEYS = { bugs: "rg_bugsConfig", study: "rg_studyConfig", changelog: "rg_changelogConfig" };
@@ -112,8 +115,35 @@ function loadStore() {
   }
   if (!TEMPLATE_IDS.includes(activeTemplate)) activeTemplate = "bugs";
 
-  return { store: { reports, active, activeTemplate }, saved, migrated, indexRaw: localStorage.getItem(INDEX_KEY) };
+  // Pastas: descarta entradas inválidas e vínculos com relatório/pasta que não existem mais.
+  const rawFolders = readJson(FOLDERS_KEY);
+  const folders = (Array.isArray(rawFolders?.folders) ? rawFolders.folders : [])
+    .filter(f => f && typeof f.id === "string" && typeof f.name === "string")
+    .map(({ id, name, createdAt }) => ({ id, name, createdAt: createdAt || 0 }));
+  const folderIds = new Set(folders.map(f => f.id));
+  const reportIds = new Set(reports.map(r => r.id));
+  const membership = {};
+  for (const [rid, fid] of Object.entries(rawFolders?.membership || {})) {
+    if (reportIds.has(rid) && folderIds.has(fid)) membership[rid] = fid;
+  }
+
+  return {
+    store: { reports, active, activeTemplate, folders, membership },
+    saved,
+    migrated,
+    indexRaw: localStorage.getItem(INDEX_KEY),
+    foldersRaw: localStorage.getItem(FOLDERS_KEY),
+  };
 }
+
+const serializeFolders = s => JSON.stringify({ version: 1, folders: s.folders, membership: s.membership });
+
+const withoutKey = (obj, key) => {
+  if (!(key in obj)) return obj;
+  const next = { ...obj };
+  delete next[key];
+  return next;
+};
 
 const serializeIndex = s => JSON.stringify({
   version: 1,
@@ -131,6 +161,7 @@ export function useReports() {
   const savedRef = useRef(initial.saved);
   const migratedRef = useRef(initial.migrated);
   const indexRef = useRef(initial.indexRaw); // último índice gravado/lido — evita regravar sem mudança
+  const foldersRef = useRef(initial.foldersRaw);
   const timerRef = useRef(null);
 
   const saveNow = useCallback(() => {
@@ -154,6 +185,11 @@ export function useReports() {
       if (index !== indexRef.current) {
         localStorage.setItem(INDEX_KEY, index);
         indexRef.current = index;
+      }
+      const folders = serializeFolders(s);
+      if (folders !== foldersRef.current) {
+        localStorage.setItem(FOLDERS_KEY, folders);
+        foldersRef.current = folders;
       }
       // Só apaga o formato antigo depois que o novo foi gravado com sucesso.
       if (migratedRef.current) {
@@ -202,9 +238,15 @@ export function useReports() {
   // — ex. FileReader do logo — iniciada antes de trocar de relatório cai no relatório certo.
   const setConfig = useMemo(() => updater => updateReportConfig(activeId, updater), [activeId, updateReportConfig]);
 
-  const createReport = useCallback((template, config) => {
+  const createReport = useCallback((template, config, folderId = null) => {
     const r = makeReport(template, config);
-    setStore(s => ({ ...s, reports: [...s.reports, r], active: { ...s.active, [template]: r.id }, activeTemplate: template }));
+    setStore(s => ({
+      ...s,
+      reports: [...s.reports, r],
+      active: { ...s.active, [template]: r.id },
+      activeTemplate: template,
+      membership: folderId && s.folders.some(f => f.id === folderId) ? { ...s.membership, [r.id]: folderId } : s.membership,
+    }));
     return r.id;
   }, []);
 
@@ -218,7 +260,14 @@ export function useReports() {
       if (config.titulo?.trim()) config.titulo = `${config.titulo} ${titleSuffix}`;
       config.data = todayIso(); // cópia é um relatório novo: data de hoje
       const copy = { id: copyId, template: src.template, createdAt: now, updatedAt: now, config };
-      return { ...s, reports: [...s.reports, copy], active: { ...s.active, [src.template]: copyId }, activeTemplate: src.template };
+      const folderId = s.membership[id]; // cópia fica na mesma pasta
+      return {
+        ...s,
+        reports: [...s.reports, copy],
+        active: { ...s.active, [src.template]: copyId },
+        activeTemplate: src.template,
+        membership: folderId ? { ...s.membership, [copyId]: folderId } : s.membership,
+      };
     });
   }, []);
 
@@ -237,7 +286,7 @@ export function useReports() {
         own = [blank];
       }
       const active = s.active[tmpl] === id ? { ...s.active, [tmpl]: mostRecent(own).id } : s.active;
-      return { ...s, reports, active };
+      return { ...s, reports, active, membership: withoutKey(s.membership, id) };
     });
   }, []);
 
@@ -253,6 +302,31 @@ export function useReports() {
 
   const renameReport = useCallback((id, titulo) => updateReportConfig(id, c => (c.titulo === titulo ? c : { ...c, titulo })), [updateReportConfig]);
 
+  // Pastas: um nível só, compartilhadas entre templates. Mover não altera updatedAt.
+  const createFolder = useCallback(name => {
+    const folder = { id: crypto.randomUUID(), name, createdAt: Date.now() };
+    setStore(s => ({ ...s, folders: [...s.folders, folder] }));
+    return folder.id;
+  }, []);
+
+  const renameFolder = useCallback((id, name) => setStore(s => ({
+    ...s,
+    folders: s.folders.map(f => (f.id === id && f.name !== name ? { ...f, name } : f)),
+  })), []);
+
+  // Excluir a pasta nunca exclui relatórios: eles voltam para "Sem pasta".
+  const deleteFolder = useCallback(id => setStore(s => ({
+    ...s,
+    folders: s.folders.filter(f => f.id !== id),
+    membership: Object.fromEntries(Object.entries(s.membership).filter(([, fid]) => fid !== id)),
+  })), []);
+
+  const moveReport = useCallback((reportId, folderId) => setStore(s => {
+    if (!folderId) return { ...s, membership: withoutKey(s.membership, reportId) };
+    if (!s.folders.some(f => f.id === folderId) || s.membership[reportId] === folderId) return s;
+    return { ...s, membership: { ...s.membership, [reportId]: folderId } };
+  }), []);
+
   return {
     reports: store.reports,
     active: store.active,
@@ -266,6 +340,12 @@ export function useReports() {
     openReport,
     selectTemplate,
     renameReport,
+    folders: store.folders,
+    membership: store.membership,
+    createFolder,
+    renameFolder,
+    deleteFolder,
+    moveReport,
     saveError,
     dismissSaveError: () => setSaveError(null),
   };
