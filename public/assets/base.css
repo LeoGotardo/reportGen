@@ -4,5 +4,7 @@ body { font-family: var(--fn); background: var(--bg); color: var(--tx); }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--s2); border-radius: 99px; }
+/* Firefox ignora ::-webkit-scrollbar. Só nele: no Chrome as propriedades padrão desligariam o estilo acima. */
+@supports (-moz-appearance: none) { * { scrollbar-width: thin; scrollbar-color: var(--s2) transparent; } }
 button { cursor: pointer; font-family: var(--fn); transition: all .15s; border: none; }
 button:active { transform: scale(.97); }

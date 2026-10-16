@@ -5,17 +5,27 @@ import { useLang } from "../contexts/lang";
 import { gridIsSingleCell, parseTsv, pasteGridIntoTable, readClipboardGrid, trimEmptyRows } from "../utils/parseClipboardTable";
 
 /**
+ * Iguala a altura de todas as células editáveis (.row-fill) da linha à da mais alta.
+ * Em JS porque o truque CSS (td height: 1px + height: 100%) não funciona no Firefox.
+ */
+function syncRowHeight(tr) {
+  if (!tr) return;
+  const cells = [...tr.querySelectorAll(".row-fill")];
+  const max = Math.max(0, ...cells.map(c => parseFloat(c.style.minHeight) || 0));
+  if (max) cells.forEach(c => { c.style.height = `${max}px`; });
+}
+
+/**
  * Textarea que cresce com o conteúdo — Enter quebra linha, como no resumo executivo.
- * A altura do conteúdo vira min-height; o CSS (height: 100% num td com height: 1px)
- * estica a célula até a altura da linha quando uma vizinha tem mais linhas.
+ * A altura do próprio conteúdo vira min-height; a linha toda assume a maior (syncRowHeight).
  */
 function fitHeight(el) {
-  // Limpa antes de medir: com o min-height antigo a célula nunca encolheria.
+  // Limpa antes de medir: com min-height/height antigos a célula nunca encolheria.
   el.style.minHeight = "";
   el.style.height = "auto";
-  const h = el.scrollHeight;
+  el.style.minHeight = `${el.scrollHeight}px`;
   el.style.height = "";
-  el.style.minHeight = `${h}px`;
+  syncRowHeight(el.closest("tr"));
 }
 
 export function CellTextarea({ value, onChange, onPaste, placeholder, singleLine = false, className = "" }) {
@@ -23,7 +33,7 @@ export function CellTextarea({ value, onChange, onPaste, placeholder, singleLine
   useLayoutEffect(() => { if (ref.current) fitHeight(ref.current); }, [value]);
 
   // Largura muda (nova coluna, resize do painel, rotação) → texto re-quebra, refaz a altura.
-  // Só largura: a altura muda sempre que uma vizinha cresce (height: 100%) e refazer aí entraria em loop.
+  // Só largura: a altura muda sempre que a linha é sincronizada e refazer aí entraria em loop.
   useEffect(() => {
     const el = ref.current;
     if (!el || typeof ResizeObserver === "undefined") return;
@@ -39,7 +49,7 @@ export function CellTextarea({ value, onChange, onPaste, placeholder, singleLine
     return () => { ro.disconnect(); cancelAnimationFrame(frame); };
   }, []);
   return (
-    <textarea ref={ref} rows={1} className={`tbl-cell ${className}`.trim()} value={value} placeholder={placeholder}
+    <textarea ref={ref} rows={1} className={`tbl-cell row-fill ${className}`.trim()} value={value} placeholder={placeholder}
       spellCheck={singleLine ? false : undefined}
       onChange={e => onChange(singleLine ? e.target.value.replace(/\s*\r?\n\s*/g, " ") : e.target.value)}
       onKeyDown={singleLine ? e => { if (e.key === "Enter") e.preventDefault(); } : undefined}
@@ -222,7 +232,7 @@ export function TableCard({ table, idx, onChange, onRemove, dragHandleProps }) {
                   {table.linhas.map((row, ri) => (
                     <tr key={ri}>
                       {row.map((cell, ci) => (
-                        <td key={ci} className="cell-fill" style={{ border: "1px solid var(--b2)", padding: 0, verticalAlign: "top" }}>
+                        <td key={ci} style={{ border: "1px solid var(--b2)", padding: 0, verticalAlign: "top" }}>
                           <CellTextarea
                             value={cell}
                             onChange={v => setCell(ri, ci, v)}

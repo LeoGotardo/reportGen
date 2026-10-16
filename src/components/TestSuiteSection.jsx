@@ -143,7 +143,7 @@ export function TestSuiteSection({ rows, onChange }) {
                       <td><CellTextarea value={r.titulo} onChange={v => upd(r.id, "titulo", v)} placeholder={t.suiteTitlePh} /></td>
                       <td><CellTextarea value={r.descricao} onChange={v => upd(r.id, "descricao", v)} placeholder={t.suiteDescPh} /></td>
                       <td>
-                        <Dropdown className="suite-result" value={res} onChange={v => upd(r.id, "resultado", v)}
+                        <Dropdown className="suite-result row-fill" value={res} onChange={v => upd(r.id, "resultado", v)}
                           ariaLabel={`${t.suiteColResult} — ${r.codigo || r.titulo}`} options={resultOptions} />
                       </td>
                       <td style={{ textAlign: "center" }}>

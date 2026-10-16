@@ -18,9 +18,8 @@ textarea.inp.code { min-height: 240px; font-family: var(--mono); font-size: 12px
 }
 
 /* Tabelas: células multilinha (crescem com o conteúdo) + área de colagem */
-/* td com height: 1px faz o height: 100% do textarea valer a altura da linha inteira */
-.cell-fill, .suite-table td { height: 1px; }
-.tbl-cell { display: block; width: 100%; height: 100%; min-width: 140px; min-height: 37px; padding: 8px 10px; font-size: 13px; line-height: 1.5; color: var(--tx); background: transparent; border: none; border-radius: 0; resize: vertical; overflow-y: auto; }
+/* Altura: cada célula mede o conteúdo e a linha assume a maior (syncRowHeight em TableComponents.jsx) */
+.tbl-cell { display: block; width: 100%; min-width: 140px; min-height: 37px; padding: 8px 10px; font-size: 13px; line-height: 1.5; color: var(--tx); background: transparent; border: none; border-radius: 0; resize: none; overflow-y: auto; }
 .tbl-cell:focus { border: none; background: var(--bg2); box-shadow: inset 0 0 0 2px var(--ac); }
 .paste-zone { position: relative; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border: 1.5px dashed var(--b2); border-radius: var(--r-sm); background: var(--bg2); cursor: text; transition: border-color .18s, background .18s; }
 .paste-zone:hover, .paste-zone:focus-within { border-color: var(--ac); }
@@ -51,6 +50,7 @@ textarea.inp.code { min-height: 240px; font-family: var(--mono); font-size: 12px
 .suite-table th { padding: 8px 10px; background: var(--s2); color: var(--tx2); font-weight: 700; font-size: 11px; text-align: left; border: 1px solid var(--b2); letter-spacing: .5px; text-transform: uppercase; }
 .suite-table td { border: 1px solid var(--b2); padding: 0; vertical-align: top; }
 .suite-id { min-width: 90px !important; font-family: var(--mono); font-size: 12px !important; resize: none; }
-.suite-result { height: 100%; min-width: 132px; align-items: flex-start; }
+/* .dd-btn.suite-result: components.css carrega depois e o .dd-btn sozinho centralizaria */
+.dd-btn.suite-result { min-width: 132px; min-height: 37px; align-items: flex-start; }
 .suite-remove { background: none; border: none; color: var(--tx3); cursor: pointer; padding: 10px 8px; }
 .suite-remove:hover { color: #f87171; }
