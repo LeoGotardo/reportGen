@@ -19,6 +19,7 @@ const LIMITS = {
   maxTopicos:     60,
   maxMudancas:    100,
   maxTestes:      60,
+  maxSuiteTestes: 200,
   maxTabelas:     15,
   maxColunas:     10,
   maxLinhas:      100,
@@ -94,6 +95,17 @@ function validateBugs(data) {
   for (const t of data.tabelas) {
     if ((err = validateArray(t.cabecalhos, "tabela.cabecalhos", LIMITS.maxColunas))) return err;
     if ((err = validateArray(t.linhas,     "tabela.linhas",     LIMITS.maxLinhas)))  return err;
+  }
+
+  // Opcional: chamadas antigas da API não mandam a suíte.
+  if (data.suiteTestes !== undefined) {
+    if ((err = validateArray(data.suiteTestes, "suiteTestes", LIMITS.maxSuiteTestes))) return err;
+    for (const s of data.suiteTestes) {
+      if (!s || typeof s !== "object") return "suiteTestes items must be objects";
+      for (const f of ["codigo", "titulo", "descricao"]) {
+        if ((err = validateText(s[f], `suiteTestes.${f}`))) return err;
+      }
+    }
   }
   return null;
 }

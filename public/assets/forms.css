@@ -16,3 +16,41 @@ textarea.inp.code { min-height: 240px; font-family: var(--mono); font-size: 12px
   textarea.inp.lg { min-height: 120px; }
   textarea.inp.code { min-height: 180px; }
 }
+
+/* Tabelas: células multilinha (crescem com o conteúdo) + área de colagem */
+.tbl-cell { display: block; width: 100%; min-width: 140px; min-height: 37px; padding: 8px 10px; font-size: 13px; line-height: 1.5; color: var(--tx); background: transparent; border: none; border-radius: 0; resize: vertical; overflow-y: auto; }
+.tbl-cell:focus { border: none; background: var(--bg2); box-shadow: inset 0 0 0 2px var(--ac); }
+.paste-zone { position: relative; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border: 1.5px dashed var(--b2); border-radius: var(--r-sm); background: var(--bg2); cursor: text; transition: border-color .18s, background .18s; }
+.paste-zone:hover, .paste-zone:focus-within { border-color: var(--ac); }
+.paste-zone:focus-within { background: var(--glow); }
+.paste-inp { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; padding: 0; opacity: 0; border: none; resize: none; cursor: text; }
+.paste-hint { flex: 1; min-width: 180px; font-size: 13px; line-height: 1.45; color: var(--tx3); }
+.paste-opt { position: relative; z-index: 1; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--tx3); cursor: pointer; white-space: nowrap; }
+.paste-notice { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 8px 12px; font-size: 12.5px; color: var(--tx2); background: var(--glow); border: 1px solid var(--b2); border-radius: var(--r-sm); }
+.paste-notice.warn { color: #f59e0b; background: rgba(245,158,11,.1); border-color: rgba(245,158,11,.35); }
+
+/* Campo de data dd/mm/aaaa + calendário nativo escondido */
+.date-field { position: relative; }
+.date-field .inp { padding-right: 46px !important; font-variant-numeric: tabular-nums; }
+.date-pick-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 8px; background: transparent; color: var(--tx3); cursor: pointer; }
+.date-pick-btn:hover, .date-pick-btn:focus-visible { color: var(--ac); background: var(--glow); }
+.date-picker-native { position: absolute; right: 0; bottom: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+.inp-invalid, .inp-invalid:focus { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.15); }
+.field-error { margin-top: 5px; font-size: 11.5px; color: #f87171; }
+
+/* Suíte de testes */
+.suite-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.suite-counts { display: flex; gap: 6px; flex-wrap: wrap; }
+.suite-chip { font-size: 11px; font-weight: 800; letter-spacing: .4px; padding: 3px 10px; border-radius: 20px; font-family: var(--mono); }
+.suite-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.suite-btn { font-size: 12px; padding: 6px 12px; gap: 6px; }
+.suite-btn:disabled { opacity: .45; cursor: not-allowed; }
+.suite-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.suite-table th { padding: 8px 10px; background: var(--s2); color: var(--tx2); font-weight: 700; font-size: 11px; text-align: left; border: 1px solid var(--b2); letter-spacing: .5px; text-transform: uppercase; }
+.suite-table td { border: 1px solid var(--b2); padding: 0; vertical-align: top; }
+.suite-id { min-width: 90px !important; font-family: var(--mono); font-size: 12px !important; }
+.suite-result { display: block; width: 100%; min-width: 128px; height: 37px; padding: 0 10px; border: none; border-radius: 0; font-size: 12px; font-weight: 800; letter-spacing: .3px; cursor: pointer; }
+.suite-result:focus { box-shadow: inset 0 0 0 2px var(--ac); }
+.suite-result option { color: var(--tx); background: var(--bg2); }
+.suite-remove { background: none; border: none; color: var(--tx3); cursor: pointer; padding: 10px 8px; }
+.suite-remove:hover { color: #f87171; }

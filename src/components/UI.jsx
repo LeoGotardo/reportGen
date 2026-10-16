@@ -1,7 +1,8 @@
-import React, { useState, useRef } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import { Bi } from "./Bi";
-import { useLang } from "../contexts/LangContext";
+import { useLang } from "../contexts/lang";
 import { usePreviewNav } from "../contexts/previewNav";
+import { formatDate, maskDate, toIsoDate } from "../utils/date";
 
 export function ArrayField({ label, values = [], onChange, mono = false, placeholder = "", rows }) {
   const { t } = useLang();
@@ -26,6 +27,94 @@ export function ArrayField({ label, values = [], onChange, mono = false, placeho
       <button onClick={() => onChange([...values, ""])} className="btn-ghost" style={{ marginTop: 12 }}>
         <Bi name="plus-lg" size={12} /> {t.addLine}
       </button>
+    </div>
+  );
+}
+
+/**
+ * Data no padrão dd/mm/aaaa (o valor guardado é ISO AAAA-MM-DD).
+ * required: apagar e sair do campo volta para a última data válida em vez de limpar.
+ */
+export function DateField({ label, value, onChange, required = false }) {
+  const { t } = useLang();
+  const [draft, setDraft] = useState(null); // texto parcial/inválido enquanto digita
+  const inputRef = useRef(null);
+  const pickerRef = useRef(null);
+  const caretRef = useRef(null);
+
+  const shown = draft ?? formatDate(value);
+  const invalid = draft !== null && draft.length === 10 && !toIsoDate(draft);
+
+  // A máscara reescreve o valor: devolve o cursor para onde o usuário estava digitando.
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (caretRef.current == null || el !== document.activeElement) return;
+    el.setSelectionRange(caretRef.current, caretRef.current);
+    caretRef.current = null;
+  });
+
+  const commit = iso => { setDraft(null); onChange(iso); };
+
+  const handleChange = e => {
+    const el = e.target;
+    const digitsBefore = el.value.slice(0, el.selectionStart ?? el.value.length).replace(/\D/g, "").length;
+    const masked = maskDate(el.value);
+    let pos = 0;
+    for (let seen = 0; pos < masked.length && seen < digitsBefore; pos++) if (/\d/.test(masked[pos])) seen++;
+    caretRef.current = pos;
+
+    const iso = masked.length === 10 ? toIsoDate(masked) : null;
+    if (iso) commit(iso);
+    else if (masked === "" && !required) commit("");
+    else setDraft(masked);
+  };
+
+  // Backspace/Delete encostado numa barra apaga o dígito vizinho (a máscara recriaria a barra).
+  const handleKeyDown = e => {
+    const el = e.currentTarget;
+    const { selectionStart: s, selectionEnd: end, value: v } = el;
+    if (s !== end) return;
+    if (e.key === "Backspace" && v[s - 1] === "/") el.setSelectionRange(s - 1, s - 1);
+    if (e.key === "Delete" && v[s] === "/") el.setSelectionRange(s + 1, s + 1);
+  };
+
+  const openPicker = () => {
+    const p = pickerRef.current;
+    try { p.showPicker(); } catch { p.focus(); p.click(); }
+  };
+
+  return (
+    <div>
+      {label && <label className="lbl">{label}</label>}
+      <div className="date-field">
+        <input
+          ref={inputRef}
+          className={`inp${invalid ? " inp-invalid" : ""}`}
+          value={shown}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          onBlur={() => setDraft(null)}
+          placeholder={t.datePh}
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={10}
+          aria-label={label}
+          aria-invalid={invalid}
+        />
+        <button type="button" className="date-pick-btn" onClick={openPicker} title={t.datePick} aria-label={t.datePick}>
+          <Bi name="calendar3" size={14} />
+        </button>
+        <input
+          ref={pickerRef}
+          type="date"
+          className="date-picker-native"
+          tabIndex={-1}
+          aria-hidden="true"
+          value={toIsoDate(value) ?? ""}
+          onChange={e => { const iso = toIsoDate(e.target.value); if (iso) commit(iso); }}
+        />
+      </div>
+      {invalid && <div className="field-error">{t.dateInvalid}</div>}
     </div>
   );
 }
@@ -102,40 +191,51 @@ export function LogoField({ value, nome, onChange }) {
 export function DragList({ items, onReorder, renderItem }) {
   const [dragging, setDragging] = useState(null);
   const [dragOver, setDragOver] = useState(null);
-  const canDrag = useRef(false);
-  const overIdx = useRef(null);
 
-  const handleDrop = () => {
-    if (dragging !== null && overIdx.current !== null && dragging !== overIdx.current) {
-      const arr = [...items];
-      const [removed] = arr.splice(dragging, 1);
-      arr.splice(overIdx.current, 0, removed);
-      onReorder(arr);
-    }
+  const reset = () => {
     setDragging(null);
     setDragOver(null);
-    overIdx.current = null;
   };
+
+  const handleDrop = e => {
+    if (dragging === null) return; // drop de texto/arquivo num input: comportamento nativo
+    e.preventDefault();
+    if (dragOver !== null && dragging !== dragOver) {
+      const arr = [...items];
+      const [removed] = arr.splice(dragging, 1);
+      arr.splice(dragOver, 0, removed);
+      onReorder(arr);
+    }
+    reset();
+  };
+
+  // Só a alça é draggable. Com o card inteiro draggable, o navegador trata clicar/arrastar
+  // dentro dos inputs como início de drag: não posiciona o cursor nem seleciona texto.
+  const handleProps = i => ({
+    draggable: true,
+    onDragStart: e => {
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", ""); // Firefox só inicia o drag se houver dados
+      const card = e.currentTarget.closest("[data-drag-item]");
+      if (card) {
+        const r = card.getBoundingClientRect();
+        e.dataTransfer.setDragImage(card, e.clientX - r.left, e.clientY - r.top);
+      }
+      setDragging(i);
+    },
+    onDragEnd: reset,
+  });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {items.map((item, i) => (
         <div
           key={item.id}
-          draggable
-          onDragStart={e => {
-            if (!canDrag.current) { e.preventDefault(); return; }
-            setDragging(i);
-          }}
-          onDragEnd={() => {
-            canDrag.current = false;
-            setDragging(null);
-            setDragOver(null);
-            overIdx.current = null;
-          }}
+          data-drag-item=""
           onDragOver={e => {
+            if (dragging === null) return;
             e.preventDefault();
-            if (overIdx.current !== i) { overIdx.current = i; setDragOver(i); }
+            if (dragOver !== i) setDragOver(i);
           }}
           onDrop={handleDrop}
           style={{
@@ -146,10 +246,7 @@ export function DragList({ items, onReorder, renderItem }) {
             outlineOffset: 2,
           }}
         >
-          {renderItem(item, i, {
-            onMouseDown: () => { canDrag.current = true; },
-            onMouseUp: () => { canDrag.current = false; },
-          })}
+          {renderItem(item, i, handleProps(i))}
         </div>
       ))}
     </div>

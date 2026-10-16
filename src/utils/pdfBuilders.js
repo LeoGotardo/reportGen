@@ -1,4 +1,6 @@
 import { CHANGE_TYPES } from "../constants/templates";
+import { formatDate } from "./date";
+import { normalizeResult, suiteCounts, SUITE_RESULT_COLORS } from "./testSuite";
 
 export function h(c) { return c?.startsWith("#") ? c : `#${c}`; }
 
@@ -46,7 +48,7 @@ export function bugsPdf(config, logo, t) {
   c.push({ text: t.doc_bugs_overline, style: "over" });
   c.push({ text: config.titulo || "Relatório", style: "h1", color: primary });
   if (config.subtitulo) c.push({ text: config.subtitulo, style: "sub", color: h(config.cores.secundaria) });
-  c.push({ text: `${t.doc_bugs_fieldAuthor}: ${config.autor || "—"}  |  ${t.doc_bugs_fieldVersion}: ${config.versao}  |  ${config.formato}`, style: "meta" });
+  c.push({ text: [`${t.doc_bugs_fieldAuthor}: ${config.autor || "—"}`, `${t.doc_bugs_fieldVersion}: ${config.versao}`, formatDate(config.data) && `${t.doc_common_date}: ${formatDate(config.data)}`, config.formato].filter(Boolean).join("  |  "), style: "meta" });
   c.push(rule(primary));
 
   if (config.resumoExecutivo?.some(v => v.trim())) {
@@ -102,6 +104,36 @@ export function bugsPdf(config, logo, t) {
     });
   }
 
+  if (config.suiteTestes?.length) {
+    const label = k => (k === "UNTESTED" ? t.doc_suite_untested : k);
+    const counts = suiteCounts(config.suiteTestes);
+    c.push({ text: t.doc_bugs_suiteSection, style: "h2", color: primary });
+    c.push({
+      text: [`${t.doc_suite_total}: ${config.suiteTestes.length}`, ...["PASS", "FAIL", "UNTESTED"].map(k => ({ text: `     ${counts[k]} ${label(k)}`, color: SUITE_RESULT_COLORS[k] }))],
+      fontSize: 9, bold: true, color: "#888", margin: [0, 0, 0, 8],
+    });
+    c.push({
+      table: {
+        headerRows: 1, widths: [55, "*", "*", 70],
+        body: [
+          [t.doc_suite_thId, t.doc_suite_thTest, t.doc_suite_thDesc, t.doc_suite_thResult].map(v => ({ text: v, style: "th" })),
+          ...config.suiteTestes.map((s, i) => {
+            const fillColor = i % 2 ? "#f8f8fb" : "#fff";
+            const res = normalizeResult(s.resultado);
+            return [
+              { text: s.codigo || "—", style: "td", fillColor, color: "#555" },
+              { text: s.titulo || "—", style: "td", fillColor, bold: true },
+              { text: s.descricao || "—", style: "td", fillColor },
+              { text: label(res), style: "td", fillColor, bold: true, color: SUITE_RESULT_COLORS[res] },
+            ];
+          }),
+        ],
+      },
+      layout: { hLineColor: () => "#eee", vLineColor: () => "#eee" },
+      margin: [0, 0, 0, 24],
+    });
+  }
+
   if (config.tabelas?.length) {
     c.push({ text: t.doc_common_tables, style: "h2", color: primary });
     config.tabelas.forEach(tb => {
@@ -142,7 +174,7 @@ export function changelogPdf(config, logo, t) {
   c.push({ text: t.doc_changelog_overline, style: "over" });
   c.push({ text: config.titulo || "Changelog", style: "h1", color: primary });
   if (config.subtitulo) c.push({ text: config.subtitulo, style: "sub", color: h(config.cores.secundaria) });
-  c.push({ text: [config.projeto && `${t.doc_changelog_fieldProject}: ${config.projeto}`, config.autor && `${t.doc_changelog_fieldAuthor}: ${config.autor}`, `${t.doc_changelog_fieldVersion}: ${config.versao}`].filter(Boolean).join("  |  "), style: "meta" });
+  c.push({ text: [config.projeto && `${t.doc_changelog_fieldProject}: ${config.projeto}`, config.autor && `${t.doc_changelog_fieldAuthor}: ${config.autor}`, `${t.doc_changelog_fieldVersion}: ${config.versao}`, formatDate(config.data) && `${t.doc_common_date}: ${formatDate(config.data)}`].filter(Boolean).join("  |  "), style: "meta" });
   c.push(rule(primary));
 
   if (config.descricao?.some(v => v.trim())) {
@@ -207,7 +239,7 @@ export function studyPdf(config, logo, t) {
   c.push({ text: t.doc_study_overline, style: "over" });
   c.push({ text: config.titulo || "Estudo", style: "h1", color: primary });
   if (config.subtitulo) c.push({ text: config.subtitulo, style: "sub", color: h(config.cores.secundaria) });
-  c.push({ text: `${t.doc_study_fieldStudent}: ${config.autor || "—"}  |  ${t.doc_study_fieldVersion}: ${config.versao}`, style: "meta" });
+  c.push({ text: [`${t.doc_study_fieldStudent}: ${config.autor || "—"}`, `${t.doc_study_fieldVersion}: ${config.versao}`, formatDate(config.data) && `${t.doc_common_date}: ${formatDate(config.data)}`].filter(Boolean).join("  |  "), style: "meta" });
   c.push(rule(primary));
 
   if (config.introducao?.some(v => v.trim())) {

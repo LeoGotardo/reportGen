@@ -3,7 +3,7 @@ import { Bi } from "./Bi";
 import { ArrayField, GoToPreview } from "./UI";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { STUDY_TYPES } from "../constants/templates";
-import { useLang } from "../contexts/LangContext";
+import { useLang } from "../contexts/lang";
 
 export function StudyTopicCard({ topic, onChange, onRemove, dragHandleProps }) {
   const { t } = useLang();

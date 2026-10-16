@@ -1,7 +1,7 @@
 import React from "react";
 import { Bi } from "./Bi";
 import { TEMPLATES } from "../constants/templates";
-import { useLang } from "../contexts/LangContext";
+import { useLang } from "../contexts/lang";
 
 export function TemplateSelector({ current, onSelect, onClose }) {
   const { t } = useLang();

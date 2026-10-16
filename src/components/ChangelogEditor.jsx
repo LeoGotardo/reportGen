@@ -1,11 +1,11 @@
 import React, { useCallback } from "react";
 import { Bi } from "./Bi";
-import { ArrayField, ColorField, DragList, LogoField, SectionHeader } from "./UI";
+import { ArrayField, ColorField, DateField, DragList, LogoField, SectionHeader } from "./UI";
 import { ChangeCard } from "./ChangelogComponents";
 import { TableCard } from "./TableComponents";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { emptyChange, emptyTable } from "../constants/initialConfigs";
-import { useLang } from "../contexts/LangContext";
+import { useLang } from "../contexts/lang";
 
 export function ChangelogEditor({ config, setConfig }) {
   const { t } = useLang();
@@ -38,10 +38,13 @@ export function ChangelogEditor({ config, setConfig }) {
             <div><label className="lbl">{t.changelogRepoLabel}</label><input className="inp" value={config.repositorio} onChange={e => upd("repositorio", e.target.value)} placeholder={t.changelogRepoPh} /></div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 18, marginBottom: 22 }}>
-            <div><label className="lbl">{t.changelogDateStart}</label><input className="inp" type="date" value={config.dataInicio} onChange={e => upd("dataInicio", e.target.value)} /></div>
-            <div><label className="lbl">{t.changelogDateEnd}</label><input className="inp" type="date" value={config.dataFim} onChange={e => upd("dataFim", e.target.value)} /></div>
+            <DateField label={t.changelogDateStart} value={config.dataInicio} onChange={v => upd("dataInicio", v)} />
+            <DateField label={t.changelogDateEnd} value={config.dataFim} onChange={v => upd("dataFim", v)} />
           </div>
-          <div style={{ marginBottom: 22 }}><label className="lbl">{t.changelogAuthorLabel}</label><input className="inp" value={config.autor} onChange={e => upd("autor", e.target.value)} placeholder={t.changelogAuthorPh} /></div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 18, marginBottom: 22 }}>
+            <div><label className="lbl">{t.changelogAuthorLabel}</label><input className="inp" value={config.autor} onChange={e => upd("autor", e.target.value)} placeholder={t.changelogAuthorPh} /></div>
+            <DateField label={t.dateLabel} value={config.data} onChange={v => upd("data", v)} required />
+          </div>
           <LogoField value={config.logo} nome={config.logoNome} onChange={updLogo} />
         </div>
       </div>
@@ -60,7 +63,7 @@ export function ChangelogEditor({ config, setConfig }) {
       <div style={{ marginBottom: 48 }}>
         <SectionHeader icon={<Bi name="textarea-t" size={22} />} title={t.changelogOverview} subtitle={t.changelogOverviewDesc} anchor="sec:descricao" />
         <div className="card" style={{ padding: 30 }}>
-          <ArrayField values={config.descricao} onChange={v => upd("descricao", v)} placeholder={t.changelogOverviewPh} />
+          <ArrayField values={config.descricao} onChange={v => upd("descricao", v)} placeholder={t.changelogOverviewPh} rows={8} />
         </div>
       </div>
 
@@ -83,7 +86,7 @@ export function ChangelogEditor({ config, setConfig }) {
               items={config.mudancas}
               onReorder={reorderChanges}
               renderItem={(change, i, dragHandleProps) => (
-                <ChangeCard change={change} idx={i} onChange={m => updateChange(change.id, m)} onRemove={() => removeChange(change.id)} dragHandleProps={dragHandleProps} />
+                <ChangeCard change={change} onChange={m => updateChange(change.id, m)} onRemove={() => removeChange(change.id)} dragHandleProps={dragHandleProps} />
               )}
             />
             <button onClick={addChange} className="btn-primary full" style={{ marginTop: 14, background: "linear-gradient(135deg,#10b981,#059669)" }}>

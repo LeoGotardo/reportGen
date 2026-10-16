@@ -36,7 +36,7 @@ Three report templates: **bugs**, **study**, **changelog**. Each has three files
 - `components/{Template}Preview.jsx` — right-panel live preview
 - `server/utils/exportUtils.js` — server-side HTML builder for PDF rendering
 
-`App.jsx` owns all state via `useLocalStorageState` (persists to `localStorage`). Active template and all three configs are stored independently so switching templates doesn't lose data.
+`App.jsx` gets all report state from `src/hooks/useReports.js`: multiple reports per template, managed in `components/ReportsModal.jsx` (create / open / rename / duplicate / delete). Persistence is `localStorage`: `rg_reports_index` (report metadata + active report per template + active template) and one `rg_report_<id>` key per report config; only changed reports are rewritten (debounced, flushed on `pagehide`). Old single-config keys (`rg_bugsConfig`, …) are migrated on first load. Each template always has at least one report. Editor/preview are keyed by report id so per-card UI state doesn't leak between reports.
 
 Key shared pieces:
 - `src/constants/initialConfigs.js` — default state shapes for each template

@@ -1,6 +1,7 @@
 import React from "react";
 import { CustomTables } from "./CustomTables";
-import { useLang } from "../contexts/LangContext";
+import { useLang } from "../contexts/lang";
+import { formatDate } from "../utils/date";
 
 export function StudyPreview({ config }) {
   const { t } = useLang();
@@ -22,6 +23,7 @@ export function StudyPreview({ config }) {
         <div style={{ display: "flex", gap: 28, fontSize: 12, color: "#888" }}>
           <span><strong style={{ color: "#555" }}>{t.doc_study_fieldStudent}:</strong> {config.autor || "—"}</span>
           <span><strong style={{ color: "#555" }}>{t.doc_study_fieldVersion}:</strong> {config.versao}</span>
+          {formatDate(config.data) && <span><strong style={{ color: "#555" }}>{t.doc_common_date}:</strong> {formatDate(config.data)}</span>}
         </div>
       </div>
 

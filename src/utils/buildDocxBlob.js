@@ -1,5 +1,7 @@
 import { CHANGE_TYPES } from "../constants/templates";
 import { getDocx } from "./cdnLoaders";
+import { formatDate } from "./date";
+import { normalizeResult, suiteCounts, SUITE_RESULT_COLORS } from "./testSuite";
 
 function hexToDocxColor(hex) {
   return (hex || "000000").replace("#", "").toUpperCase().padStart(6, "0");
@@ -127,13 +129,15 @@ export async function buildDocxBlob(config, activeTemplate, t) {
     margins: { top: 80, bottom: 80, left: 120, right: 120 },
     verticalAlign: VerticalAlign.CENTER,
     children: [new Paragraph({
-      children: [new TextRun({
-        text: String(text || "—"),
+      // \n dentro de um TextRun não quebra linha no Word: um run por linha com break.
+      children: String(text || "—").split(/\r?\n/).map((line, li) => new TextRun({
+        text: line,
+        break: li > 0 ? 1 : undefined,
         size: opts.size || 20,
         font: opts.mono ? "Courier New" : "Arial",
         bold: opts.bold || false,
         color: opts.color || "333333",
-      })],
+      })),
     })],
   });
 
@@ -199,10 +203,11 @@ export async function buildDocxBlob(config, activeTemplate, t) {
   const metaLines = [
     config.autor    ? `${t.doc_bugs_fieldAuthor}: ${config.autor}` : null,
     `${t.doc_bugs_fieldVersion}: ${config.versao}`,
+    formatDate(config.data) ? `${t.doc_common_date}: ${formatDate(config.data)}` : null,
     config.formato  ? `${t.doc_bugs_fieldFormat}: ${config.formato}` : null,
     activeTemplate === "changelog" && config.projeto     ? `${t.doc_changelog_fieldProject}: ${config.projeto}` : null,
     activeTemplate === "changelog" && config.repositorio ? `${t.doc_changelog_fieldRepo}: ${config.repositorio}` : null,
-    activeTemplate === "changelog" && config.dataInicio  ? `${t.doc_changelog_fieldPeriod}: ${config.dataInicio}${config.dataFim ? ` → ${config.dataFim}` : ""}` : null,
+    activeTemplate === "changelog" && config.dataInicio  ? `${t.doc_changelog_fieldPeriod}: ${formatDate(config.dataInicio) || config.dataInicio}${config.dataFim ? ` → ${formatDate(config.dataFim) || config.dataFim}` : ""}` : null,
   ].filter(Boolean);
 
   metaLines.forEach(line => {
@@ -343,6 +348,44 @@ export async function buildDocxBlob(config, activeTemplate, t) {
         }
         contentChildren.push(Br());
       });
+    }
+
+    if (config.suiteTestes?.length) {
+      const label = k => (k === "UNTESTED" ? t.doc_suite_untested : k);
+      const resColor = k => SUITE_RESULT_COLORS[k].replace("#", "").toUpperCase();
+      const counts = suiteCounts(config.suiteTestes);
+      contentChildren.push(SectionTitle(t.doc_bugs_suiteSection));
+      contentChildren.push(new Paragraph({
+        spacing: { after: 120 },
+        children: [
+          new TextRun({ text: `${t.doc_suite_total}: ${config.suiteTestes.length}`, bold: true, size: 18, color: "888888", font: "Arial" }),
+          ...["PASS", "FAIL", "UNTESTED"].map(k => new TextRun({ text: `     ${counts[k]} ${label(k)}`, bold: true, size: 18, color: resColor(k), font: "Arial" })),
+        ],
+      }));
+      const colW = [0.13, 0.3, 0.42, 0.15].map(f => Math.round(contentW * f));
+      contentChildren.push(new Table({
+        width: { size: contentW, type: WidthType.DXA },
+        columnWidths: colW,
+        rows: [
+          new TableRow({
+            tableHeader: true,
+            children: [t.doc_suite_thId, t.doc_suite_thTest, t.doc_suite_thDesc, t.doc_suite_thResult].map((h, ci) => HeaderCell(h, colW[ci], primary)),
+          }),
+          ...config.suiteTestes.map((s, i) => {
+            const fill = i % 2 ? "F8F8FB" : "FFFFFF";
+            const res = normalizeResult(s.resultado);
+            return new TableRow({
+              children: [
+                DataCell(s.codigo || "—", colW[0], { fill, color: "555555", mono: true, size: 18 }),
+                DataCell(s.titulo || "—", colW[1], { fill, bold: true }),
+                DataCell(s.descricao || "—", colW[2], { fill }),
+                DataCell(label(res), colW[3], { fill, bold: true, color: resColor(res), size: 18 }),
+              ],
+            });
+          }),
+        ],
+      }));
+      contentChildren.push(Br());
     }
 
     if (config.tabelas?.length) {

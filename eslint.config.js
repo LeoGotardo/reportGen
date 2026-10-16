@@ -26,4 +26,9 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  {
+    // Backend Express roda no Node, não no navegador.
+    files: ['server/**/*.js'],
+    languageOptions: { globals: globals.node },
+  },
 ])

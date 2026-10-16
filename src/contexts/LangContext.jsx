@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getT, LANGS } from "../i18n";
-
-const LangContext = createContext(null);
+import { LangContext } from "./lang";
 
 const HTML_LANG = { pt: "pt-BR", en: "en" };
 
@@ -25,8 +24,4 @@ export function LangProvider({ children }) {
       {children}
     </LangContext.Provider>
   );
-}
-
-export function useLang() {
-  return useContext(LangContext);
 }

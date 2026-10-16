@@ -1,12 +1,13 @@
 import React, { useCallback } from "react";
 import { Bi } from "./Bi";
-import { ArrayField, ColorField, DragList, LogoField, SectionHeader } from "./UI";
+import { ArrayField, ColorField, DateField, DragList, LogoField, SectionHeader } from "./UI";
 import { BugProblemCard } from "./BugProblemCard";
 import { BugTestCard } from "./BugTestCard";
 import { TableCard } from "./TableComponents";
+import { TestSuiteSection } from "./TestSuiteSection";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { emptyBugProblem, emptyBugTest, emptyTable } from "../constants/initialConfigs";
-import { useLang } from "../contexts/LangContext";
+import { useLang } from "../contexts/lang";
 
 export function BugsEditor({ config, setConfig }) {
   const { t } = useLang();
@@ -38,7 +39,10 @@ export function BugsEditor({ config, setConfig }) {
           </div>
           <div style={{ marginBottom: 18 }}><label className="lbl">{t.titleLabel}</label><input className="inp" value={config.titulo} onChange={e => upd("titulo", e.target.value)} placeholder={t.bugsTitlePh} /></div>
           <div style={{ marginBottom: 18 }}><label className="lbl">{t.bugsSubtitleLabel}</label><input className="inp" value={config.subtitulo} onChange={e => upd("subtitulo", e.target.value)} placeholder={t.bugsSubtitlePh} /></div>
-          <div style={{ marginBottom: 22 }}><label className="lbl">{t.bugsAuthorLabel}</label><input className="inp" value={config.autor} onChange={e => upd("autor", e.target.value)} placeholder={t.bugsAuthorPh} /></div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 18, marginBottom: 22 }}>
+            <div><label className="lbl">{t.bugsAuthorLabel}</label><input className="inp" value={config.autor} onChange={e => upd("autor", e.target.value)} placeholder={t.bugsAuthorPh} /></div>
+            <DateField label={t.dateLabel} value={config.data} onChange={v => upd("data", v)} required />
+          </div>
           <LogoField value={config.logo} nome={config.logoNome} onChange={updLogo} />
         </div>
       </div>
@@ -125,6 +129,10 @@ export function BugsEditor({ config, setConfig }) {
             <button onClick={addTest} className="btn-primary full" style={{ marginTop: 14, background: "linear-gradient(135deg,#22c55e,#16a34a)" }}><Bi name="plus-circle-fill" size={16} /> {t.addTest}</button>
           </>
         )}
+      </div>
+      <div style={{ marginBottom: 48 }}>
+        <SectionHeader icon={<Bi name="list-check" size={22} />} title={t.suiteSection} subtitle={t.suiteSectionDesc} badge={(config.suiteTestes || []).length} anchor="sec:suiteTestes" />
+        <TestSuiteSection rows={config.suiteTestes || []} onChange={v => upd("suiteTestes", v)} />
       </div>
       <div>
         <SectionHeader icon={<Bi name="check2-circle" size={22} />} title={t.bugConclusion} anchor="sec:conclusao" />

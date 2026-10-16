@@ -1,11 +1,11 @@
 import React, { useCallback } from "react";
 import { Bi } from "./Bi";
-import { ArrayField, ColorField, DragList, LogoField, SectionHeader } from "./UI";
+import { ArrayField, ColorField, DateField, DragList, LogoField, SectionHeader } from "./UI";
 import { StudyTopicCard } from "./StudyComponents";
 import { TableCard } from "./TableComponents";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { emptyStudyTopic, emptyTable } from "../constants/initialConfigs";
-import { useLang } from "../contexts/LangContext";
+import { useLang } from "../contexts/lang";
 
 export function StudyEditor({ config, setConfig }) {
   const { t } = useLang();
@@ -33,7 +33,10 @@ export function StudyEditor({ config, setConfig }) {
           </div>
           <div style={{ marginBottom: 18 }}><label className="lbl">{t.titleLabel}</label><input className="inp" value={config.titulo} onChange={e => upd("titulo", e.target.value)} placeholder={t.studyTitlePh} /></div>
           <div style={{ marginBottom: 18 }}><label className="lbl">{t.studySubtitleLabel}</label><input className="inp" value={config.subtitulo} onChange={e => upd("subtitulo", e.target.value)} placeholder={t.studySubtitlePh} /></div>
-          <div style={{ marginBottom: 22 }}><label className="lbl">{t.studyAuthorLabel}</label><input className="inp" value={config.autor} onChange={e => upd("autor", e.target.value)} placeholder={t.studyAuthorPh} /></div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 18, marginBottom: 22 }}>
+            <div><label className="lbl">{t.studyAuthorLabel}</label><input className="inp" value={config.autor} onChange={e => upd("autor", e.target.value)} placeholder={t.studyAuthorPh} /></div>
+            <DateField label={t.dateLabel} value={config.data} onChange={v => upd("data", v)} required />
+          </div>
           <LogoField value={config.logo} nome={config.logoNome} onChange={updLogo} />
         </div>
       </div>
@@ -50,7 +53,7 @@ export function StudyEditor({ config, setConfig }) {
       <div style={{ marginBottom: 48 }}>
         <SectionHeader icon={<Bi name="info-circle" size={22} />} title={t.studyIntro} anchor="sec:introducao" />
         <div className="card" style={{ padding: 30 }}>
-          <ArrayField values={config.introducao} onChange={v => upd("introducao", v)} placeholder={t.studyIntroPh} />
+          <ArrayField values={config.introducao} onChange={v => upd("introducao", v)} placeholder={t.studyIntroPh} rows={8} />
         </div>
       </div>
       <div style={{ marginBottom: 48 }}>

@@ -14,3 +14,5 @@
 .right-tab:hover:not(.active) { color: var(--tx2); background: var(--b1); }
 .right-body { flex: 1; overflow: hidden; }
 .right-body.scrollable { overflow-y: auto; }
+.hdr-stats { display: flex; align-items: center; gap: 18px; min-width: 0; }
+@media (max-width: 1100px) { .hdr-stats { display: none; } }

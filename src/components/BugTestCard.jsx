@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Bi } from "./Bi";
 import { ArrayField, GoToPreview } from "./UI";
-import { useLang } from "../contexts/LangContext";
+import { useLang } from "../contexts/lang";
 
 export function BugTestCard({ test, idx, onChange, onRemove, dragHandleProps }) {
   const { t } = useLang();

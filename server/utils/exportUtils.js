@@ -1,6 +1,20 @@
 import { getT } from "./i18n.js";
 
 const esc = s => (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+// Suíte de testes: resultado em qualquer idioma/variação → PASS | FAIL | UNTESTED.
+const SUITE_COLORS = { PASS: "#16a34a", FAIL: "#dc2626", UNTESTED: "#6b7280" };
+const suiteRes = v => {
+  const s = String(v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+  if (/^(pass|passed|passou|ok|aprovado|sucesso|success|✓|✔)$/.test(s)) return "PASS";
+  if (/^(fail|failed|falhou|falha|erro|error|reprovado|nok|nao passou|✗|✘)$/.test(s)) return "FAIL";
+  return "UNTESTED";
+};
+// "AAAA-MM-DD" → dd/mm/aaaa; outro texto (API aceita formato livre) volta como veio.
+const fmtDate = v => {
+  const s = typeof v === "string" ? v.trim() : "";
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : s;
+};
 
 const PRINT_BAR = (label, btnColor, formato, versao, printBtn) => `
 <div class="print-bar no-print">
@@ -28,7 +42,7 @@ function buildCustomTablesHtml(tabelas, primary, label) {
           ${t.cabecalhos.map(h => `<th style="color:#fff;padding:9px 14px;text-align:left;font-weight:700">${esc(h)}</th>`).join("")}
         </tr></thead>
         <tbody>
-          ${t.linhas.map((row, ri) => `<tr style="background:${ri % 2 ? "#f8f8fb" : "#fff"}">${row.map(cell => `<td style="padding:8px 14px;border-bottom:1px solid #eee;color:#333">${esc(cell) || "—"}</td>`).join("")}</tr>`).join("")}
+          ${t.linhas.map((row, ri) => `<tr style="background:${ri % 2 ? "#f8f8fb" : "#fff"}">${row.map(cell => `<td style="padding:8px 14px;border-bottom:1px solid #eee;color:#333;white-space:pre-wrap;vertical-align:top">${esc(cell) || "—"}</td>`).join("")}</tr>`).join("")}
         </tbody>
       </table>
     </div>`).join("");
@@ -110,6 +124,7 @@ ${PRINT_BAR(t.doc_common_footerTechReport, "#6271f5", config.formato, config.ver
   <div style="display:flex;gap:28px;font-size:12px;color:#888">
     <span><strong style="color:#555">${t.doc_bugs_fieldAuthor}:</strong> ${esc(config.autor) || "—"}</span>
     <span><strong style="color:#555">${t.doc_bugs_fieldVersion}:</strong> ${esc(config.versao)}</span>
+    ${fmtDate(config.data) ? `<span><strong style="color:#555">${t.doc_common_date}:</strong> ${esc(fmtDate(config.data))}</span>` : ""}
     <span><strong style="color:#555">${t.doc_bugs_fieldFormat}:</strong> ${esc(config.formato)}</span>
   </div>
 </div>
@@ -171,6 +186,40 @@ ${(config.testes || []).length ? `
     ${ts.codigo?.some(v => v.trim()) ? ts.codigo.filter(v => v.trim()).map(v => `<pre style="background:${codeBg};color:#86efac;padding:12px 16px;border-radius:8px;font-size:11px;font-family:monospace;line-height:1.6;overflow-x:auto;margin-bottom:8px;white-space:pre-wrap;word-break:break-all;border-left:3px solid #22c55e">${esc(v)}</pre>`).join("") : ""}
   </div>`).join("")}
 </div>` : ""}
+
+${(config.suiteTestes || []).length ? (() => {
+  const label = k => (k === "UNTESTED" ? t.doc_suite_untested : k);
+  const counts = { PASS: 0, FAIL: 0, UNTESTED: 0 };
+  config.suiteTestes.forEach(s => counts[suiteRes(s.resultado)]++);
+  const td = "padding:8px 12px;border-bottom:1px solid #eee;vertical-align:top";
+  return `
+<div style="padding:38px 48px 0">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+    <div style="width:5px;height:24px;background:${primary};border-radius:3px"></div>
+    <div style="font-size:18px;font-weight:800;color:${primary}">${t.doc_bugs_suiteSection}</div>
+  </div>
+  <div style="display:flex;gap:16px;font-size:11px;font-weight:700;margin-bottom:14px;color:#888">
+    <span>${t.doc_suite_total}: ${config.suiteTestes.length}</span>
+    ${["PASS", "FAIL", "UNTESTED"].map(k => `<span style="color:${SUITE_COLORS[k]}">${counts[k]} ${label(k)}</span>`).join("")}
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr style="background:${primary}">
+      ${[t.doc_suite_thId, t.doc_suite_thTest, t.doc_suite_thDesc, t.doc_suite_thResult].map(h => `<th style="color:#fff;padding:9px 12px;text-align:left;font-weight:700">${h}</th>`).join("")}
+    </tr></thead>
+    <tbody>
+      ${config.suiteTestes.map((s, i) => {
+        const res = suiteRes(s.resultado);
+        return `<tr style="background:${i % 2 ? "#f8f8fb" : "#fff"};page-break-inside:avoid">
+        <td style="${td};color:#555;font-family:monospace;white-space:nowrap">${esc(s.codigo) || "—"}</td>
+        <td style="${td};color:#1a1a2e;font-weight:600;white-space:pre-wrap">${esc(s.titulo) || "—"}</td>
+        <td style="${td};color:#333;white-space:pre-wrap">${esc(s.descricao) || "—"}</td>
+        <td style="${td}"><span style="background:${SUITE_COLORS[res]}1f;color:${SUITE_COLORS[res]};padding:2px 9px;border-radius:12px;font-size:10px;font-weight:800;white-space:nowrap">${label(res)}</span></td>
+      </tr>`;
+      }).join("")}
+    </tbody>
+  </table>
+</div>`;
+})() : ""}
 
 ${config.conclusao?.some(v => v.trim()) ? `
 <div style="padding:38px 48px 56px">
@@ -241,6 +290,7 @@ ${PRINT_BAR(t.doc_common_footerStudy, "#f59e0b", config.formato, config.versao, 
   <div style="display:flex;gap:28px;font-size:12px;color:#888">
     <span><strong style="color:#555">${t.doc_study_fieldStudent}:</strong> ${esc(config.autor) || "—"}</span>
     <span><strong style="color:#555">${t.doc_study_fieldVersion}:</strong> ${esc(config.versao)}</span>
+    ${fmtDate(config.data) ? `<span><strong style="color:#555">${t.doc_common_date}:</strong> ${esc(fmtDate(config.data))}</span>` : ""}
   </div>
 </div>
 
@@ -371,7 +421,8 @@ ${PRINT_BAR(t.doc_common_footerChangelog, "#10b981", config.formato, config.vers
     ${config.projeto     ? `<span><strong style="color:#555">${t.doc_changelog_fieldProject}:</strong> ${esc(config.projeto)}</span>` : ""}
     ${config.autor       ? `<span><strong style="color:#555">${t.doc_changelog_fieldAuthor}:</strong> ${esc(config.autor)}</span>` : ""}
     <span><strong style="color:#555">${t.doc_changelog_fieldVersion}:</strong> ${esc(config.versao)}</span>
-    ${config.dataInicio  ? `<span><strong style="color:#555">${t.doc_changelog_fieldPeriod}:</strong> ${esc(config.dataInicio)}${config.dataFim ? ` → ${esc(config.dataFim)}` : ""}</span>` : ""}
+    ${fmtDate(config.data) ? `<span><strong style="color:#555">${t.doc_common_date}:</strong> ${esc(fmtDate(config.data))}</span>` : ""}
+    ${config.dataInicio  ? `<span><strong style="color:#555">${t.doc_changelog_fieldPeriod}:</strong> ${esc(fmtDate(config.dataInicio))}${config.dataFim ? ` → ${esc(fmtDate(config.dataFim))}` : ""}</span>` : ""}
     ${config.repositorio ? `<span><strong style="color:#555">${t.doc_changelog_fieldRepo}:</strong> ${esc(config.repositorio)}</span>` : ""}
   </div>
 </div>

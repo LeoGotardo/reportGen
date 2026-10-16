@@ -30,6 +30,16 @@ export const emptyBugTest = () => ({
   codigo: [""],
 });
 
+// Linha da suíte de testes. `id` é interno (chave React); o ID visível do teste fica em `codigo`.
+export const SUITE_RESULTS = ["PASS", "FAIL", "UNTESTED"];
+export const emptySuiteTest = (codigo = "") => ({
+  id: crypto.randomUUID(),
+  codigo,
+  titulo: "",
+  descricao: "",
+  resultado: "UNTESTED",
+});
+
 export const emptyStudyTopic = () => ({
   id: crypto.randomUUID(),
   titulo: "",
@@ -69,9 +79,11 @@ export const initialBugsConfig = {
   subtitulo: "",
   autor: "",
   versao: "1.0",
+  data: "",
   resumoExecutivo: [""],
   problemas: [],
   testes: [],
+  suiteTestes: [],
   tabelas: [],
   conclusao: [""],
 };
@@ -94,6 +106,7 @@ export const initialStudyConfig = {
   subtitulo: "",
   autor: "",
   versao: "1.0",
+  data: "",
   introducao: [""],
   topicos: [],
   tabelas: [],
@@ -122,6 +135,7 @@ export const initialChangelogConfig = {
   subtitulo: "",
   autor: "",
   versao: "1.0",
+  data: "",
   projeto: "",
   repositorio: "",
   dataInicio: "",

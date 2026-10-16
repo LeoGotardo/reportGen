@@ -64,6 +64,7 @@
     "subtitulo": { "type": "string", "required": false, "default": "", "description": "Subtítulo na capa." },
     "autor": { "type": "string", "required": false, "default": "", "description": "Autor exibido na capa e no rodapé." },
     "versao": { "type": "string", "required": false, "default": "1.0", "description": "Versão do documento; também compõe o nome do arquivo PDF (relatorio-<template>-v<versao>.pdf)." },
+    "data": { "type": "string", "required": false, "default": "", "description": "Data do relatório, exibida na capa como dd/mm/aaaa (pt e en). Envie 'YYYY-MM-DD'. No app é preenchida automaticamente com a data de criação; via API, se omitida, a capa não mostra data." },
     "logo": {
       "type": "string|null",
       "required": false,
@@ -152,6 +153,19 @@
           "codigo": { "type": "array<string>", "required": false, "description": "Blocos de código do teste." }
         }
       },
+      "suiteTestes": {
+        "type": "array<CasoDeTeste>",
+        "required": false,
+        "default": [],
+        "maxItems": 200,
+        "description": "Suíte de testes, renderizada como tabela (ID, Teste, Descrição, Resultado) com totais por resultado, antes da conclusão.",
+        "item": {
+          "codigo": { "type": "string", "required": false, "description": "ID visível do teste (ex.: 'TC-001')." },
+          "titulo": { "type": "string", "required": false, "description": "Nome do teste." },
+          "descricao": { "type": "string", "required": false, "description": "O que o teste verifica. Aceita quebras de linha." },
+          "resultado": { "type": "string", "required": false, "default": "UNTESTED", "enum": ["PASS", "FAIL", "UNTESTED"], "description": "PASS (passou), FAIL (falhou) ou UNTESTED (não testado). Outros valores viram UNTESTED." }
+        }
+      },
       "conclusao": {
         "type": "array<string>",
         "required": false,
@@ -238,8 +252,8 @@
       },
       "projeto":     { "type": "string", "required": false, "default": "", "description": "Nome do projeto." },
       "repositorio": { "type": "string", "required": false, "default": "", "description": "URL ou slug do repositório (ex.: 'org/repo')." },
-      "dataInicio":  { "type": "string", "required": false, "default": "", "description": "Início do período coberto. Formato livre; recomendado 'YYYY-MM-DD'." },
-      "dataFim":     { "type": "string", "required": false, "default": "", "description": "Fim do período coberto. Formato livre; recomendado 'YYYY-MM-DD'." },
+      "dataInicio":  { "type": "string", "required": false, "default": "", "description": "Início do período coberto. Recomendado 'YYYY-MM-DD' (exibido como dd/mm/aaaa); outro texto é exibido como veio." },
+      "dataFim":     { "type": "string", "required": false, "default": "", "description": "Fim do período coberto. Recomendado 'YYYY-MM-DD' (exibido como dd/mm/aaaa); outro texto é exibido como veio." },
       "descricao": {
         "type": "array<string>",
         "required": false,
@@ -285,6 +299,7 @@
       "subtitulo": "Sprint 42",
       "autor": "Equipe de Segurança",
       "versao": "1.0",
+      "data": "2026-08-11",
       "cores": { "primaria": "1F3864", "secundaria": "2E75B6", "altaSev": "C00000", "mediaSev": "C55A11", "baixaSev": "375623", "codeBg": "1E1E1E", "codeText": "D4D4D4" },
       "resumoExecutivo": ["Foram identificados 1 problema crítico e 0 problemas menores na API de pagamentos."],
       "problemas": [
@@ -303,6 +318,11 @@
             "testesPassam": ["npm test -- auth.spec.js"]
           }
         }
+      ],
+      "suiteTestes": [
+        { "codigo": "TC-001", "titulo": "Login com credenciais válidas", "descricao": "Usuário existente recebe token JWT.", "resultado": "PASS" },
+        { "codigo": "TC-002", "titulo": "Login com SQL injection", "descricao": "Payload ' OR 1=1 -- é rejeitado com 400.", "resultado": "FAIL" },
+        { "codigo": "TC-003", "titulo": "Bloqueio após 5 tentativas", "descricao": "", "resultado": "UNTESTED" }
       ],
       "testes": [
         {
@@ -326,6 +346,7 @@
       "subtitulo": "Fundamentos e boas práticas",
       "autor": "Leonardo",
       "versao": "1.0",
+      "data": "2026-08-11",
       "introducao": ["Este documento registra o estudo sobre hooks no React 19."],
       "topicos": [
         {
@@ -351,6 +372,7 @@
       "subtitulo": "Release de agosto",
       "autor": "Time de Plataforma",
       "versao": "2.3.0",
+      "data": "2026-08-11",
       "projeto": "reportGen",
       "repositorio": "LeoGotardo/reportGen",
       "dataInicio": "2026-07-01",

@@ -1,7 +1,8 @@
 import React from "react";
 import { CHANGE_TYPES } from "../constants/templates";
 import { CustomTables } from "./CustomTables";
-import { useLang } from "../contexts/LangContext";
+import { useLang } from "../contexts/lang";
+import { formatDate } from "../utils/date";
 
 export function ChangelogPreview({ config }) {
   const { t } = useLang();
@@ -34,7 +35,8 @@ export function ChangelogPreview({ config }) {
           {config.projeto && <span><strong style={{ color: "#555" }}>{t.doc_changelog_fieldProject}:</strong> {config.projeto}</span>}
           {config.autor && <span><strong style={{ color: "#555" }}>{t.doc_changelog_fieldAuthor}:</strong> {config.autor}</span>}
           <span><strong style={{ color: "#555" }}>{t.doc_changelog_fieldVersion}:</strong> {config.versao}</span>
-          {config.dataInicio && <span><strong style={{ color: "#555" }}>{t.doc_changelog_fieldPeriod}:</strong> {config.dataInicio}{config.dataFim ? ` → ${config.dataFim}` : ""}</span>}
+          {formatDate(config.data) && <span><strong style={{ color: "#555" }}>{t.doc_common_date}:</strong> {formatDate(config.data)}</span>}
+          {config.dataInicio && <span><strong style={{ color: "#555" }}>{t.doc_changelog_fieldPeriod}:</strong> {formatDate(config.dataInicio) || config.dataInicio}{config.dataFim ? ` → ${formatDate(config.dataFim) || config.dataFim}` : ""}</span>}
           {config.repositorio && <span><strong style={{ color: "#555" }}>{t.doc_changelog_fieldRepo}:</strong> {config.repositorio}</span>}
         </div>
       </div>
@@ -114,7 +116,7 @@ export function ChangelogPreview({ config }) {
                     {info.label} ({grouped[tipo].length})
                   </span>
                 </div>
-                {grouped[tipo].map((m, i) => (
+                {grouped[tipo].map(m => (
                   <div key={m.id} data-anchor={`item:${m.id}`} style={{ marginBottom: 20, borderLeft: `3px solid ${c}`, paddingLeft: 18 }}>
                     <div style={{ fontSize: 14, fontWeight: 800, color: "#1a1a2e", marginBottom: 6 }}>{m.titulo || t.noTitle}</div>
                     {m.arquivo && <div style={{ fontFamily: "monospace", fontSize: 10, color: "#666", background: "#f5f5f5", padding: "3px 10px", borderRadius: 5, display: "inline-block", marginBottom: 8 }}>{m.arquivo}</div>}

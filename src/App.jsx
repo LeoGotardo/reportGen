@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useRef } from "react";
 
 // Components
-import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Bi } from "./components/Bi";
 import { TemplateSelector } from "./components/TemplateSelector";
 import { JsonImportModal } from "./components/JsonImportModal";
+import { ReportsModal } from "./components/ReportsModal";
 import { JsonOutput } from "./components/JsonOutput";
 import { ExportPanel } from "./components/ExportPanel";
 import { ResizeHandle, Stats } from "./components/LayoutComponents";
@@ -17,41 +17,34 @@ import { ChangelogPreview } from "./components/ChangelogPreview";
 
 // Hooks
 import { useIsMobile } from "./hooks/useIsMobile";
-import { useLang } from "./contexts/LangContext";
-import { useLocalStorageState } from "./hooks/useLocalStorageState";
+import { useLang } from "./contexts/lang";
+import { useReports, blankConfig } from "./hooks/useReports";
 import { PreviewNavContext } from "./contexts/previewNav";
 
 // Constants
 import { TEMPLATES } from "./constants/templates";
-import { initialBugsConfig, initialChangelogConfig, initialStudyConfig } from "./constants/initialConfigs";
 
 
 export default function App() {
   const { t, lang, setLang } = useLang();
 
-  const [activeTemplate, setActiveTemplate] = useLocalStorageState("rg_activeTemplate", "bugs");
-  const [studyConfig,     setStudyConfig]     = useLocalStorageState("rg_studyConfig",     initialStudyConfig);
-  const [bugsConfig,      setBugsConfig]      = useLocalStorageState("rg_bugsConfig",      initialBugsConfig);
-  const [changelogConfig, setChangelogConfig] = useLocalStorageState("rg_changelogConfig", initialChangelogConfig);
+  const {
+    reports, active, activeTemplate, activeReport, config, setConfig,
+    createReport, duplicateReport, deleteReport, openReport, selectTemplate, renameReport,
+    saveError, dismissSaveError,
+  } = useReports();
   const [rightTab,  setRightTab]  = useState("preview");
   const [mobTab,    setMobTab]    = useState("editor");
   const [editorWidth, setEditorWidth] = useState(48);
   const [showImport,   setShowImport]   = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [showReports, setShowReports] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const bodyRef  = useRef(null);
   const rightBodyRef  = useRef(null);
   const isMobile = useIsMobile();
 
-  const config =
-    activeTemplate === "study"     ? studyConfig :
-    activeTemplate === "changelog" ? changelogConfig :
-                                     bugsConfig;
-
-  const setConfig =
-    activeTemplate === "study"     ? setStudyConfig :
-    activeTemplate === "changelog" ? setChangelogConfig :
-                                     setBugsConfig;
+  const reportCount = reports.filter(r => r.template === activeTemplate).length;
 
   const handleResize = useCallback(clientX => {
     if (!bodyRef.current) return;
@@ -79,23 +72,19 @@ export default function App() {
   }, []);
 
   const handleSelectTemplate = id => {
-    setActiveTemplate(id);
+    selectTemplate(id);
     setRightTab("preview");
   };
 
   const handleClearReport = () => {
-    if      (activeTemplate === "study")     setStudyConfig(initialStudyConfig);
-    else if (activeTemplate === "changelog") setChangelogConfig(initialChangelogConfig);
-    else                                     setBugsConfig(initialBugsConfig);
+    setConfig(blankConfig(activeTemplate));
     setShowClearConfirm(false);
   };
 
+  // JSON importado vira um relatório novo — não sobrescreve o aberto.
   const handleImport = merged => {
-    const tmpl = merged.template || "bugs";
-    setActiveTemplate(tmpl);
-    if      (tmpl === "study")     setStudyConfig(merged);
-    else if (tmpl === "changelog") setChangelogConfig(merged);
-    else                           setBugsConfig(merged);
+    createReport(merged.template || "bugs", merged);
+    setRightTab("preview");
   };
 
   const tmpl = TEMPLATES[activeTemplate];
@@ -113,7 +102,6 @@ export default function App() {
   const rightBodyClass = `right-body${(rightTab === "preview" || rightTab === "export" || rightTab === "assets") ? " scrollable" : ""}`;
 
   return (
-    <ErrorBoundary>
     <PreviewNavContext.Provider value={goToPreview}>
     <div className="app-shell">
       {showTemplateSelector && (
@@ -121,6 +109,19 @@ export default function App() {
           current={activeTemplate}
           onSelect={handleSelectTemplate}
           onClose={() => setShowTemplateSelector(false)}
+        />
+      )}
+      {showReports && (
+        <ReportsModal
+          reports={reports}
+          active={active}
+          activeTemplate={activeTemplate}
+          onOpen={openReport}
+          onCreate={template => { createReport(template); setRightTab("preview"); }}
+          onDuplicate={id => duplicateReport(id, t.reportCopySuffix)}
+          onDelete={deleteReport}
+          onRename={renameReport}
+          onClose={() => setShowReports(false)}
         />
       )}
       {showImport && (
@@ -167,7 +168,7 @@ export default function App() {
           }}>
             <Bi name={tmpl.icon} size={20} style={{ color: "#fff" }} />
           </div>
-          <div>
+          <div className="hdr-brand-text">
             <div style={{ fontSize: 17, fontWeight: 900, letterSpacing: -.4, fontFamily: "var(--disp)", lineHeight: 1.1 }}>ReportGen</div>
             <div style={{ fontSize: 10, color: "var(--tx3)", letterSpacing: .8, textTransform: "uppercase" }}>{t.appSubtitle}</div>
           </div>
@@ -190,10 +191,28 @@ export default function App() {
           <Bi name="chevron-expand" size={12} style={{ opacity: 0.6 }} />
         </button>
 
-        <div style={{ width: 1, height: 30, background: "var(--b2)" }} />
+        {/* Report switcher: vários relatórios por template */}
+        <button
+          onClick={() => setShowReports(true)}
+          className="btn-ghost report-switcher"
+          title={t.manageReports}
+          aria-label={t.manageReports}
+        >
+          <Bi name="files" size={13} />
+          {!isMobile && (
+            <span className="report-switcher-name" style={config.titulo?.trim() ? undefined : { fontStyle: "italic", color: "var(--tx3)" }}>
+              {config.titulo?.trim() || t.untitledReport}
+            </span>
+          )}
+          {reportCount > 1 && <span className="reports-tab-count">{reportCount}</span>}
+          <Bi name="chevron-down" size={11} style={{ opacity: 0.6 }} />
+        </button>
 
-        {/* Fix #4: Stats with colored pills */}
-        <Stats config={config} />
+        {/* Fix #4: Stats with colored pills — some em telas médias pra caber o seletor de relatório */}
+        <div className="hdr-stats">
+          <div style={{ width: 1, height: 30, background: "var(--b2)" }} />
+          <Stats config={config} />
+        </div>
 
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
           <button
@@ -223,13 +242,25 @@ export default function App() {
         </div>
       </header>
 
+      {saveError && (
+        <div className="save-error" role="alert">
+          <Bi name="exclamation-octagon-fill" size={14} style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1 }}>{saveError.kind === "quota" ? t.saveErrorQuota : t.saveErrorUnknown}</span>
+          <button onClick={dismissSaveError} aria-label="OK" style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: 2 }}>
+            <Bi name="x-lg" size={12} />
+          </button>
+        </div>
+      )}
+
       <div className="app-body" ref={bodyRef}>
         {/* Editor pane */}
         <div
           className={`pane-editor${mobTab === "editor" ? " mob-active" : ""}`}
           style={{ width: `${editorWidth}%` }}
         >
-          <EditorComponent config={config} setConfig={setConfig} />
+          {/* key: remonta ao trocar de relatório — ids de itens se repetem entre relatórios
+              (duplicados/importados) e o estado interno dos cards não pode vazar de um pro outro */}
+          <EditorComponent key={activeReport.id} config={config} setConfig={setConfig} />
         </div>
 
         <ResizeHandle onResize={handleResize} />
@@ -275,7 +306,7 @@ export default function App() {
                     </div>
                   </div>
                   <div style={{ background: "#fff" }}>
-                    <PreviewComponent config={config} />
+                    <PreviewComponent key={activeReport.id} config={config} />
                   </div>
                 </div>
               </div>
@@ -283,12 +314,12 @@ export default function App() {
 
             {rightTab === "json" && (
               <div style={{ height: "100%" }}>
-                <JsonOutput config={config} />
+                <JsonOutput key={activeReport.id} config={config} />
               </div>
             )}
 
             {rightTab === "export" && (
-              <ExportPanel config={config} activeTemplate={activeTemplate} />
+              <ExportPanel key={activeReport.id} config={config} activeTemplate={activeTemplate} />
             )}
 
           </div>
@@ -315,6 +346,5 @@ export default function App() {
       </nav>
     </div>
     </PreviewNavContext.Provider>
-    </ErrorBoundary>
   );
 }

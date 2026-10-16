@@ -23,7 +23,7 @@ export function CustomTables({ tabelas, primary, label }) {
               {t.linhas.map((row, ri) => (
                 <tr key={ri} style={{ background: ri % 2 ? "#f8f8fb" : "#fff" }}>
                   {row.map((cell, ci) => (
-                    <td key={ci} style={{ padding: "8px 14px", borderBottom: "1px solid #eee", color: "#333" }}>{cell || "—"}</td>
+                    <td key={ci} style={{ padding: "8px 14px", borderBottom: "1px solid #eee", color: "#333", whiteSpace: "pre-wrap", verticalAlign: "top" }}>{cell || "—"}</td>
                   ))}
                 </tr>
               ))}

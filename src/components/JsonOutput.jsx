@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Bi } from "./Bi";
-import { useLang } from "../contexts/LangContext";
+import { useLang } from "../contexts/lang";
 import reportSchema from "../../report-schema.json";
 
 export function JsonOutput({ config }) {

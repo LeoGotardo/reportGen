@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Bi } from "./Bi";
-import { initialBugsConfig, initialChangelogConfig, initialStudyConfig, emptyBugProblem, emptyChange, emptyStudyTopic } from "../constants/initialConfigs";
-import { useLang } from "../contexts/LangContext";
+import { initialBugsConfig, initialChangelogConfig, initialStudyConfig, emptyBugProblem, emptyChange, emptyStudyTopic, emptySuiteTest } from "../constants/initialConfigs";
+import { normalizeResult } from "../utils/testSuite";
+import { useLang } from "../contexts/lang";
 
 // Fix #2: Proper mergeConfig that normalises arrays, re-assigns IDs,
 // and guarantees the nested `detalhe` structure on every item.
@@ -39,6 +40,15 @@ function mergeConfig(incoming) {
             textoResolucao: [""], codigoResolucao: [""], testesPassam: [""],
             ...(p.detalhe || {}),
           },
+        }))
+      : [];
+    // `codigo` é o ID visível do teste; `id` é interno e sempre regenerado.
+    merged.suiteTestes = Array.isArray(incoming.suiteTestes)
+      ? incoming.suiteTestes.map(s => ({
+          ...emptySuiteTest(), ...s, id: crypto.randomUUID(),
+          // LLMs às vezes mandam o ID do teste em `id`: aproveita como `codigo` se não vier um.
+          codigo: s?.codigo ?? (typeof s?.id === "string" ? s.id : ""),
+          resultado: normalizeResult(s?.resultado),
         }))
       : [];
     if (!Array.isArray(merged.resumoExecutivo) || !merged.resumoExecutivo.length) merged.resumoExecutivo = [""];

@@ -4,7 +4,7 @@ import { buildBugsHtml, buildStudyHtml, buildChangelogHtml } from "../utils/expo
 import { getPdfMake } from "../utils/cdnLoaders";
 import { logoToDataUrl, bugsPdf, changelogPdf, studyPdf } from "../utils/pdfBuilders";
 import { buildDocxBlob } from "../utils/buildDocxBlob";
-import { useLang } from "../contexts/LangContext";
+import { useLang } from "../contexts/lang";
 
 export function ExportPanel({ config, activeTemplate }) {
   const { t } = useLang();

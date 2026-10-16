@@ -3,7 +3,7 @@ import { Bi } from "./Bi";
 import { GoToPreview } from "./UI";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { CHANGE_TYPES } from "../constants/templates";
-import { useLang } from "../contexts/LangContext";
+import { useLang } from "../contexts/lang";
 
 function TypeIcon({ type, color }) {
   const s = { flexShrink: 0 };
@@ -17,7 +17,7 @@ function TypeIcon({ type, color }) {
   return <svg viewBox="0 0 14 14" width="14" height="14" style={s}><circle cx="7" cy="7" r="5" style={{ fill: color }} opacity="0.5"/></svg>;
 }
 
-export function ChangeCard({ change, idx, onChange, onRemove, dragHandleProps }) {
+export function ChangeCard({ change, onChange, onRemove, dragHandleProps }) {
   const { t: i18n } = useLang();
   const [open, setOpen] = useState(false);
   const isMob = useIsMobile();

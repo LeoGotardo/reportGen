@@ -3,7 +3,7 @@ import { Bi } from "./Bi";
 import { ArrayField, GoToPreview } from "./UI";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { SEV } from "../constants/templates";
-import { useLang } from "../contexts/LangContext";
+import { useLang } from "../contexts/lang";
 
 export function BugProblemCard({ prob, idx, onChange, onRemove, dragHandleProps }) {
   const { t } = useLang();
