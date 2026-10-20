@@ -1,6 +1,19 @@
 import { getT } from "../i18n/index.js";
 
-const esc = s => (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+// Tudo que vem do relatório (JSON importado, chamada à API) passa por aqui antes de virar HTML.
+const esc = v => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+// Logo só como imagem base64 embutida: nada de URL externa nem aspas que fechem o atributo src.
+const safeLogo = v => (typeof v === "string" && /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/]+={0,2}$/i.test(v) ? v : "");
+// Paleta só entra no HTML como hex; valor ausente ou fora disso cai no padrão do template.
+const DEFAULT_CORES = {
+  bugs:      { primaria: "1F3864", secundaria: "2E75B6", altaSev: "C00000", mediaSev: "C55A11", baixaSev: "375623", codeBg: "1E1E1E", codeText: "D4D4D4" },
+  study:     { primaria: "1F3864", secundaria: "2E75B6", concept: "f59e0b", practice: "10b981", summary: "6366f1", codeBg: "1E1E1E", codeText: "D4D4D4" },
+  changelog: { primaria: "0F4C35", secundaria: "10B981", breaking: "DC2626", feat: "2563EB", fix: "D97706", refactor: "7C3AED", perf: "0891B2", style: "DB2777", chore: "64748B", codeBg: "0D1117", codeText: "E6EDF3" },
+};
+const coresOf = (template, config) => Object.fromEntries(Object.entries(DEFAULT_CORES[template]).map(([k, def]) => {
+  const v = String(config.cores?.[k] ?? "").replace(/^#/, "");
+  return [k, `#${/^[0-9a-f]{3,8}$/i.test(v) ? v : def}`];
+}));
 // Suíte de testes: resultado em qualquer idioma/variação → PASS | FAIL | UNTESTED.
 const SUITE_COLORS = { PASS: "#16a34a", FAIL: "#dc2626", UNTESTED: "#6b7280" };
 const suiteRes = v => {
@@ -58,16 +71,17 @@ function buildCustomTablesHtml(tabelas, primary, label) {
 
 // ─── BUGS ────────────────────────────────────────────────────────────────────
 export function buildBugsHtml(config, tObj) {
+  const cores = coresOf("bugs", config);
   const t = tObj || getT("pt");
-  const primary   = `#${config.cores.primaria}`;
-  const secondary = `#${config.cores.secundaria}`;
+  const primary   = cores.primaria;
+  const secondary = cores.secundaria;
   const sevC = {
-    ALTA:  `#${config.cores.altaSev}`,
-    MÉDIA: `#${config.cores.mediaSev}`,
-    BAIXA: `#${config.cores.baixaSev}`,
+    ALTA:  cores.altaSev,
+    MÉDIA: cores.mediaSev,
+    BAIXA: cores.baixaSev,
   };
-  const codeBg   = `#${config.cores.codeBg}`;
-  const codeTxt  = `#${config.cores.codeText}`;
+  const codeBg   = cores.codeBg;
+  const codeTxt  = cores.codeText;
 
   const tableRows = config.problemas.map((p, i) => {
     const c = sevC[p.severity] || sevC.ALTA;
@@ -117,7 +131,7 @@ export function buildBugsHtml(config, tObj) {
 <style>${BASE_STYLE}</style></head><body>
 ${PRINT_BAR(t.doc_common_footerTechReport, "#6271f5", config.formato, config.versao, t.doc_common_printBtn)}
 <div style="padding:56px 48px 42px;background:linear-gradient(160deg,${primary}08,transparent);border-bottom:4px solid ${primary}">
-  ${config.logo ? `<div style="margin-bottom:28px"><img src="${config.logo}" style="max-height:100px;max-width:350px;object-fit:contain"/></div>` : ""}
+  ${safeLogo(config.logo) ? `<div style="margin-bottom:28px"><img src="${safeLogo(config.logo)}" style="max-height:100px;max-width:350px;object-fit:contain"/></div>` : ""}
   <div style="font-size:9px;font-weight:700;letter-spacing:3px;color:#aaa;text-transform:uppercase;margin-bottom:14px">${t.doc_bugs_overline}</div>
   <div style="font-size:30px;font-weight:900;color:${primary};line-height:1.15;margin-bottom:12px;font-family:Georgia,serif">${esc(config.titulo) || "Título do Relatório"}</div>
   <div style="font-size:15px;color:${secondary};font-weight:500;padding-bottom:22px;margin-bottom:22px;border-bottom:1px solid ${secondary}30">${esc(config.subtitulo)}</div>
@@ -224,7 +238,7 @@ ${(config.testes || []).length ? `
 ${config.conclusao?.some(v => v.trim()) ? `
 <div style="padding:38px 48px 56px">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
-    <div style="width:5px;height:24px;background:#${config.cores.baixaSev};border-radius:3px"></div>
+    <div style="width:5px;height:24px;background:${cores.baixaSev};border-radius:3px"></div>
     <div style="font-size:18px;font-weight:800;color:${primary}">${t.doc_bugs_conclusion}</div>
   </div>
   ${config.conclusao.filter(v => v.trim()).map(v => `<p style="font-size:13px;color:#333;margin-bottom:12px">${esc(v)}</p>`).join("")}
@@ -232,23 +246,24 @@ ${config.conclusao?.some(v => v.trim()) ? `
 
 <div style="padding:24px 48px;border-top:1px solid #eee;display:flex;align-items:center;justify-content:space-between;color:#999;font-size:11px">
   <span>${t.doc_common_footerTechReport} — ${esc(config.titulo) || "Documento"}</span>
-  ${config.logo ? `<img src="${config.logo}" style="max-height:32px;max-width:100px;object-fit:contain;opacity:0.6"/>` : ""}
+  ${safeLogo(config.logo) ? `<img src="${safeLogo(config.logo)}" style="max-height:32px;max-width:100px;object-fit:contain;opacity:0.6"/>` : ""}
 </div>
 </body></html>`;
 }
 
 // ─── STUDY ───────────────────────────────────────────────────────────────────
 export function buildStudyHtml(config, tObj) {
+  const cores = coresOf("study", config);
   const t = tObj || getT("pt");
-  const primary   = `#${config.cores.primaria}`;
-  const secondary = `#${config.cores.secundaria}`;
+  const primary   = cores.primaria;
+  const secondary = cores.secundaria;
   const typeColors = {
-    CONCEITO: `#${config.cores.concept}`,
-    PRÁTICA:  `#${config.cores.practice}`,
-    RESUMO:   `#${config.cores.summary}`,
+    CONCEITO: cores.concept,
+    PRÁTICA:  cores.practice,
+    RESUMO:   cores.summary,
   };
-  const codeBg  = `#${config.cores.codeBg}`;
-  const codeTxt = `#${config.cores.codeText}`;
+  const codeBg  = cores.codeBg;
+  const codeTxt = cores.codeText;
 
   const tableRows = config.topicos.map((p, i) => {
     const c = typeColors[p.tipo] || typeColors.CONCEITO;
@@ -283,7 +298,7 @@ export function buildStudyHtml(config, tObj) {
 <style>${BASE_STYLE}</style></head><body>
 ${PRINT_BAR(t.doc_common_footerStudy, "#f59e0b", config.formato, config.versao, t.doc_common_printBtn)}
 <div style="padding:56px 48px 42px;background:linear-gradient(160deg,${primary}08,transparent);border-bottom:4px solid ${primary}">
-  ${config.logo ? `<div style="margin-bottom:28px"><img src="${config.logo}" style="max-height:100px;max-width:350px;object-fit:contain"/></div>` : ""}
+  ${safeLogo(config.logo) ? `<div style="margin-bottom:28px"><img src="${safeLogo(config.logo)}" style="max-height:100px;max-width:350px;object-fit:contain"/></div>` : ""}
   <div style="font-size:9px;font-weight:700;letter-spacing:3px;color:#aaa;text-transform:uppercase;margin-bottom:14px">${t.doc_study_overline}</div>
   <div style="font-size:30px;font-weight:900;color:${primary};line-height:1.15;margin-bottom:12px;font-family:Georgia,serif">${esc(config.titulo) || "Título do Estudo"}</div>
   <div style="font-size:15px;color:${secondary};font-weight:500;padding-bottom:22px;margin-bottom:22px;border-bottom:1px solid ${secondary}30">${esc(config.subtitulo) || "Tema ou assunto estudado"}</div>
@@ -342,33 +357,34 @@ ${config.conclusao?.some(v => v.trim()) ? `
 
 <div style="padding:24px 48px;border-top:1px solid #eee;display:flex;align-items:center;justify-content:space-between;color:#999;font-size:11px">
   <span>${t.doc_common_footerStudy} — ${esc(config.titulo) || "Documento"}</span>
-  ${config.logo ? `<img src="${config.logo}" style="max-height:32px;max-width:100px;object-fit:contain;opacity:0.6"/>` : ""}
+  ${safeLogo(config.logo) ? `<img src="${safeLogo(config.logo)}" style="max-height:32px;max-width:100px;object-fit:contain;opacity:0.6"/>` : ""}
 </div>
 </body></html>`;
 }
 
 // ─── CHANGELOG ───────────────────────────────────────────────────────────────
 export function buildChangelogHtml(config, tObj) {
+  const cores = coresOf("changelog", config);
   const t = tObj || getT("pt");
-  const primary  = `#${config.cores.primaria}`;
+  const primary  = cores.primaria;
   const typeColors = {
-    feat:     `#${config.cores.feat}`,
-    fix:      `#${config.cores.fix}`,
-    breaking: `#${config.cores.breaking}`,
-    refactor: `#${config.cores.refactor}`,
-    perf:     `#${config.cores.perf}`,
-    style:    `#${config.cores.style || "DB2777"}`,
-    chore:    `#${config.cores.chore}`,
+    feat:     cores.feat,
+    fix:      cores.fix,
+    breaking: cores.breaking,
+    refactor: cores.refactor,
+    perf:     cores.perf,
+    style:    cores.style,
+    chore:    cores.chore,
   };
   const LABELS = { feat: "Feature", fix: "Fix", breaking: "Breaking", refactor: "Refactor", perf: "Perf", style: "Style", chore: "Chore" };
   const typeOrder = ["breaking", "feat", "fix", "refactor", "perf", "style", "chore"];
 
-  const grouped = {};
+  const grouped = Object.create(null); // tipo vem do JSON: "__proto__" não pode cair no protótipo
   config.mudancas?.forEach(m => { if (!grouped[m.tipo]) grouped[m.tipo] = []; grouped[m.tipo].push(m); });
 
   const tableRows = config.mudancas.map((m, i) => {
     const c = typeColors[m.tipo] || typeColors.feat;
-    const label = LABELS[m.tipo] || m.tipo;
+    const label = Object.hasOwn(LABELS, m.tipo) ? LABELS[m.tipo] : esc(m.tipo);
     return `<tr style="background:${i % 2 ? "#f8f9fb" : "#fff"}">
       <td style="padding:8px 12px;border-bottom:1px solid #eee;font-weight:700;color:#ccc;font-family:monospace">${i + 1}</td>
       <td style="padding:8px 12px;border-bottom:1px solid #eee"><span style="background:${c}18;color:${c};padding:2px 9px;border-radius:12px;font-size:10px;font-weight:800">${label}</span></td>
@@ -413,10 +429,10 @@ export function buildChangelogHtml(config, tObj) {
 <style>${BASE_STYLE}</style></head><body>
 ${PRINT_BAR(t.doc_common_footerChangelog, "#10b981", config.formato, config.versao, t.doc_common_printBtn)}
 <div style="padding:48px 48px 36px;border-bottom:4px solid ${primary}">
-  ${config.logo ? `<div style="margin-bottom:24px"><img src="${config.logo}" style="max-height:80px;max-width:280px;object-fit:contain"/></div>` : ""}
+  ${safeLogo(config.logo) ? `<div style="margin-bottom:24px"><img src="${safeLogo(config.logo)}" style="max-height:80px;max-width:280px;object-fit:contain"/></div>` : ""}
   <div style="font-size:9px;font-weight:700;letter-spacing:3px;color:#aaa;text-transform:uppercase;margin-bottom:12px">${t.doc_changelog_overline}</div>
   <div style="font-size:28px;font-weight:900;color:${primary};line-height:1.15;margin-bottom:10px;font-family:Georgia,serif">${esc(config.titulo) || "Changelog do Projeto"}</div>
-  <div style="font-size:14px;color:#${config.cores.secundaria};font-weight:600;padding-bottom:20px;margin-bottom:20px;border-bottom:1px solid #${config.cores.secundaria}30">${esc(config.subtitulo) || "Registro técnico de alterações"}</div>
+  <div style="font-size:14px;color:${cores.secundaria};font-weight:600;padding-bottom:20px;margin-bottom:20px;border-bottom:1px solid ${cores.secundaria}30">${esc(config.subtitulo) || "Registro técnico de alterações"}</div>
   <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:12px;color:#888">
     ${config.projeto     ? `<span><strong style="color:#555">${t.doc_changelog_fieldProject}:</strong> ${esc(config.projeto)}</span>` : ""}
     ${config.autor       ? `<span><strong style="color:#555">${t.doc_changelog_fieldAuthor}:</strong> ${esc(config.autor)}</span>` : ""}
@@ -447,7 +463,7 @@ ${config.descricao?.some(v => v.trim()) ? `
 ${config.mudancas.length ? `
 <div style="padding:32px 48px 0">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-    <div style="width:5px;height:24px;background:#${config.cores.secundaria};border-radius:3px"></div>
+    <div style="width:5px;height:24px;background:${cores.secundaria};border-radius:3px"></div>
     <div style="font-size:16px;font-weight:800;color:${primary}">${t.doc_changelog_table}</div>
   </div>
   <table style="width:100%;border-collapse:collapse;font-size:11px">
@@ -463,7 +479,7 @@ ${config.mudancas.length ? `
 </div>
 <div style="padding:32px 48px 0">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-    <div style="width:5px;height:24px;background:#${config.cores.secundaria};border-radius:3px"></div>
+    <div style="width:5px;height:24px;background:${cores.secundaria};border-radius:3px"></div>
     <div style="font-size:16px;font-weight:800;color:${primary}">${t.doc_changelog_detail}</div>
   </div>
   ${detailBlocks}
@@ -474,7 +490,7 @@ ${buildCustomTablesHtml(config.tabelas, primary, t.doc_common_tables)}
 ${config.resumo?.some(v => v.trim()) ? `
 <div style="padding:32px 48px 48px">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-    <div style="width:5px;height:24px;background:#${config.cores.chore};border-radius:3px"></div>
+    <div style="width:5px;height:24px;background:${cores.chore};border-radius:3px"></div>
     <div style="font-size:16px;font-weight:800;color:${primary}">${t.doc_changelog_summary}</div>
   </div>
   ${config.resumo.filter(v => v.trim()).map(v => `<p style="font-size:12px;color:#333;margin-bottom:10px">${esc(v)}</p>`).join("")}
@@ -482,7 +498,7 @@ ${config.resumo?.some(v => v.trim()) ? `
 
 <div style="padding:20px 48px;border-top:1px solid #eee;display:flex;align-items:center;justify-content:space-between;color:#999;font-size:11px">
   <span>${t.doc_common_footerChangelog} — ${esc(config.titulo) || "Documento"} · v${esc(config.versao)}</span>
-  ${config.logo ? `<img src="${config.logo}" style="max-height:32px;max-width:100px;object-fit:contain;opacity:0.6"/>` : ""}
+  ${safeLogo(config.logo) ? `<img src="${safeLogo(config.logo)}" style="max-height:32px;max-width:100px;object-fit:contain;opacity:0.6"/>` : ""}
 </div>
 </body></html>`;
 }

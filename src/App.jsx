@@ -31,7 +31,7 @@ export default function App() {
   const {
     reports, active, activeTemplate, activeReport, config, setConfig,
     createReport, duplicateReport, deleteReport, openReport, selectTemplate, renameReport,
-    folders, membership, createFolder, renameFolder, deleteFolder, moveReport,
+    folders, membership, createFolder, renameFolder, deleteFolder, moveReport, importBackup,
     saveError, dismissSaveError,
   } = useReports();
   const [rightTab,  setRightTab]  = useState("preview");
@@ -128,6 +128,7 @@ export default function App() {
           onRenameFolder={renameFolder}
           onDeleteFolder={deleteFolder}
           onMove={moveReport}
+          onImportBackup={importBackup}
           onClose={() => setShowReports(false)}
         />
       )}

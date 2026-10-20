@@ -1,62 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Bi } from "./Bi";
-import { initialBugsConfig, initialChangelogConfig, initialStudyConfig, emptyBugProblem, emptyChange, emptyStudyTopic, emptySuiteTest } from "../constants/initialConfigs";
-import { normalizeResult } from "../utils/testSuite";
 import { useLang } from "../contexts/lang";
+import { mergeConfig } from "../utils/mergeConfig";
+import { IMPORT_LIMITS } from "../utils/backup";
+import { TEMPLATE_IDS } from "../hooks/useReports";
 
-// Fix #2: Proper mergeConfig that normalises arrays, re-assigns IDs,
-// and guarantees the nested `detalhe` structure on every item.
-function mergeConfig(incoming) {
-  const template = incoming.template || "bugs";
-  const base =
-    template === "changelog" ? initialChangelogConfig :
-    template === "study"     ? initialStudyConfig     :
-                               initialBugsConfig;
-
-  const merged = { ...base, ...incoming };
-  merged.cores = { ...base.cores, ...(incoming.cores || {}) };
-
-  if (template === "changelog") {
-    merged.mudancas = Array.isArray(incoming.mudancas)
-      ? incoming.mudancas.map((m, i) => ({ ...emptyChange(), ...m, id: i + 1 }))
-      : [];
-    if (!Array.isArray(merged.descricao) || !merged.descricao.length) merged.descricao = [""];
-    if (!Array.isArray(merged.resumo)    || !merged.resumo.length)    merged.resumo    = [""];
-  } else if (template === "study") {
-    merged.topicos = Array.isArray(incoming.topicos)
-      ? incoming.topicos.map((t, i) => ({
-          ...emptyStudyTopic(), ...t, id: i + 1,
-          detalhe: { explicacao: [""], exemplos: [""], codigo: [""], ...(t.detalhe || {}) },
-        }))
-      : [];
-    if (!Array.isArray(merged.introducao) || !merged.introducao.length) merged.introducao = [""];
-    if (!Array.isArray(merged.conclusao)  || !merged.conclusao.length)  merged.conclusao  = [""];
-  } else {
-    merged.problemas = Array.isArray(incoming.problemas)
-      ? incoming.problemas.map((p, i) => ({
-          ...emptyBugProblem(), ...p, id: i + 1,
-          detalhe: {
-            ondeOcorre: [""], codigoOnde: [""], porqueProblema: [""],
-            textoResolucao: [""], codigoResolucao: [""], testesPassam: [""],
-            ...(p.detalhe || {}),
-          },
-        }))
-      : [];
-    // `codigo` é o ID visível do teste; `id` é interno e sempre regenerado.
-    merged.suiteTestes = Array.isArray(incoming.suiteTestes)
-      ? incoming.suiteTestes.map(s => ({
-          ...emptySuiteTest(), ...s, id: crypto.randomUUID(),
-          // LLMs às vezes mandam o ID do teste em `id`: aproveita como `codigo` se não vier um.
-          codigo: s?.codigo ?? (typeof s?.id === "string" ? s.id : ""),
-          resultado: normalizeResult(s?.resultado),
-        }))
-      : [];
-    if (!Array.isArray(merged.resumoExecutivo) || !merged.resumoExecutivo.length) merged.resumoExecutivo = [""];
-    if (!Array.isArray(merged.conclusao)       || !merged.conclusao.length)       merged.conclusao       = [""];
-  }
-
-  return merged;
-}
+const MAX_MB = IMPORT_LIMITS.fileBytes / 2 ** 20;
 
 export function JsonImportModal({ onClose, onImport }) {
   const { t } = useLang();
@@ -76,16 +25,23 @@ export function JsonImportModal({ onClose, onImport }) {
     setError("");
     const trimmed = text.trim();
     if (!trimmed) { setError(t.pasteValid); return; }
+    if (trimmed.length > IMPORT_LIMITS.fileBytes) { setError(t.importTooLarge.replace("{mb}", MAX_MB)); return; }
     let parsed;
     try { parsed = JSON.parse(trimmed); } catch (e) { setError(`${t.invalidJson} ${e.message}`); return; }
-    if (typeof parsed !== "object" || Array.isArray(parsed)) { setError(t.objectRequired); return; }
+    // `null` também é "object": sem essa checagem, mergeConfig lançaria depois do aviso de sucesso.
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) { setError(t.objectRequired); return; }
+    // Template desconhecido viraria um relatório que nenhuma aba lista; vazio continua valendo "bugs".
+    if (parsed.template && !TEMPLATE_IDS.includes(parsed.template)) { setError(t.importUnknownTemplate); return; }
     const merged = mergeConfig(parsed);
     setSuccess(true);
     setTimeout(() => { onImport(merged); onClose(); }, 700);
   };
 
   const handleFile = e => {
-    const file = e.target.files?.[0]; if (!file) return;
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permite escolher o mesmo arquivo de novo
+    if (!file) return;
+    if (file.size > IMPORT_LIMITS.fileBytes) { setError(t.importTooLarge.replace("{mb}", MAX_MB)); return; }
     const reader = new FileReader();
     reader.onload = ev => setText(ev.target.result);
     reader.readAsText(file);

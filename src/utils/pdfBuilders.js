@@ -4,20 +4,9 @@ import { normalizeResult, suiteCounts, SUITE_RESULT_COLORS } from "./testSuite";
 
 export function h(c) { return c?.startsWith("#") ? c : `#${c}`; }
 
+// Só logo embutido (data:image/…): uma URL externa vinda de JSON importado faria o navegador buscá-la.
 export async function logoToDataUrl(src) {
-  if (!src) return null;
-  if (src.startsWith("data:")) return src;
-  return new Promise(res => {
-    const img = new Image(); img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const c = document.createElement("canvas");
-      c.width = img.width; c.height = img.height;
-      c.getContext("2d").drawImage(img, 0, 0);
-      res(c.toDataURL("image/png"));
-    };
-    img.onerror = () => res(null);
-    img.src = src;
-  });
+  return typeof src === "string" && src.startsWith("data:image/") ? src : null;
 }
 
 function pdfStyles(primary) {

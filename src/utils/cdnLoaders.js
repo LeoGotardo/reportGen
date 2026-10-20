@@ -21,3 +21,8 @@ export async function getDocx() {
   await loadScript("docx-js", "https://unpkg.com/docx@8.5.0/build/index.umd.js");
   return window.docx;
 }
+
+export async function getJSZip() {
+  await loadScript("jszip", "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js");
+  return window.JSZip;
+}

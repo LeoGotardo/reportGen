@@ -69,7 +69,7 @@
       "type": "string|null",
       "required": false,
       "default": null,
-      "description": "Imagem embutida como data URI (ex.: 'data:image/png;base64,...'). URLs externas não são carregadas pelo Puppeteer. Aparece na capa (até 100px de altura) e no rodapé."
+      "description": "Imagem embutida como data URI em base64 (ex.: 'data:image/png;base64,...'). Qualquer outro valor (URL externa, data URI sem base64) é ignorado e o documento sai sem logo. Aparece na capa (até 100px de altura) e no rodapé."
     },
     "logoNome": { "type": "string", "required": false, "default": "", "description": "Nome do arquivo de logo — apenas informativo na UI, não é renderizado no PDF." },
     "tabelas": {
@@ -93,7 +93,7 @@
       "cores": {
         "type": "object",
         "required": false,
-        "description": "Paleta do PDF; hex sem '#'.",
+        "description": "Paleta do PDF; hex sem '#'. Valor ausente ou que não seja hex usa o padrão.",
         "fields": {
           "primaria":   { "default": "1F3864", "description": "Cor de títulos e capa." },
           "secundaria": { "default": "2E75B6", "description": "Cor de destaques/subtítulos." },
@@ -180,7 +180,7 @@
       "cores": {
         "type": "object",
         "required": false,
-        "description": "Paleta do PDF; hex sem '#'.",
+        "description": "Paleta do PDF; hex sem '#'. Valor ausente ou que não seja hex usa o padrão.",
         "fields": {
           "primaria":   { "default": "1F3864", "description": "Cor de títulos e capa." },
           "secundaria": { "default": "2E75B6", "description": "Cor de destaques/subtítulos." },
@@ -235,7 +235,7 @@
       "cores": {
         "type": "object",
         "required": false,
-        "description": "Paleta do PDF; hex sem '#'. Cada tipo de mudança tem sua cor.",
+        "description": "Paleta do PDF; hex sem '#'. Valor ausente ou que não seja hex usa o padrão. Cada tipo de mudança tem sua cor.",
         "fields": {
           "primaria":   { "default": "0F4C35", "description": "Cor de títulos e capa." },
           "secundaria": { "default": "10B981", "description": "Cor de destaques/subtítulos." },

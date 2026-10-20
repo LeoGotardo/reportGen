@@ -24,3 +24,6 @@
 .dd-option.active { background: var(--s2); color: var(--tx); }
 @keyframes ddIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .dd-menu { animation: none; } }
+/* Alça do DragList: sem touch-action o toque rolaria a página em vez de arrastar o card. */
+.drag-handle { touch-action: none; }
+body.drag-sorting, body.drag-sorting * { cursor: grabbing !important; user-select: none !important; }

@@ -4,6 +4,8 @@ import { Dropdown } from "./Dropdown";
 import { TEMPLATES } from "../constants/templates";
 import { TEMPLATE_IDS } from "../hooks/useReports";
 import { useLang } from "../contexts/lang";
+import { IMPORT_LIMITS, downloadBackup, readBackupZip } from "../utils/backup";
+import { todayIso } from "../utils/date";
 
 const ITEM_FIELD = { bugs: "problemas", study: "topicos", changelog: "mudancas" };
 const DRAG_TYPE = "application/x-reportgen-report";
@@ -21,7 +23,7 @@ function relativeTime(ts, lang, justNow) {
 export function ReportsModal({
   reports, active, activeTemplate, folders, membership,
   onOpen, onCreate, onDuplicate, onDelete, onRename,
-  onCreateFolder, onRenameFolder, onDeleteFolder, onMove, onClose,
+  onCreateFolder, onRenameFolder, onDeleteFolder, onMove, onImportBackup, onClose,
 }) {
   const { t, lang } = useLang();
   const [tab, setTab] = useState(activeTemplate);
@@ -32,6 +34,8 @@ export function ReportsModal({
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [confirmFolderDelete, setConfirmFolderDelete] = useState(false);
   const [dropTarget, setDropTarget] = useState(null);
+  const [backup, setBackup] = useState(null); // null | "busy" | { ok, text }
+  const backupInputRef = useRef(null);
   // Enter (ou Esc) desmonta o input e o navegador pode disparar um blur logo depois:
   // sem essa trava, uma pasta nova seria criada duas vezes.
   const folderDoneRef = useRef(false);
@@ -99,6 +103,43 @@ export function ReportsModal({
   };
 
   const open = id => { onOpen(id); onClose(); };
+
+  // Backup: todas as pastas e relatórios (de todos os templates) num .zip, um diretório por pasta.
+  const exportAll = async () => {
+    setBackup("busy");
+    try {
+      await downloadBackup({ reports, folders, membership }, t.untitledReport, `reportgen-backup-${todayIso()}.zip`);
+      setBackup({ ok: true, text: t.backupExported.replace("{n}", reports.length).replace("{f}", folders.length) });
+    } catch {
+      setBackup({ ok: false, text: t.backupLoadError });
+    }
+  };
+
+  const importZip = async e => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permite escolher o mesmo arquivo de novo
+    if (!file) return;
+    setBackup("busy");
+    let plan;
+    try {
+      plan = await readBackupZip(file);
+    } catch (err) {
+      const text = {
+        "not-zip": t.backupNotZip,
+        "too-large": t.importTooLarge.replace("{mb}", IMPORT_LIMITS.zipBytes / 2 ** 20),
+        "too-big": t.backupTooBig,
+      }[err?.code] ?? t.backupLoadError;
+      setBackup({ ok: false, text });
+      return;
+    }
+    const invalid = plan.invalid ? ` ${t.backupInvalid.replace("{n}", plan.invalid)}` : "";
+    if (!plan.reports.length && !plan.folders.length) { setBackup({ ok: false, text: t.backupEmpty + invalid }); return; }
+    const { added, skipped, foldersAdded } = onImportBackup(plan);
+    const text = !added && !foldersAdded
+      ? t.backupNothingNew
+      : t.backupImported.replace("{n}", added).replace("{f}", foldersAdded) + (skipped ? ` ${t.backupSkipped.replace("{n}", skipped)}` : "");
+    setBackup({ ok: true, text: text + invalid });
+  };
 
   // Arrastar um relatório até uma pasta (ou "Sem pasta"). Pelo teclado/toque: menu "Mover para pasta".
   const dropProps = id => ({
@@ -297,6 +338,19 @@ export function ReportsModal({
               </div>
             );
           })}
+        </div>
+
+        <div className="json-modal-footer reports-footer">
+          <span role="status" className={`reports-backup-msg${backup && backup !== "busy" ? (backup.ok ? " ok" : " err") : ""}`}>
+            {backup === "busy" ? t.backupWorking : backup?.text ?? t.backupHint}
+          </span>
+          <button className="btn-ghost" onClick={exportAll} disabled={backup === "busy"} title={t.backupExportHint}>
+            <Bi name="file-earmark-zip" size={13} /> {t.backupExport}
+          </button>
+          <button className="btn-ghost" onClick={() => backupInputRef.current?.click()} disabled={backup === "busy"} title={t.backupImportHint}>
+            <Bi name="upload" size={13} /> {t.backupImport}
+          </button>
+          <input ref={backupInputRef} type="file" accept=".zip,application/zip" onChange={importZip} style={{ display: "none" }} />
         </div>
       </div>
     </div>

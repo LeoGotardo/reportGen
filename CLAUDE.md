@@ -36,7 +36,9 @@ Three report templates: **bugs**, **study**, **changelog**. Each has three files
 - `components/{Template}Preview.jsx` — right-panel live preview
 - `server/utils/exportUtils.js` — server-side HTML builder for PDF rendering
 
-`App.jsx` gets all report state from `src/hooks/useReports.js`: multiple reports per template, managed in `components/ReportsModal.jsx` (create / open / rename / duplicate / delete). Persistence is `localStorage`: `rg_reports_index` (report metadata + active report per template + active template) and one `rg_report_<id>` key per report config; only changed reports are rewritten (debounced, flushed on `pagehide`). Folders (single level, shared across templates) live in a separate `rg_folders` key (`folders` + `membership` reportId→folderId) so a stale tab rewriting the index can't drop them; both keys are only rewritten when their serialized value changes. Old single-config keys (`rg_bugsConfig`, …) are migrated on first load. Each template always has at least one report. Editor/preview are keyed by report id so per-card UI state doesn't leak between reports.
+`App.jsx` gets all report state from `src/hooks/useReports.js`: multiple reports per template, managed in `components/ReportsModal.jsx` (create / open / rename / duplicate / delete). Persistence is `localStorage`: `rg_reports_index` (report metadata + active report per template + active template) and one `rg_report_<id>` key per report config; only changed reports are rewritten (debounced, flushed on `pagehide`). Folders (single level, shared across templates) live in a separate `rg_folders` key (`folders` + `membership` reportId→folderId) so a stale tab rewriting the index can't drop them; both keys are only rewritten when their serialized value changes. Old single-config keys (`rg_bugsConfig`, …) are migrated on first load. Full backup lives in `src/utils/backup.js` (JSZip via CDN): export writes a `.zip` with one directory per folder, one `<title>.json` per report (unfiled at the root) and a `reportgen.json` manifest (ids, timestamps, original folder names, empty folders); import (`importBackup` in the hook) only adds — same id + same config is skipped, so re-importing doesn't duplicate. Import limits (zip size, entry count, bytes counted while inflating against zip bombs) are `IMPORT_LIMITS` there.
+
+Every config entering the app (localStorage load, JSON import, zip import) goes through `normalize` → `src/utils/sanitizeConfig.js`: it walks the default shape from `initialConfigs.js`, so **fields not in the defaults are dropped**. New string/string-array fields work by adding them to the defaults; new lists of objects or enums also need an entry in `SPECS` there. Colors must be hex, `logo` a base64 `data:image/…` URL. Each template always has at least one report. Editor/preview are keyed by report id so per-card UI state doesn't leak between reports.
 
 Key shared pieces:
 - `src/constants/initialConfigs.js` — default state shapes for each template
@@ -58,7 +60,9 @@ Translation strings are duplicated: `src/i18n/index.js` (frontend) and `server/u
 - Rate limit: 20 requests / 15 min on `/export`
 - Optional API key auth via `API_KEY` env var (`x-api-key` header)
 
-`server/utils/exportUtils.js` mirrors the logic of `src/utils/exportUtils.js` but runs server-side. Both build self-contained HTML strings (inline CSS, no external deps) so Puppeteer renders them without network calls.
+The HTML is built from untrusted JSON, so Puppeteer runs with JavaScript disabled and aborts every request that isn't a `data:` URL (no SSRF even if escaping fails), and validate/build errors return 400 instead of crashing the process.
+
+`server/utils/exportUtils.js` mirrors the logic of `src/utils/exportUtils.js` but runs server-side; every interpolated value goes through `esc` (text), `coresOf` (hex colors) or `safeLogo`. Both build self-contained HTML strings (inline CSS, no external deps) so Puppeteer renders them without network calls.
 
 ### Deployment
 

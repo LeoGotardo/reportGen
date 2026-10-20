@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { initialBugsConfig, initialChangelogConfig, initialStudyConfig } from "../constants/initialConfigs";
 import { isoFromDate, toIsoDate, todayIso } from "../utils/date";
+import { sanitizeConfig } from "../utils/sanitizeConfig";
 
 // Vários relatórios por template, salvos no localStorage:
 //   rg_reports_index  → { reports: [{ id, template, createdAt, updatedAt }], active: { bugs, study, changelog }, activeTemplate }
@@ -23,15 +24,27 @@ const BASE = { bugs: initialBugsConfig, study: initialStudyConfig, changelog: in
 // `data` do relatório nasce com a data de criação (editável depois).
 export const blankConfig = template => ({ ...structuredClone(BASE[template]), data: todayIso() });
 
-/** Completa campos que faltam (relatórios salvos por versões antigas) com os defaults do template. */
+/**
+ * Todo config que entra no app (localStorage, JSON/zip importado) passa por aqui: campos que faltam
+ * (versões antigas) ganham o default e tipos errados/campos maliciosos são descartados (sanitizeConfig).
+ */
 function normalize(template, parsed) {
-  const base = BASE[template];
-  const src = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  const cfg = sanitizeConfig(template, parsed);
   // Datas aceitas em ISO ou dd/mm/aaaa (JSON importado); guardadas sempre em ISO.
   const iso = v => toIsoDate(v) ?? "";
-  const cfg = { ...structuredClone(base), ...src, template, cores: { ...base.cores, ...(src.cores || {}) }, data: iso(src.data) };
-  if (template === "changelog") { cfg.dataInicio = iso(src.dataInicio); cfg.dataFim = iso(src.dataFim); }
+  cfg.data = iso(cfg.data);
+  if (template === "changelog") { cfg.dataInicio = iso(cfg.dataInicio); cfg.dataFim = iso(cfg.dataFim); }
   return cfg;
+}
+
+// No carregamento, um relatório problemático é pulado: nunca pode levar o app à tela de erro,
+// cuja única saída é apagar todos os relatórios.
+function tryNormalize(template, parsed) {
+  try {
+    return normalize(template, parsed);
+  } catch {
+    return null;
+  }
 }
 
 function readJson(key) {
@@ -65,7 +78,8 @@ function loadStore() {
       if (!meta?.id || !TEMPLATE_IDS.includes(meta.template)) return [];
       const parsed = readJson(reportKey(meta.id));
       if (parsed === undefined) return []; // ausente ou corrompido: ignora em vez de derrubar o app
-      const config = normalize(meta.template, parsed);
+      const config = tryNormalize(meta.template, parsed);
+      if (!config) return [];
       // Relatório salvo antes do campo existir: usa o dia em que foi criado.
       if (!config.data) config.data = isoFromDate(new Date(meta.createdAt || Date.now()));
       saved.set(meta.id, config);
@@ -85,7 +99,8 @@ function loadStore() {
       if (listed.has(id)) continue;
       const parsed = readJson(key);
       if (!TEMPLATE_IDS.includes(parsed?.template)) continue;
-      const config = normalize(parsed.template, parsed);
+      const config = tryNormalize(parsed.template, parsed);
+      if (!config) continue;
       if (!config.data) config.data = todayIso();
       saved.set(id, config);
       reports.push({ id, template: parsed.template, createdAt: now, updatedAt: now, config });
@@ -151,6 +166,75 @@ const serializeIndex = s => JSON.stringify({
   active: s.active,
   activeTemplate: s.activeTemplate,
 });
+
+// JSON com chaves ordenadas: compara configs sem depender da ordem dos campos.
+const stableJson = v => JSON.stringify(v, (_, x) => (
+  x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().map(k => [k, x[k]])) : x
+));
+
+// Relatório nunca editado: igual ao em branco do template, fora a data.
+const isPristine = r => stableJson({ ...r.config, data: "" }) === stableJson({ ...normalize(r.template, blankConfig(r.template)), data: "" });
+
+/**
+ * Junta um backup (plano de utils/backup.js) ao que já existe: só adiciona, nunca sobrescreve nem apaga
+ * o que o usuário tem. Relatório com o mesmo id e o mesmo conteúdo é pulado — reimportar não duplica.
+ */
+function mergeBackup(s, plan) {
+  const now = Date.now();
+  const folders = [...s.folders];
+  const membership = { ...s.membership };
+
+  // Pasta do backup → pasta local: mesmo id, senão mesmo nome (só entre as que já existiam,
+  // para duas pastas homônimas do backup não virarem uma), senão uma pasta nova.
+  const folderFor = new Map();
+  let foldersAdded = 0;
+  for (const f of plan.folders) {
+    const local = folders.find(x => x.id === f.id) || s.folders.find(x => x.name === f.name);
+    if (local) { folderFor.set(f.key, local.id); continue; }
+    const folder = { id: f.id || crypto.randomUUID(), name: f.name, createdAt: f.createdAt || now };
+    folders.push(folder);
+    folderFor.set(f.key, folder.id);
+    foldersAdded++;
+  }
+
+  const byId = new Map(s.reports.map(r => [r.id, r]));
+  const added = [];
+  let skipped = 0;
+  for (const item of plan.reports) {
+    const config = normalize(item.template, item.config);
+    if (!config.data) config.data = isoFromDate(new Date(item.createdAt || now));
+    const existing = item.id ? byId.get(item.id) : undefined;
+    // O local passa pelo mesmo caminho do exportado (JSON → normalize): campo undefined/ausente
+    // no config em memória não pode fazer o mesmo relatório parecer diferente.
+    if (existing && stableJson(normalize(existing.template, JSON.parse(JSON.stringify(existing.config)))) === stableJson(config)) {
+      skipped++;
+      continue;
+    }
+    const r = {
+      id: item.id && !existing ? item.id : crypto.randomUUID(),
+      template: item.template,
+      createdAt: item.createdAt || now,
+      updatedAt: item.updatedAt || item.createdAt || now,
+      config,
+    };
+    byId.set(r.id, r);
+    added.push(r);
+    const folderId = item.folderKey && folderFor.get(item.folderKey);
+    if (folderId) membership[r.id] = folderId;
+  }
+
+  // Navegador novo: o relatório em branco que cada template ganha não fica sobrando ao lado dos importados.
+  let reports = [...s.reports, ...added];
+  const active = { ...s.active };
+  for (const tmpl of TEMPLATE_IDS) {
+    const own = s.reports.filter(r => r.template === tmpl);
+    if (!added.some(r => r.template === tmpl) || own.length !== 1 || membership[own[0].id] || !isPristine(own[0])) continue;
+    reports = reports.filter(r => r !== own[0]);
+    if (active[tmpl] === own[0].id) active[tmpl] = mostRecent(reports.filter(r => r.template === tmpl)).id;
+  }
+
+  return { store: { ...s, reports, active, folders, membership }, added: added.length, skipped, foldersAdded };
+}
 
 export function useReports() {
   const [initial] = useState(loadStore);
@@ -327,6 +411,15 @@ export function useReports() {
     return { ...s, membership: { ...s.membership, [reportId]: folderId } };
   }), []);
 
+  // Calcula sobre o estado atual para devolver o resumo na hora; se algo mudou antes de
+  // aplicar, refaz o merge sobre o estado novo em vez de sobrescrevê-lo.
+  const importBackup = useCallback(plan => {
+    const base = storeRef.current;
+    const { store: next, ...summary } = mergeBackup(base, plan);
+    if (summary.added || summary.foldersAdded) setStore(s => (s === base ? next : mergeBackup(s, plan).store));
+    return summary;
+  }, []);
+
   return {
     reports: store.reports,
     active: store.active,
@@ -346,6 +439,7 @@ export function useReports() {
     renameFolder,
     deleteFolder,
     moveReport,
+    importBackup,
     saveError,
     dismissSaveError: () => setSaveError(null),
   };

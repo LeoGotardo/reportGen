@@ -61,3 +61,12 @@
   .folder-chip { flex-shrink: 0; }
 }
 @media (max-width: 860px) { .dd-btn.report-move { width: 42px; height: 42px; } }
+
+/* Backup .zip (rodapé do gerenciador) */
+.reports-footer { align-items: center; flex-wrap: wrap; padding-top: 14px; padding-bottom: 14px; }
+.reports-footer .btn-ghost { font-size: 12px; padding: 7px 12px; gap: 6px; }
+.reports-footer .btn-ghost:disabled { opacity: .5; cursor: progress; }
+.reports-backup-msg { flex: 1; min-width: 180px; font-size: 12px; color: var(--tx3); }
+.reports-backup-msg.ok { color: #86efac; }
+.reports-backup-msg.err { color: #fca5a5; }
+@media (max-width: 600px) { .reports-footer { padding-left: 16px; padding-right: 16px; } }

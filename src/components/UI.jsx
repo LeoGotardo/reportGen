@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Bi } from "./Bi";
 import { useLang } from "../contexts/lang";
 import { usePreviewNav } from "../contexts/previewNav";
@@ -188,43 +188,154 @@ export function LogoField({ value, nome, onChange }) {
   );
 }
 
-export function DragList({ items, onReorder, renderItem }) {
-  const [dragging, setDragging] = useState(null);
-  const [dragOver, setDragOver] = useState(null);
+const DRAG_THRESHOLD = 4; // px até virar arraste: clique simples na alça não faz nada
+const EDGE = 70;          // px a partir da borda do painel onde a rolagem automática começa
+const MAX_SPEED = 24;     // px por frame com o ponteiro colado na borda (ou fora dela)
 
-  const reset = () => {
+function scrollParent(el) {
+  for (let p = el.parentElement; p; p = p.parentElement) {
+    const oy = getComputedStyle(p).overflowY;
+    if ((oy === "auto" || oy === "scroll") && p.scrollHeight > p.clientHeight) return p;
+  }
+  return document.scrollingElement;
+}
+
+const LIST_PAD = 24;      // a rolagem automática para quando o início/fim da lista fica esta distância da borda
+
+function visibleBounds(scroller) {
+  const r = scroller === document.scrollingElement ? { top: 0, bottom: innerHeight } : scroller.getBoundingClientRect();
+  return { top: Math.max(r.top, 0), bottom: Math.min(r.bottom, innerHeight) };
+}
+
+/**
+ * px a rolar neste frame: cresce conforme o ponteiro entra na borda de cima/baixo do painel. Para quando
+ * o início/fim da lista já está visível — senão o painel seguiria até o fim do formulário e o card sumiria.
+ */
+function edgeSpeed(scroller, y, list) {
+  const { top, bottom } = visibleBounds(scroller);
+  const zone = Math.min(EDGE, (bottom - top) / 4);
+  const depth = y < top + zone ? y - (top + zone) : y > bottom - zone ? y - (bottom - zone) : 0;
+  if (!depth) return 0;
+  const v = Math.max(1, Math.round(MAX_SPEED * Math.min(1, Math.abs(depth) / zone))); // scrollTop fracionário arredondaria para 0
+  const lr = list.getBoundingClientRect();
+  return depth > 0
+    ? Math.min(v, Math.max(0, Math.ceil(lr.bottom - (bottom - LIST_PAD))))
+    : -Math.min(v, Math.max(0, Math.ceil(top + LIST_PAD - lr.top)));
+}
+
+// Um ponteiro arrasta um card por vez, em qualquer lista.
+let activeDrag = null;
+
+/**
+ * Começa (no pointerdown da alça) o arraste de um item do DragList. Fora do componente: o estado do
+ * arraste muda a cada frame e não deve passar pelo React — só o alvo e o item arrastado viram state.
+ */
+function startDrag(e, { items, onReorder, setDragging, setDragOver }) {
+  if (e.button !== 0 || activeDrag) return;
+  const handle = e.currentTarget;
+  const el = handle.closest("[data-drag-item]");
+  const list = el?.parentElement;
+  const i = list ? [...list.children].indexOf(el) : -1;
+  if (i < 0) return;
+  e.preventDefault(); // sem seleção de texto nem foco saindo do campo atual
+  const scroller = scrollParent(el);
+  // O card só anda dentro da lista: translate além do fim aumentaria a área rolável do painel
+  // e a rolagem automática nunca chegaria ao fim.
+  const lr = list.getBoundingClientRect();
+  const er = el.getBoundingClientRect();
+  const minTy = lr.top - er.top;
+  const maxTy = lr.bottom - er.bottom;
+  const d = { owner: setDragging, i, y: e.clientY, startX: e.clientX, startY: e.clientY, startScroll: scroller.scrollTop, over: i, started: false, raf: 0 };
+  activeDrag = d;
+  try { handle.setPointerCapture(e.pointerId); } catch { /* ponteiro já liberado */ }
+
+  // Alvo = item sob o ponteiro. O item arrastado conta pela posição original (sem o translate).
+  const hitTest = ty => {
+    const kids = [...list.children];
+    const slot = j => {
+      const r = kids[j].getBoundingClientRect();
+      const off = j === i ? ty : 0;
+      return { top: r.top - off, bottom: r.bottom - off };
+    };
+    if (d.y < slot(0).top) return 0;
+    if (d.y > slot(kids.length - 1).bottom) return kids.length - 1;
+    for (let j = 0; j < kids.length; j++) {
+      const s = slot(j);
+      if (d.y >= s.top && d.y <= s.bottom) return j;
+    }
+    return d.over; // no vão entre dois cards: mantém o alvo anterior
+  };
+
+  // Reposiciona o card sob o ponteiro e recalcula o alvo.
+  const update = () => {
+    const ty = Math.min(maxTy, Math.max(minTy, d.y - d.startY + (scroller.scrollTop - d.startScroll)));
+    el.style.transform = `translateY(${ty}px)`;
+    const over = hitTest(ty);
+    if (over !== d.over) { d.over = over; setDragOver(over); }
+  };
+  // A cada frame, não só no pointermove: a rolagem (automática ou pela roda do mouse) move o
+  // conteúdo com o ponteiro parado.
+  const tick = () => {
+    const v = edgeSpeed(scroller, d.y, list);
+    if (v) scroller.scrollTop += v;
+    update();
+    d.raf = requestAnimationFrame(tick);
+  };
+
+  const onMove = ev => {
+    d.y = ev.clientY;
+    if (d.started || Math.hypot(ev.clientX - d.startX, ev.clientY - d.startY) < DRAG_THRESHOLD) return;
+    d.started = true;
+    document.body.classList.add("drag-sorting");
+    setDragging(i);
+    setDragOver(i);
+    d.raf = requestAnimationFrame(tick);
+  };
+  const onUp = ev => { d.y = ev.clientY; d.stop(true); };
+  const onCancel = () => d.stop(false);
+  const onKey = ev => { if (ev.key === "Escape") d.stop(false); };
+
+  d.stop = drop => {
+    if (activeDrag !== d) return;
+    activeDrag = null;
+    cancelAnimationFrame(d.raf);
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onCancel);
+    window.removeEventListener("keydown", onKey);
+    if (!d.started) return;
+    if (drop) update(); // soltar no mesmo frame do último movimento: alvo ainda não recalculado
+    document.body.classList.remove("drag-sorting");
+    el.style.transform = "";
+    if (drop && d.over !== i && items.length === list.children.length) {
+      const next = [...items];
+      const [moved] = next.splice(i, 1);
+      next.splice(d.over, 0, moved);
+      onReorder(next);
+    }
     setDragging(null);
     setDragOver(null);
   };
 
-  const handleDrop = e => {
-    if (dragging === null) return; // drop de texto/arquivo num input: comportamento nativo
-    e.preventDefault();
-    if (dragOver !== null && dragging !== dragOver) {
-      const arr = [...items];
-      const [removed] = arr.splice(dragging, 1);
-      arr.splice(dragOver, 0, removed);
-      onReorder(arr);
-    }
-    reset();
-  };
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
+  window.addEventListener("pointercancel", onCancel);
+  window.addEventListener("keydown", onKey);
+}
 
-  // Só a alça é draggable. Com o card inteiro draggable, o navegador trata clicar/arrastar
-  // dentro dos inputs como início de drag: não posiciona o cursor nem seleciona texto.
-  const handleProps = i => ({
-    draggable: true,
-    onDragStart: e => {
-      e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", ""); // Firefox só inicia o drag se houver dados
-      const card = e.currentTarget.closest("[data-drag-item]");
-      if (card) {
-        const r = card.getBoundingClientRect();
-        e.dataTransfer.setDragImage(card, e.clientX - r.left, e.clientY - r.top);
-      }
-      setDragging(i);
-    },
-    onDragEnd: reset,
-  });
+// Arraste por pointer events, não drag nativo do HTML5: no drag nativo a roda do mouse não rola
+// (Linux) e a rolagem automática na borda é mínima, então não dava para levar um card além da tela.
+// Aqui o card segue o ponteiro, a borda do painel rola sozinha e a roda continua funcionando.
+export function DragList({ items, onReorder, renderItem }) {
+  const [dragging, setDragging] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
+  useEffect(() => () => { if (activeDrag?.owner === setDragging) activeDrag.stop(false); }, []);
+
+  // Só a alça inicia o arraste: clicar/arrastar dentro dos inputs continua selecionando texto.
+  const handleProps = {
+    className: "drag-handle",
+    onPointerDown: e => startDrag(e, { items, onReorder, setDragging, setDragOver }),
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -232,21 +343,18 @@ export function DragList({ items, onReorder, renderItem }) {
         <div
           key={item.id}
           data-drag-item=""
-          onDragOver={e => {
-            if (dragging === null) return;
-            e.preventDefault();
-            if (dragOver !== i) setDragOver(i);
-          }}
-          onDrop={handleDrop}
           style={{
-            opacity: dragging === i ? 0.4 : 1,
-            transition: "opacity .15s",
+            position: "relative",
+            zIndex: dragging === i ? 20 : "auto",
+            opacity: dragging === i ? 0.92 : 1,
+            boxShadow: dragging === i ? "0 18px 44px rgba(0,0,0,.45)" : "none",
+            transition: "opacity .15s, box-shadow .15s",
             borderRadius: "var(--r)",
             outline: dragOver === i && dragging !== i ? "2px solid var(--ac)" : "none",
             outlineOffset: 2,
           }}
         >
-          {renderItem(item, i, handleProps(i))}
+          {renderItem(item, i, handleProps)}
         </div>
       ))}
     </div>

@@ -134,38 +134,43 @@ function validateChangelog(data) {
   return null;
 }
 
+const BUILDERS = {
+  bugs:      [validateBugs,      buildBugsHtml],
+  study:     [validateStudy,     buildStudyHtml],
+  changelog: [validateChangelog, buildChangelogHtml],
+};
+
 app.post("/export", async (req, res) => {
   const data = req.body;
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return res.status(400).json({ error: "body must be a JSON object" });
+  }
   const { template, lang = "pt" } = data;
 
   if (!template) {
     return res.status(400).json({ error: "template is required" });
   }
-
-  const t = getT(lang);
-
-  let validationError;
-  let html;
-
-  if (template === "bugs") {
-    validationError = validateBugs(data);
-    if (!validationError) html = buildBugsHtml(data, t);
-  } else if (template === "study") {
-    validationError = validateStudy(data);
-    if (!validationError) html = buildStudyHtml(data, t);
-  } else if (template === "changelog") {
-    validationError = validateChangelog(data);
-    if (!validationError) html = buildChangelogHtml(data, t);
-  } else {
-    return res.status(400).json({ error: `unknown template: ${template}` });
+  if (!Object.hasOwn(BUILDERS, template)) {
+    return res.status(400).json({ error: "unknown template" });
   }
 
-  if (validationError) {
-    return res.status(400).json({ error: validationError });
+  const t = getT(lang);
+  const [validate, build] = BUILDERS[template];
+
+  // Campo com tipo inesperado (ex.: item null) lança aqui; fora do try, a rejeição
+  // não tratada derrubava o processo inteiro.
+  let html;
+  try {
+    const validationError = validate(data);
+    if (validationError) return res.status(400).json({ error: validationError });
+    html = build(data, t);
+  } catch {
+    return res.status(400).json({ error: "invalid payload: unexpected field types" });
   }
 
   const format   = data.formato === "CARTA" ? "Letter" : "A4";
-  const filename = `relatorio-${template}-v${data.versao || "1"}.pdf`;
+  const versao   = String(data.versao ?? "").replace(/[^\w.-]/g, "").slice(0, 20) || "1";
+  const filename = `relatorio-${template}-v${versao}.pdf`;
 
   let browser;
   try {
@@ -175,6 +180,11 @@ app.post("/export", async (req, res) => {
     });
 
     const page = await browser.newPage();
+    // O HTML é montado com dados do cliente: sem JavaScript e sem rede (só data: URLs, ex.: logo
+    // embutido). Mesmo que algo escape do esc(), não executa nem alcança a rede interna (SSRF).
+    await page.setJavaScriptEnabled(false);
+    await page.setRequestInterception(true);
+    page.on("request", r => (r.url().startsWith("data:") ? r.continue() : r.abort()));
     await page.setContent(html, { waitUntil: "networkidle0", timeout: LIMITS.puppeteerMs });
 
     const pdf = await page.pdf({
@@ -189,7 +199,7 @@ app.post("/export", async (req, res) => {
     res.send(pdf);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "pdf generation failed", detail: err.message });
+    res.status(500).json({ error: "pdf generation failed" });
   } finally {
     await browser?.close();
   }
