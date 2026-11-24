@@ -31,6 +31,7 @@
   "notes": [
     "Cores são strings hex SEM '#'. Ex.: '1F3864'.",
     "Campos de lista de parágrafos (ex.: resumoExecutivo, conclusao) são arrays de string — cada item vira um parágrafo/bullet.",
+    "Campos de prosa aceitam markdown inline — listas de parágrafos (resumoExecutivo, conclusao, introducao, descricao/resumo do changelog, ondeOcorre, porqueProblema, textoResolucao, explicacao, exemplos) e os textos problemas[].resumo, problemas[].comoReproduzir, testes[].descricao, testes[].como, mudancas[].descricao, motivacao, impacto (também na tabela) e notas: **negrito**, *itálico*, `código`, [texto](https://…) (só http/https/mailto); linhas começando com \"- \" viram bullet e \\n quebra linha. Tabelas GFM também: linha '| A | B |', depois '|---|---|' (mesmo nº de colunas), depois uma linha '| x | y |' por registro; a tabela acaba na primeira linha vazia ou sem '|'; '\\|' é pipe literal; células aceitam markdown inline; alinhamento (:--:) é ignorado. Na tabela de mudanças, impacto mostra só markdown inline. Sem _itálico_ (snake_case fica literal). Títulos, campos de código, topicos[].resumo, suiteTestes e demais células de tabela são literais.",
     "Campos de código são arrays de string (ArrayField mono) ou string única (changelog codigoAntes/codigoDepois); cada item vira um bloco de código.",
     "'id' é gerado pela UI (crypto.randomUUID) e é opcional na API; se ausente, o PDF é gerado normalmente.",
     "Arrays vazios são válidos: a seção correspondente é omitida do PDF.",

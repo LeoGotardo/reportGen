@@ -1,8 +1,30 @@
 import { CHANGE_TYPES } from "../constants/templates";
 import { formatDate } from "./date";
 import { normalizeResult, suiteCounts, SUITE_RESULT_COLORS } from "./testSuite";
+import { mdPdf, parseBlocks } from "./markdown";
 
 export function h(c) { return c?.startsWith("#") ? c : `#${c}`; }
+
+// Parágrafos de prosa (style "body") aceitam markdown, inclusive tabelas (viram nós irmãos);
+// código e células de tabela do relatório ficam literais. `prefix` ("Motivação: ") vai antes do
+// texto sem atrapalhar a detecção de uma tabela logo no começo.
+const mdTable = b => ({
+  table: {
+    headerRows: 1, widths: b.head.map(() => "*"),
+    body: [
+      b.head.map(h => ({ text: mdPdf(h), style: "th" })),
+      ...b.rows.map((row, i) => row.map(cell => ({ text: mdPdf(cell), style: "td", fillColor: i % 2 ? "#f8f8fb" : "#fff" }))),
+    ],
+  },
+  layout: { hLineColor: () => "#eee", vLineColor: () => "#eee" },
+  margin: [0, 4, 0, 10],
+});
+const withMd = c => c.flatMap(({ prefix, ...n }) => {
+  if (n.style !== "body" || typeof n.text !== "string") return [n];
+  const blocks = parseBlocks(n.text);
+  if (prefix) blocks[0] && !blocks[0].head ? (blocks[0] = { text: prefix + blocks[0].text }) : blocks.unshift({ text: prefix });
+  return blocks.map(b => (b.head ? mdTable(b) : { ...n, text: mdPdf(b.text) }));
+});
 
 // Só logo embutido (data:image/…): uma URL externa vinda de JSON importado faria o navegador buscá-la.
 export async function logoToDataUrl(src) {
@@ -43,54 +65,6 @@ export function bugsPdf(config, logo, t) {
   if (config.resumoExecutivo?.some(v => v.trim())) {
     c.push({ text: t.doc_bugs_execSummary, style: "h2", color: primary });
     config.resumoExecutivo.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "body" }));
-  }
-
-  if (config.problemas?.length) {
-    c.push({ text: t.doc_bugs_problemsTable, style: "h2", color: primary });
-    c.push({
-      table: {
-        headerRows: 1, widths: [30, "*", 65, "*"],
-        body: [
-          ["#", t.doc_bugs_thProblem, t.doc_bugs_thSeverity, t.doc_bugs_thResolution].map(v => ({ text: v, style: "th" })),
-          ...config.problemas.map((p, i) => [
-            { text: String(i + 1), style: "td", fillColor: i % 2 ? "#f8f8fb" : "#fff" },
-            { text: p.titulo, style: "td", fillColor: i % 2 ? "#f8f8fb" : "#fff" },
-            { text: p.severity, style: "td", color: sevC[p.severity] || sevC.ALTA, bold: true, fillColor: i % 2 ? "#f8f8fb" : "#fff" },
-            { text: p.resolucao, style: "td", fillColor: i % 2 ? "#f8f8fb" : "#fff" },
-          ]),
-        ],
-      },
-      layout: { hLineColor: () => "#eee", vLineColor: () => "#eee" },
-      margin: [0, 0, 0, 24],
-    });
-
-    c.push({ text: t.doc_bugs_problemsDetail, style: "h2", color: primary });
-    config.problemas.forEach((p, i) => {
-      const sc = sevC[p.severity] || sevC.ALTA;
-      const d = p.detalhe || {};
-      c.push({ text: `${i + 1}. ${p.titulo}`, bold: true, fontSize: 13, color: primary, margin: [0, 12, 0, 2] });
-      c.push({ text: p.severity, bold: true, color: sc, fontSize: 10, margin: [0, 0, 0, 6] });
-      if (p.resumo) c.push({ text: p.resumo, style: "body" });
-      if (p.comoReproduzir?.trim()) { c.push({ text: t.doc_bugs_fieldHowToReproduce.toUpperCase(), style: "lbl" }); c.push({ text: p.comoReproduzir, style: "body" }); }
-      const sec  = (l, arr) => { if (arr?.some(v => v.trim())) { c.push({ text: l, style: "lbl" }); arr.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "body" })); } };
-      const csec = (l, arr) => { if (arr?.some(v => v.trim())) { c.push({ text: l, style: "lbl" }); arr.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "code" })); } };
-      sec(t.doc_bugs_fieldWhere.toUpperCase(), d.ondeOcorre);
-      csec(t.doc_bugs_fieldCode.toUpperCase(), d.codigoOnde);
-      sec(t.doc_bugs_fieldWhy.toUpperCase(), d.porqueProblema);
-      sec(t.doc_bugs_fieldResText.toUpperCase(), d.textoResolucao);
-      csec(t.doc_bugs_fieldResCode.toUpperCase(), d.codigoResolucao);
-      if (d.testesPassam?.some(v => v.trim())) { c.push({ text: t.doc_bugs_fieldTestsPass.toUpperCase(), style: "lbl", color: "#22c55e" }); d.testesPassam.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "code", color: "#86efac" })); }
-    });
-  }
-
-  if (config.testes?.length) {
-    c.push({ text: t.doc_bugs_testsSection, style: "h2", color: "#16a34a" });
-    config.testes.forEach((ts, i) => {
-      c.push({ text: `${i + 1}. ${ts.titulo}`, bold: true, fontSize: 12, color: "#16a34a", margin: [0, 8, 0, 2] });
-      if (ts.descricao?.trim()) { c.push({ text: t.doc_bugs_testFieldWhat.toUpperCase(), style: "lbl" }); c.push({ text: ts.descricao, style: "body" }); }
-      if (ts.como?.trim())      { c.push({ text: t.doc_bugs_testFieldHow.toUpperCase(), style: "lbl" }); c.push({ text: ts.como, style: "body" }); }
-      if (ts.codigo?.some(v => v.trim())) ts.codigo.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "code" }));
-    });
   }
 
   if (config.suiteTestes?.length) {
@@ -144,12 +118,60 @@ export function bugsPdf(config, logo, t) {
     });
   }
 
+  if (config.problemas?.length) {
+    c.push({ text: t.doc_bugs_problemsTable, style: "h2", color: primary });
+    c.push({
+      table: {
+        headerRows: 1, widths: [30, "*", 65, "*"],
+        body: [
+          ["#", t.doc_bugs_thProblem, t.doc_bugs_thSeverity, t.doc_bugs_thResolution].map(v => ({ text: v, style: "th" })),
+          ...config.problemas.map((p, i) => [
+            { text: String(i + 1), style: "td", fillColor: i % 2 ? "#f8f8fb" : "#fff" },
+            { text: p.titulo, style: "td", fillColor: i % 2 ? "#f8f8fb" : "#fff" },
+            { text: p.severity, style: "td", color: sevC[p.severity] || sevC.ALTA, bold: true, fillColor: i % 2 ? "#f8f8fb" : "#fff" },
+            { text: p.resolucao, style: "td", fillColor: i % 2 ? "#f8f8fb" : "#fff" },
+          ]),
+        ],
+      },
+      layout: { hLineColor: () => "#eee", vLineColor: () => "#eee" },
+      margin: [0, 0, 0, 24],
+    });
+
+    c.push({ text: t.doc_bugs_problemsDetail, style: "h2", color: primary });
+    config.problemas.forEach((p, i) => {
+      const sc = sevC[p.severity] || sevC.ALTA;
+      const d = p.detalhe || {};
+      c.push({ text: `${i + 1}. ${p.titulo}`, bold: true, fontSize: 13, color: primary, margin: [0, 12, 0, 2] });
+      c.push({ text: p.severity, bold: true, color: sc, fontSize: 10, margin: [0, 0, 0, 6] });
+      if (p.resumo) c.push({ text: p.resumo, style: "body" });
+      if (p.comoReproduzir?.trim()) { c.push({ text: t.doc_bugs_fieldHowToReproduce.toUpperCase(), style: "lbl" }); c.push({ text: p.comoReproduzir, style: "body" }); }
+      const sec  = (l, arr) => { if (arr?.some(v => v.trim())) { c.push({ text: l, style: "lbl" }); arr.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "body" })); } };
+      const csec = (l, arr) => { if (arr?.some(v => v.trim())) { c.push({ text: l, style: "lbl" }); arr.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "code" })); } };
+      sec(t.doc_bugs_fieldWhere.toUpperCase(), d.ondeOcorre);
+      csec(t.doc_bugs_fieldCode.toUpperCase(), d.codigoOnde);
+      sec(t.doc_bugs_fieldWhy.toUpperCase(), d.porqueProblema);
+      sec(t.doc_bugs_fieldResText.toUpperCase(), d.textoResolucao);
+      csec(t.doc_bugs_fieldResCode.toUpperCase(), d.codigoResolucao);
+      if (d.testesPassam?.some(v => v.trim())) { c.push({ text: t.doc_bugs_fieldTestsPass.toUpperCase(), style: "lbl", color: "#22c55e" }); d.testesPassam.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "code", color: "#86efac" })); }
+    });
+  }
+
+  if (config.testes?.length) {
+    c.push({ text: t.doc_bugs_testsSection, style: "h2", color: "#16a34a" });
+    config.testes.forEach((ts, i) => {
+      c.push({ text: `${i + 1}. ${ts.titulo}`, bold: true, fontSize: 12, color: "#16a34a", margin: [0, 8, 0, 2] });
+      if (ts.descricao?.trim()) { c.push({ text: t.doc_bugs_testFieldWhat.toUpperCase(), style: "lbl" }); c.push({ text: ts.descricao, style: "body" }); }
+      if (ts.como?.trim())      { c.push({ text: t.doc_bugs_testFieldHow.toUpperCase(), style: "lbl" }); c.push({ text: ts.como, style: "body" }); }
+      if (ts.codigo?.some(v => v.trim())) ts.codigo.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "code" }));
+    });
+  }
+
   if (config.conclusao?.some(v => v.trim())) {
     c.push({ text: t.doc_bugs_conclusion, style: "h2", color: primary });
     config.conclusao.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "body" }));
   }
 
-  return { content: c, styles: pdfStyles(primary), defaultStyle: { font: "Roboto" }, pageSize: config.formato === "CARTA" ? "LETTER" : "A4", pageMargins: [56, 48, 56, 48] };
+  return { content: withMd(c), styles: pdfStyles(primary), defaultStyle: { font: "Roboto" }, pageSize: config.formato === "CARTA" ? "LETTER" : "A4", pageMargins: [56, 48, 56, 48] };
 }
 
 export function changelogPdf(config, logo, t) {
@@ -185,7 +207,7 @@ export function changelogPdf(config, logo, t) {
               { text: info.label, style: "td", color: info.color, bold: true, fillColor: i % 2 ? "#f8f9fb" : "#fff" },
               { text: m.titulo, style: "td", fillColor: i % 2 ? "#f8f9fb" : "#fff" },
               { text: m.arquivo || "—", style: "td", fontSize: 8, fillColor: i % 2 ? "#f8f9fb" : "#fff" },
-              { text: m.impacto || "—", style: "td", fontSize: 9, fillColor: i % 2 ? "#f8f9fb" : "#fff" },
+              { text: mdPdf(m.impacto || "—"), style: "td", fontSize: 9, fillColor: i % 2 ? "#f8f9fb" : "#fff" },
             ];
           }),
         ],
@@ -202,11 +224,12 @@ export function changelogPdf(config, logo, t) {
         c.push({ text: m.titulo, bold: true, fontSize: 12, margin: [0, 4, 0, 2] });
         if (m.arquivo)             c.push({ text: m.arquivo, style: "code", fontSize: 9 });
         if (m.descricao?.trim())   c.push({ text: m.descricao, style: "body" });
-        if (m.motivacao?.trim())   c.push({ text: `${t.doc_changelog_fieldMotiv}: ${m.motivacao}`, style: "body", italics: true });
-        if (m.impacto?.trim())     c.push({ text: `${t.doc_changelog_fieldImpact}: ${m.impacto}`, style: "body", italics: true });
+        if (m.motivacao?.trim())   c.push({ text: m.motivacao, prefix: `${t.doc_changelog_fieldMotiv}: `, style: "body", italics: true });
+        if (m.impacto?.trim())     c.push({ text: m.impacto, prefix: `${t.doc_changelog_fieldImpact}: `, style: "body", italics: true });
         if (m.codigoAntes?.trim()) c.push({ text: `${t.doc_changelog_fieldBefore}:\n${m.codigoAntes}`, style: "code" });
         if (m.codigoDepois?.trim())c.push({ text: `${t.doc_changelog_fieldAfter}:\n${m.codigoDepois}`, style: "code" });
-        if (m.notas?.trim())       c.push({ text: `${t.doc_docx_notePrefix}${m.notas}`, style: "body", color: "#D97706" });
+        // Roboto (fonte embutida do pdfmake) não tem o ⚠: sai um quadrado.
+        if (m.notas?.trim())       c.push({ text: m.notas, prefix: t.doc_docx_notePrefix.replace("⚠ ", ""), style: "body", color: "#D97706" });
       });
     });
   }
@@ -216,7 +239,7 @@ export function changelogPdf(config, logo, t) {
     config.resumo.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "body" }));
   }
 
-  return { content: c, styles: pdfStyles(primary), defaultStyle: { font: "Roboto" }, pageSize: config.formato === "CARTA" ? "LETTER" : "A4", pageMargins: [56, 48, 56, 48] };
+  return { content: withMd(c), styles: pdfStyles(primary), defaultStyle: { font: "Roboto" }, pageSize: config.formato === "CARTA" ? "LETTER" : "A4", pageMargins: [56, 48, 56, 48] };
 }
 
 export function studyPdf(config, logo, t) {
@@ -265,7 +288,7 @@ export function studyPdf(config, logo, t) {
       c.push({ text: `${i + 1}. ${p.titulo}`, bold: true, fontSize: 13, color: primary, margin: [0, 12, 0, 2] });
       c.push({ text: p.tipo, bold: true, color: tc, fontSize: 10, margin: [0, 0, 0, 6] });
       if (d.explicacao?.some(v => v.trim())) { c.push({ text: t.doc_study_fieldExplanation.toUpperCase(), style: "lbl" }); d.explicacao.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "body" })); }
-      if (d.exemplos?.some(v => v.trim()))   { c.push({ text: t.doc_study_fieldExamples.toUpperCase(), style: "lbl" }); d.exemplos.filter(v => v.trim()).forEach(v => c.push({ text: `• ${v}`, style: "body" })); }
+      if (d.exemplos?.some(v => v.trim()))   { c.push({ text: t.doc_study_fieldExamples.toUpperCase(), style: "lbl" }); d.exemplos.filter(v => v.trim()).forEach(v => c.push({ text: v, prefix: "• ", style: "body" })); }
       if (d.codigo?.some(v => v.trim()))     { c.push({ text: t.doc_study_fieldCode.toUpperCase(), style: "lbl" }); d.codigo.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "code" })); }
     });
   }
@@ -275,5 +298,5 @@ export function studyPdf(config, logo, t) {
     config.conclusao.filter(v => v.trim()).forEach(v => c.push({ text: v, style: "body" }));
   }
 
-  return { content: c, styles: pdfStyles(primary), defaultStyle: { font: "Roboto" }, pageSize: config.formato === "CARTA" ? "LETTER" : "A4", pageMargins: [56, 48, 56, 48] };
+  return { content: withMd(c), styles: pdfStyles(primary), defaultStyle: { font: "Roboto" }, pageSize: config.formato === "CARTA" ? "LETTER" : "A4", pageMargins: [56, 48, 56, 48] };
 }

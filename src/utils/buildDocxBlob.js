@@ -2,6 +2,7 @@ import { CHANGE_TYPES } from "../constants/templates";
 import { getDocx } from "./cdnLoaders";
 import { formatDate } from "./date";
 import { normalizeResult, suiteCounts, SUITE_RESULT_COLORS } from "./testSuite";
+import { parseBlocks, parseMarkdown } from "./markdown";
 
 function hexToDocxColor(hex) {
   return (hex || "000000").replace("#", "").toUpperCase().padStart(6, "0");
@@ -23,7 +24,7 @@ export async function buildDocxBlob(config, activeTemplate, t) {
     Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
     HeadingLevel, AlignmentType, BorderStyle, WidthType, ShadingType,
     VerticalAlign, PageNumber, Header, Footer, PageBreak,
-    LevelFormat, TabStopType, TabStopPosition,
+    LevelFormat, TabStopType, TabStopPosition, ExternalHyperlink,
   } = docx;
 
   const isLetter  = config.formato === "CARTA";
@@ -73,10 +74,36 @@ export async function buildDocxBlob(config, activeTemplate, t) {
     children: [new TextRun({ text: text.toUpperCase(), bold: true, size: 16, color: "999999", font: "Arial" })],
   });
 
-  const BodyText = (text) => new Paragraph({
-    spacing: { before: 0, after: 80 },
-    children: [new TextRun({ text: String(text || ""), size: 22, font: "Arial", color: "333333" })],
+  // Markdown dos campos de prosa (utils/markdown.js) → runs; "\n" do campo vira quebra de linha.
+  const mdRuns = (text, base) => parseMarkdown(text).flatMap(tok => {
+    const runs = tok.text.split("\n").map((part, i) => new TextRun({
+      ...base, text: part, break: i ? 1 : undefined, bold: tok.bold, italics: tok.italic,
+      ...(tok.code && { font: "Consolas", color: "C7254E", shading: { fill: "F0F0F3", type: ShadingType.CLEAR } }),
+      ...(tok.href && { color: "2E75B6", underline: {} }),
+    }));
+    return tok.href ? [new ExternalHyperlink({ link: tok.href, children: runs })] : runs;
   });
+
+  // Tabela markdown dentro da prosa: mesmo visual das tabelas do relatório.
+  const MdTable = b => {
+    const colW = b.head.map(() => Math.round(contentW / b.head.length));
+    const plain = s => parseMarkdown(s).map(tok => tok.text).join("");
+    return new Table({
+      width: { size: contentW, type: WidthType.DXA },
+      columnWidths: colW,
+      rows: [
+        new TableRow({ tableHeader: true, children: b.head.map((h, ci) => HeaderCell(plain(h) || " ", colW[ci])) }),
+        ...b.rows.map((row, ri) => new TableRow({ children: row.map((cell, ci) => DataCell(cell || " ", colW[ci], { fill: ri % 2 ? "F8F8FB" : "FFFFFF", md: true })) })),
+      ],
+    });
+  };
+
+  // Prosa → [Paragraph | Table]: quem chama faz push(...BodyText(v)).
+  const BodyBlocks = blocks => blocks.map(b => b.head ? MdTable(b) : new Paragraph({
+    spacing: { before: 0, after: 80 },
+    children: mdRuns(b.text, { size: 22, font: "Arial", color: "333333" }),
+  }));
+  const BodyText = text => BodyBlocks(parseBlocks(text));
 
   const CodeBlock = (text) => new Paragraph({
     spacing: { before: 60, after: 60 },
@@ -89,11 +116,20 @@ export async function buildDocxBlob(config, activeTemplate, t) {
     })],
   });
 
-  const BulletItem = (text) => new Paragraph({
-    numbering: { reference: "bullets", level: 0 },
-    spacing: { before: 0, after: 60 },
-    children: [new TextRun({ text: String(text || ""), size: 22, font: "Arial", color: "333333" })],
-  });
+  // Parágrafo especial (bullet, nota) com markdown: o texto antes da 1ª tabela fica nele, o resto vem depois.
+  const splitLead = text => {
+    const blocks = parseBlocks(text);
+    return [blocks[0] && !blocks[0].head ? blocks.shift().text : "", blocks];
+  };
+
+  const BulletItem = (text) => {
+    const [lead, rest] = splitLead(text);
+    return [new Paragraph({
+      numbering: { reference: "bullets", level: 0 },
+      spacing: { before: 0, after: 60 },
+      children: mdRuns(lead, { size: 22, font: "Arial", color: "333333" }),
+    }), ...BodyBlocks(rest)];
+  };
 
   const SeverityBadge = (sev) => {
     const colors = {
@@ -130,7 +166,7 @@ export async function buildDocxBlob(config, activeTemplate, t) {
     verticalAlign: VerticalAlign.CENTER,
     children: [new Paragraph({
       // \n dentro de um TextRun não quebra linha no Word: um run por linha com break.
-      children: String(text || "—").split(/\r?\n/).map((line, li) => new TextRun({
+      children: opts.md ? mdRuns(text || "—", { size: opts.size || 20, font: "Arial", color: opts.color || "333333" }) : String(text || "—").split(/\r?\n/).map((line, li) => new TextRun({
         text: line,
         break: li > 0 ? 1 : undefined,
         size: opts.size || 20,
@@ -231,8 +267,65 @@ export async function buildDocxBlob(config, activeTemplate, t) {
 
     if (config.resumoExecutivo?.some(v => v.trim())) {
       contentChildren.push(SectionTitle(t.doc_bugs_execSummary));
-      config.resumoExecutivo.filter(v => v.trim()).forEach(v => contentChildren.push(BodyText(v)));
+      config.resumoExecutivo.filter(v => v.trim()).forEach(v => contentChildren.push(...BodyText(v)));
       contentChildren.push(Br());
+    }
+
+    if (config.suiteTestes?.length) {
+      const label = k => (k === "UNTESTED" ? t.doc_suite_untested : k);
+      const resColor = k => SUITE_RESULT_COLORS[k].replace("#", "").toUpperCase();
+      const counts = suiteCounts(config.suiteTestes);
+      contentChildren.push(SectionTitle(t.doc_bugs_suiteSection));
+      contentChildren.push(new Paragraph({
+        spacing: { after: 120 },
+        children: [
+          new TextRun({ text: `${t.doc_suite_total}: ${config.suiteTestes.length}`, bold: true, size: 18, color: "888888", font: "Arial" }),
+          ...["PASS", "FAIL", "UNTESTED"].map(k => new TextRun({ text: `     ${counts[k]} ${label(k)}`, bold: true, size: 18, color: resColor(k), font: "Arial" })),
+        ],
+      }));
+      const colW = [0.13, 0.3, 0.42, 0.15].map(f => Math.round(contentW * f));
+      contentChildren.push(new Table({
+        width: { size: contentW, type: WidthType.DXA },
+        columnWidths: colW,
+        rows: [
+          new TableRow({
+            tableHeader: true,
+            children: [t.doc_suite_thId, t.doc_suite_thTest, t.doc_suite_thDesc, t.doc_suite_thResult].map((h, ci) => HeaderCell(h, colW[ci], primary)),
+          }),
+          ...config.suiteTestes.map((s, i) => {
+            const fill = i % 2 ? "F8F8FB" : "FFFFFF";
+            const res = normalizeResult(s.resultado);
+            return new TableRow({
+              children: [
+                DataCell(s.codigo || "—", colW[0], { fill, color: "555555", mono: true, size: 18 }),
+                DataCell(s.titulo || "—", colW[1], { fill, bold: true }),
+                DataCell(s.descricao || "—", colW[2], { fill }),
+                DataCell(label(res), colW[3], { fill, bold: true, color: resColor(res), size: 18 }),
+              ],
+            });
+          }),
+        ],
+      }));
+      contentChildren.push(Br());
+    }
+
+    if (config.tabelas?.length) {
+      contentChildren.push(SectionTitle(t.doc_common_tables));
+      config.tabelas.forEach(tb => {
+        if (tb.titulo) contentChildren.push(new Paragraph({ spacing: { before: 160, after: 60 }, children: [new TextRun({ text: tb.titulo, bold: true, size: 22, font: "Arial", color: primary })] }));
+        if (tb.cabecalhos?.length) {
+          const colW = tb.cabecalhos.map(() => Math.round(contentW / tb.cabecalhos.length));
+          contentChildren.push(new Table({
+            width: { size: contentW, type: WidthType.DXA },
+            columnWidths: colW,
+            rows: [
+              new TableRow({ tableHeader: true, children: tb.cabecalhos.map((col, ci) => HeaderCell(col, colW[ci], primary)) }),
+              ...tb.linhas.map((row, ri) => new TableRow({ children: row.map((cell, ci) => DataCell(cell || "—", colW[ci], { fill: ri % 2 ? "F8F8FB" : "FFFFFF" })) })),
+            ],
+          }));
+          contentChildren.push(Br());
+        }
+      });
     }
 
     if (config.problemas?.length) {
@@ -297,18 +390,18 @@ export async function buildDocxBlob(config, activeTemplate, t) {
 
         if (p.resumo?.trim()) {
           contentChildren.push(FieldLabel(t.doc_bugs_fieldDesc));
-          contentChildren.push(BodyText(p.resumo));
+          contentChildren.push(...BodyText(p.resumo));
         }
 
         if (p.comoReproduzir?.trim()) {
           contentChildren.push(FieldLabel(t.doc_bugs_fieldHowToReproduce));
-          contentChildren.push(BodyText(p.comoReproduzir));
+          contentChildren.push(...BodyText(p.comoReproduzir));
         }
 
         const sec  = (label, arr) => {
           if (!arr?.some(v => v.trim())) return;
           contentChildren.push(FieldLabel(label));
-          arr.filter(v => v.trim()).forEach(v => contentChildren.push(BodyText(v)));
+          arr.filter(v => v.trim()).forEach(v => contentChildren.push(...BodyText(v)));
         };
         const codeSec = (label, arr) => {
           if (!arr?.some(v => v.trim())) return;
@@ -339,8 +432,8 @@ export async function buildDocxBlob(config, activeTemplate, t) {
           indent: { left: 200 },
           children: [new TextRun({ text: `${i + 1}.  ${ts.titulo || t.noTitle}`, bold: true, size: 22, color: "16A34A", font: "Arial" })],
         }));
-        if (ts.descricao?.trim()) { contentChildren.push(FieldLabel(t.doc_bugs_testFieldWhat)); contentChildren.push(BodyText(ts.descricao)); }
-        if (ts.como?.trim())      { contentChildren.push(FieldLabel(t.doc_bugs_testFieldHow));  contentChildren.push(BodyText(ts.como)); }
+        if (ts.descricao?.trim()) { contentChildren.push(FieldLabel(t.doc_bugs_testFieldWhat)); contentChildren.push(...BodyText(ts.descricao)); }
+        if (ts.como?.trim())      { contentChildren.push(FieldLabel(t.doc_bugs_testFieldHow));  contentChildren.push(...BodyText(ts.como)); }
         if (ts.codigo?.some(v => v.trim())) {
           ts.codigo.filter(v => v.trim()).forEach(block =>
             block.split("\n").forEach(line => contentChildren.push(CodeBlock(line)))
@@ -350,66 +443,9 @@ export async function buildDocxBlob(config, activeTemplate, t) {
       });
     }
 
-    if (config.suiteTestes?.length) {
-      const label = k => (k === "UNTESTED" ? t.doc_suite_untested : k);
-      const resColor = k => SUITE_RESULT_COLORS[k].replace("#", "").toUpperCase();
-      const counts = suiteCounts(config.suiteTestes);
-      contentChildren.push(SectionTitle(t.doc_bugs_suiteSection));
-      contentChildren.push(new Paragraph({
-        spacing: { after: 120 },
-        children: [
-          new TextRun({ text: `${t.doc_suite_total}: ${config.suiteTestes.length}`, bold: true, size: 18, color: "888888", font: "Arial" }),
-          ...["PASS", "FAIL", "UNTESTED"].map(k => new TextRun({ text: `     ${counts[k]} ${label(k)}`, bold: true, size: 18, color: resColor(k), font: "Arial" })),
-        ],
-      }));
-      const colW = [0.13, 0.3, 0.42, 0.15].map(f => Math.round(contentW * f));
-      contentChildren.push(new Table({
-        width: { size: contentW, type: WidthType.DXA },
-        columnWidths: colW,
-        rows: [
-          new TableRow({
-            tableHeader: true,
-            children: [t.doc_suite_thId, t.doc_suite_thTest, t.doc_suite_thDesc, t.doc_suite_thResult].map((h, ci) => HeaderCell(h, colW[ci], primary)),
-          }),
-          ...config.suiteTestes.map((s, i) => {
-            const fill = i % 2 ? "F8F8FB" : "FFFFFF";
-            const res = normalizeResult(s.resultado);
-            return new TableRow({
-              children: [
-                DataCell(s.codigo || "—", colW[0], { fill, color: "555555", mono: true, size: 18 }),
-                DataCell(s.titulo || "—", colW[1], { fill, bold: true }),
-                DataCell(s.descricao || "—", colW[2], { fill }),
-                DataCell(label(res), colW[3], { fill, bold: true, color: resColor(res), size: 18 }),
-              ],
-            });
-          }),
-        ],
-      }));
-      contentChildren.push(Br());
-    }
-
-    if (config.tabelas?.length) {
-      contentChildren.push(SectionTitle(t.doc_common_tables));
-      config.tabelas.forEach(tb => {
-        if (tb.titulo) contentChildren.push(new Paragraph({ spacing: { before: 160, after: 60 }, children: [new TextRun({ text: tb.titulo, bold: true, size: 22, font: "Arial", color: primary })] }));
-        if (tb.cabecalhos?.length) {
-          const colW = tb.cabecalhos.map(() => Math.round(contentW / tb.cabecalhos.length));
-          contentChildren.push(new Table({
-            width: { size: contentW, type: WidthType.DXA },
-            columnWidths: colW,
-            rows: [
-              new TableRow({ tableHeader: true, children: tb.cabecalhos.map((col, ci) => HeaderCell(col, colW[ci], primary)) }),
-              ...tb.linhas.map((row, ri) => new TableRow({ children: row.map((cell, ci) => DataCell(cell || "—", colW[ci], { fill: ri % 2 ? "F8F8FB" : "FFFFFF" })) })),
-            ],
-          }));
-          contentChildren.push(Br());
-        }
-      });
-    }
-
     if (config.conclusao?.some(v => v.trim())) {
       contentChildren.push(SectionTitle(t.doc_bugs_conclusion));
-      config.conclusao.filter(v => v.trim()).forEach(v => contentChildren.push(BodyText(v)));
+      config.conclusao.filter(v => v.trim()).forEach(v => contentChildren.push(...BodyText(v)));
     }
   }
 
@@ -420,7 +456,7 @@ export async function buildDocxBlob(config, activeTemplate, t) {
 
     if (config.descricao?.some(v => v.trim())) {
       contentChildren.push(SectionTitle(t.doc_changelog_overview));
-      config.descricao.filter(v => v.trim()).forEach(v => contentChildren.push(BodyText(v)));
+      config.descricao.filter(v => v.trim()).forEach(v => contentChildren.push(...BodyText(v)));
       contentChildren.push(Br());
     }
 
@@ -456,7 +492,7 @@ export async function buildDocxBlob(config, activeTemplate, t) {
             DataCell(info.label, colW[1], { fill, bold: true, color: tc }),
             DataCell(m.titulo, colW[2], { fill }),
             DataCell(m.arquivo || "—", colW[3], { fill, mono: true, size: 16 }),
-            DataCell(m.impacto || "—", colW[4], { fill, size: 18 }),
+            DataCell(m.impacto || "—", colW[4], { fill, size: 18, md: true }),
           ],
         });
       });
@@ -500,16 +536,16 @@ export async function buildDocxBlob(config, activeTemplate, t) {
             }));
           }
 
-          if (m.descricao?.trim()) contentChildren.push(BodyText(m.descricao));
+          if (m.descricao?.trim()) contentChildren.push(...BodyText(m.descricao));
 
           if (m.motivacao?.trim()) {
             contentChildren.push(FieldLabel(t.doc_changelog_fieldMotiv));
-            contentChildren.push(BodyText(m.motivacao));
+            contentChildren.push(...BodyText(m.motivacao));
           }
 
           if (m.impacto?.trim()) {
             contentChildren.push(FieldLabel(t.doc_changelog_fieldImpact));
-            contentChildren.push(BodyText(m.impacto));
+            contentChildren.push(...BodyText(m.impacto));
           }
 
           if (m.codigoAntes?.trim()) {
@@ -525,15 +561,17 @@ export async function buildDocxBlob(config, activeTemplate, t) {
           }
 
           if (m.notas?.trim()) {
+            const [lead, blocks] = splitLead(m.notas);
             contentChildren.push(new Paragraph({
               spacing: { before: 60, after: 60 },
               shading: { fill: "FFFBEB", type: ShadingType.CLEAR },
               indent: { left: 200 },
               children: [
                 new TextRun({ text: t.doc_docx_notePrefix, bold: true, size: 20, color: "D97706", font: "Arial" }),
-                new TextRun({ text: m.notas, size: 20, color: "555555", font: "Arial" }),
+                ...mdRuns(lead, { size: 20, color: "555555", font: "Arial" }),
               ],
             }));
+            contentChildren.push(...BodyBlocks(blocks));
           }
 
           contentChildren.push(Br());
@@ -543,7 +581,7 @@ export async function buildDocxBlob(config, activeTemplate, t) {
 
     if (config.resumo?.some(v => v.trim())) {
       contentChildren.push(SectionTitle(t.doc_changelog_summary));
-      config.resumo.filter(v => v.trim()).forEach(v => contentChildren.push(BodyText(v)));
+      config.resumo.filter(v => v.trim()).forEach(v => contentChildren.push(...BodyText(v)));
     }
   }
 
@@ -556,7 +594,7 @@ export async function buildDocxBlob(config, activeTemplate, t) {
 
     if (config.introducao?.some(v => v.trim())) {
       contentChildren.push(SectionTitle(t.doc_study_intro));
-      config.introducao.filter(v => v.trim()).forEach(v => contentChildren.push(BodyText(v)));
+      config.introducao.filter(v => v.trim()).forEach(v => contentChildren.push(...BodyText(v)));
       contentChildren.push(Br());
     }
 
@@ -625,12 +663,12 @@ export async function buildDocxBlob(config, activeTemplate, t) {
 
         if (d.explicacao?.some(v => v.trim())) {
           contentChildren.push(FieldLabel(t.doc_study_fieldExplanation));
-          d.explicacao.filter(v => v.trim()).forEach(v => contentChildren.push(BodyText(v)));
+          d.explicacao.filter(v => v.trim()).forEach(v => contentChildren.push(...BodyText(v)));
         }
 
         if (d.exemplos?.some(v => v.trim())) {
           contentChildren.push(FieldLabel(t.doc_study_fieldExamples));
-          d.exemplos.filter(v => v.trim()).forEach(v => contentChildren.push(BulletItem(v)));
+          d.exemplos.filter(v => v.trim()).forEach(v => contentChildren.push(...BulletItem(v)));
           contentChildren.push(Br());
         }
 
@@ -648,7 +686,7 @@ export async function buildDocxBlob(config, activeTemplate, t) {
 
     if (config.conclusao?.some(v => v.trim())) {
       contentChildren.push(SectionTitle(t.doc_study_conclusion));
-      config.conclusao.filter(v => v.trim()).forEach(v => contentChildren.push(BodyText(v)));
+      config.conclusao.filter(v => v.trim()).forEach(v => contentChildren.push(...BodyText(v)));
     }
   }
 

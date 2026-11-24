@@ -1,4 +1,5 @@
 import { getT } from "../i18n/index.js";
+import { mdHtml, mdInlineHtml } from "../utils/markdown.js";
 
 // Tudo que vem do relatório (JSON importado, chamada à API) passa por aqui antes de virar HTML.
 const esc = v => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -99,7 +100,7 @@ export function buildBugsHtml(config, tObj) {
     const field = (label, items) => items?.some(v => v.trim())
       ? `<div style="margin-bottom:14px">
            <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${label}</div>
-           ${items.filter(v => v.trim()).map(v => `<p style="font-size:12px;color:#333;line-height:1.7;margin-bottom:6px">${esc(v)}</p>`).join("")}
+           ${items.filter(v => v.trim()).map(v => `<div style="font-size:12px;color:#333;line-height:1.7;margin-bottom:6px">${mdHtml(v)}</div>`).join("")}
          </div>` : "";
     const code = (label, items) => items?.some(v => v.trim())
       ? `<div style="margin-bottom:14px">
@@ -115,8 +116,8 @@ export function buildBugsHtml(config, tObj) {
         <div style="font-size:15px;font-weight:800;color:#1a1a2e;flex:1">${esc(p.titulo)}</div>
         <span style="background:${c}18;color:${c};padding:2px 10px;border-radius:12px;font-size:10px;font-weight:800">${esc(p.severity)}</span>
       </div>
-      ${p.resumo?.trim() ? `<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${t.doc_bugs_fieldDesc}</div><p style="font-size:12px;color:#333;line-height:1.7">${esc(p.resumo)}</p></div>` : ""}
-      ${p.comoReproduzir?.trim() ? `<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${t.doc_bugs_fieldHowToReproduce}</div><p style="font-size:12px;color:#333;line-height:1.7">${esc(p.comoReproduzir)}</p></div>` : ""}
+      ${p.resumo?.trim() ? `<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${t.doc_bugs_fieldDesc}</div><div style="font-size:12px;color:#333;line-height:1.7">${mdHtml(p.resumo)}</div></div>` : ""}
+      ${p.comoReproduzir?.trim() ? `<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${t.doc_bugs_fieldHowToReproduce}</div><div style="font-size:12px;color:#333;line-height:1.7">${mdHtml(p.comoReproduzir)}</div></div>` : ""}
       ${field(t.doc_bugs_fieldWhere, d.ondeOcorre)}
       ${code(t.doc_bugs_fieldCode, d.codigoOnde)}
       ${field(t.doc_bugs_fieldWhy, d.porqueProblema)}
@@ -128,7 +129,7 @@ export function buildBugsHtml(config, tObj) {
 
   return `<!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="UTF-8"/><title>${esc(config.titulo) || t.doc_common_footerTechReport}</title>
-<style>${BASE_STYLE}</style></head><body>
+<style>${BASE_STYLE}</style></head><body style="--md-primary:${primary}">
 ${PRINT_BAR(t.doc_common_footerTechReport, "#6271f5", config.formato, config.versao, t.doc_common_printBtn)}
 <div style="padding:56px 48px 42px;background:linear-gradient(160deg,${primary}08,transparent);border-bottom:4px solid ${primary}">
   ${safeLogo(config.logo) ? `<div style="margin-bottom:28px"><img src="${safeLogo(config.logo)}" style="max-height:100px;max-width:350px;object-fit:contain"/></div>` : ""}
@@ -149,7 +150,7 @@ ${config.resumoExecutivo?.some(v => v.trim()) ? `
     <div style="width:5px;height:24px;background:${primary};border-radius:3px"></div>
     <div style="font-size:18px;font-weight:800;color:${primary}">${t.doc_bugs_execSummary}</div>
   </div>
-  ${config.resumoExecutivo.filter(v => v.trim()).map(v => `<p style="font-size:13px;color:#333;margin-bottom:12px">${esc(v)}</p>`).join("")}
+  ${config.resumoExecutivo.filter(v => v.trim()).map(v => `<div style="font-size:13px;color:#333;margin-bottom:12px">${mdHtml(v)}</div>`).join("")}
 </div>` : ""}
 
 ${(config.suiteTestes || []).length ? (() => {
@@ -229,8 +230,8 @@ ${(config.testes || []).length ? `
       <div style="font-size:14px;font-weight:800;color:#1a1a2e;flex:1">${esc(ts.titulo)}</div>
       <span style="background:#22c55e22;color:#16a34a;padding:2px 10px;border-radius:12px;font-size:10px;font-weight:800">PASS</span>
     </div>
-    ${ts.descricao?.trim() ? `<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${t.doc_bugs_testFieldWhat}</div><p style="font-size:12px;color:#333;line-height:1.7">${esc(ts.descricao)}</p></div>` : ""}
-    ${ts.como?.trim() ? `<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${t.doc_bugs_testFieldHow}</div><p style="font-size:12px;color:#333;line-height:1.7">${esc(ts.como)}</p></div>` : ""}
+    ${ts.descricao?.trim() ? `<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${t.doc_bugs_testFieldWhat}</div><div style="font-size:12px;color:#333;line-height:1.7">${mdHtml(ts.descricao)}</div></div>` : ""}
+    ${ts.como?.trim() ? `<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${t.doc_bugs_testFieldHow}</div><div style="font-size:12px;color:#333;line-height:1.7">${mdHtml(ts.como)}</div></div>` : ""}
     ${ts.codigo?.some(v => v.trim()) ? ts.codigo.filter(v => v.trim()).map(v => `<pre style="background:${codeBg};color:#86efac;padding:12px 16px;border-radius:8px;font-size:11px;font-family:monospace;line-height:1.6;overflow-x:auto;margin-bottom:8px;white-space:pre-wrap;word-break:break-all;border-left:3px solid #22c55e">${esc(v)}</pre>`).join("") : ""}
   </div>`).join("")}
 </div>` : ""}
@@ -241,7 +242,7 @@ ${config.conclusao?.some(v => v.trim()) ? `
     <div style="width:5px;height:24px;background:${cores.baixaSev};border-radius:3px"></div>
     <div style="font-size:18px;font-weight:800;color:${primary}">${t.doc_bugs_conclusion}</div>
   </div>
-  ${config.conclusao.filter(v => v.trim()).map(v => `<p style="font-size:13px;color:#333;margin-bottom:12px">${esc(v)}</p>`).join("")}
+  ${config.conclusao.filter(v => v.trim()).map(v => `<div style="font-size:13px;color:#333;margin-bottom:12px">${mdHtml(v)}</div>`).join("")}
 </div>` : ""}
 
 <div style="padding:24px 48px;border-top:1px solid #eee;display:flex;align-items:center;justify-content:space-between;color:#999;font-size:11px">
@@ -287,15 +288,15 @@ export function buildStudyHtml(config, tObj) {
         <div style="font-size:15px;font-weight:800;color:#1a1a2e;flex:1">${esc(p.titulo)}</div>
         <span style="background:${c}18;color:${c};padding:2px 10px;border-radius:12px;font-size:10px;font-weight:800">${esc(p.tipo)}</span>
       </div>
-      ${d.explicacao?.some(v => v.trim()) ? `<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${t.doc_study_fieldExplanation}</div>${d.explicacao.filter(v => v.trim()).map(v => `<p style="font-size:12px;color:#333;line-height:1.7;margin-bottom:6px">${esc(v)}</p>`).join("")}</div>` : ""}
-      ${d.exemplos?.some(v => v.trim()) ? `<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${t.doc_study_fieldExamples}</div>${d.exemplos.filter(v => v.trim()).map(v => `<p style="font-size:12px;color:#333;line-height:1.7;margin-bottom:6px">${esc(v)}</p>`).join("")}</div>` : ""}
+      ${d.explicacao?.some(v => v.trim()) ? `<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${t.doc_study_fieldExplanation}</div>${d.explicacao.filter(v => v.trim()).map(v => `<div style="font-size:12px;color:#333;line-height:1.7;margin-bottom:6px">${mdHtml(v)}</div>`).join("")}</div>` : ""}
+      ${d.exemplos?.some(v => v.trim()) ? `<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${t.doc_study_fieldExamples}</div>${d.exemplos.filter(v => v.trim()).map(v => `<div style="font-size:12px;color:#333;line-height:1.7;margin-bottom:6px">${mdHtml(v)}</div>`).join("")}</div>` : ""}
       ${d.codigo?.some(v => v.trim()) ? `<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">${t.doc_study_fieldCode}</div>${d.codigo.filter(v => v.trim()).map(v => `<pre style="background:${codeBg};color:${codeTxt};padding:12px 16px;border-radius:8px;font-size:11px;font-family:monospace;line-height:1.6;overflow-x:auto;margin-bottom:8px;white-space:pre-wrap;word-break:break-all">${esc(v)}</pre>`).join("")}</div>` : ""}
     </div>`;
   }).join("");
 
   return `<!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="UTF-8"/><title>${esc(config.titulo) || t.doc_common_footerStudy}</title>
-<style>${BASE_STYLE}</style></head><body>
+<style>${BASE_STYLE}</style></head><body style="--md-primary:${primary}">
 ${PRINT_BAR(t.doc_common_footerStudy, "#f59e0b", config.formato, config.versao, t.doc_common_printBtn)}
 <div style="padding:56px 48px 42px;background:linear-gradient(160deg,${primary}08,transparent);border-bottom:4px solid ${primary}">
   ${safeLogo(config.logo) ? `<div style="margin-bottom:28px"><img src="${safeLogo(config.logo)}" style="max-height:100px;max-width:350px;object-fit:contain"/></div>` : ""}
@@ -315,7 +316,7 @@ ${config.introducao?.some(v => v.trim()) ? `
     <div style="width:5px;height:24px;background:${primary};border-radius:3px"></div>
     <div style="font-size:18px;font-weight:800;color:${primary}">${t.doc_study_intro}</div>
   </div>
-  ${config.introducao.filter(v => v.trim()).map(v => `<p style="font-size:13px;color:#333;margin-bottom:12px">${esc(v)}</p>`).join("")}
+  ${config.introducao.filter(v => v.trim()).map(v => `<div style="font-size:13px;color:#333;margin-bottom:12px">${mdHtml(v)}</div>`).join("")}
 </div>` : ""}
 
 ${config.topicos.length ? `
@@ -352,7 +353,7 @@ ${config.conclusao?.some(v => v.trim()) ? `
     <div style="width:5px;height:24px;background:${typeColors.RESUMO};border-radius:3px"></div>
     <div style="font-size:18px;font-weight:800;color:${primary}">${t.doc_study_conclusion}</div>
   </div>
-  ${config.conclusao.filter(v => v.trim()).map(v => `<p style="font-size:13px;color:#333;margin-bottom:12px">${esc(v)}</p>`).join("")}
+  ${config.conclusao.filter(v => v.trim()).map(v => `<div style="font-size:13px;color:#333;margin-bottom:12px">${mdHtml(v)}</div>`).join("")}
 </div>` : ""}
 
 <div style="padding:24px 48px;border-top:1px solid #eee;display:flex;align-items:center;justify-content:space-between;color:#999;font-size:11px">
@@ -390,7 +391,7 @@ export function buildChangelogHtml(config, tObj) {
       <td style="padding:8px 12px;border-bottom:1px solid #eee"><span style="background:${c}18;color:${c};padding:2px 9px;border-radius:12px;font-size:10px;font-weight:800">${label}</span></td>
       <td style="padding:8px 12px;border-bottom:1px solid #eee;font-weight:600;font-size:12px">${esc(m.titulo)}</td>
       <td style="padding:8px 12px;border-bottom:1px solid #eee;font-family:monospace;font-size:10px;color:#666">${esc(m.arquivo)}</td>
-      <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:11px;color:#444">${esc(m.impacto)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:11px;color:#444">${mdInlineHtml(m.impacto)}</td>
     </tr>`;
   }).join("");
 
@@ -408,9 +409,9 @@ export function buildChangelogHtml(config, tObj) {
       <div style="margin-bottom:20px;border-left:3px solid ${c};padding-left:18px">
         <div style="font-size:14px;font-weight:800;color:#1a1a2e;margin-bottom:6px">${esc(m.titulo)}</div>
         ${m.arquivo ? `<div style="font-family:monospace;font-size:10px;color:#666;background:#f5f5f5;padding:3px 10px;border-radius:5px;display:inline-block;margin-bottom:8px">${esc(m.arquivo)}</div>` : ""}
-        ${m.descricao?.trim() ? `<p style="font-size:12px;color:#333;margin-bottom:8px;line-height:1.7">${esc(m.descricao)}</p>` : ""}
-        ${m.motivacao?.trim() ? `<div style="margin-bottom:8px"><div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:4px">${t.doc_changelog_fieldMotiv}</div><p style="font-size:12px;color:#555;line-height:1.6">${esc(m.motivacao)}</p></div>` : ""}
-        ${m.impacto?.trim() ? `<div style="margin-bottom:8px"><div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:4px">${t.doc_changelog_fieldImpact}</div><p style="font-size:12px;color:#555;line-height:1.6">${esc(m.impacto)}</p></div>` : ""}
+        ${m.descricao?.trim() ? `<div style="font-size:12px;color:#333;margin-bottom:8px;line-height:1.7">${mdHtml(m.descricao)}</div>` : ""}
+        ${m.motivacao?.trim() ? `<div style="margin-bottom:8px"><div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:4px">${t.doc_changelog_fieldMotiv}</div><div style="font-size:12px;color:#555;line-height:1.6">${mdHtml(m.motivacao)}</div></div>` : ""}
+        ${m.impacto?.trim() ? `<div style="margin-bottom:8px"><div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:4px">${t.doc_changelog_fieldImpact}</div><div style="font-size:12px;color:#555;line-height:1.6">${mdHtml(m.impacto)}</div></div>` : ""}
         ${(m.codigoAntes?.trim() || m.codigoDepois?.trim()) ? `
           <div style="margin-top:10px">
             <div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#999;margin-bottom:6px">Diff</div>
@@ -419,14 +420,14 @@ export function buildChangelogHtml(config, tObj) {
               ${m.codigoDepois?.trim() ? m.codigoDepois.split("\n").map(line => `<div style="padding:2px 14px 2px 10px;background:rgba(16,185,129,0.12);border-left:3px solid #10B981;color:#86efac;white-space:pre-wrap;word-break:break-all">+ ${esc(line)}</div>`).join("") : ""}
             </div>
           </div>` : ""}
-        ${m.notas?.trim() ? `<div style="margin-top:8px;padding:8px 12px;background:#fffbeb;border-left:3px solid #D97706;border-radius:0 6px 6px 0"><span style="font-size:10px;font-weight:700;color:#D97706">${t.doc_docx_notePrefix}</span><span style="font-size:11px;color:#555">${esc(m.notas)}</span></div>` : ""}
+        ${m.notas?.trim() ? `<div style="margin-top:8px;padding:8px 12px;background:#fffbeb;border-left:3px solid #D97706;border-radius:0 6px 6px 0"><span style="font-size:10px;font-weight:700;color:#D97706">${t.doc_docx_notePrefix}</span><span style="font-size:11px;color:#555">${mdHtml(m.notas)}</span></div>` : ""}
       </div>`).join("")}
     </div>`;
   }).join("");
 
   return `<!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="UTF-8"/><title>${esc(config.titulo) || t.doc_common_footerChangelog}</title>
-<style>${BASE_STYLE}</style></head><body>
+<style>${BASE_STYLE}</style></head><body style="--md-primary:${primary}">
 ${PRINT_BAR(t.doc_common_footerChangelog, "#10b981", config.formato, config.versao, t.doc_common_printBtn)}
 <div style="padding:48px 48px 36px;border-bottom:4px solid ${primary}">
   ${safeLogo(config.logo) ? `<div style="margin-bottom:24px"><img src="${safeLogo(config.logo)}" style="max-height:80px;max-width:280px;object-fit:contain"/></div>` : ""}
@@ -457,7 +458,7 @@ ${config.descricao?.some(v => v.trim()) ? `
     <div style="width:5px;height:24px;background:${primary};border-radius:3px"></div>
     <div style="font-size:16px;font-weight:800;color:${primary}">${t.doc_changelog_overview}</div>
   </div>
-  ${config.descricao.filter(v => v.trim()).map(v => `<p style="font-size:12px;color:#333;margin-bottom:10px">${esc(v)}</p>`).join("")}
+  ${config.descricao.filter(v => v.trim()).map(v => `<div style="font-size:12px;color:#333;margin-bottom:10px">${mdHtml(v)}</div>`).join("")}
 </div>` : ""}
 
 ${config.mudancas.length ? `
@@ -493,7 +494,7 @@ ${config.resumo?.some(v => v.trim()) ? `
     <div style="width:5px;height:24px;background:${cores.chore};border-radius:3px"></div>
     <div style="font-size:16px;font-weight:800;color:${primary}">${t.doc_changelog_summary}</div>
   </div>
-  ${config.resumo.filter(v => v.trim()).map(v => `<p style="font-size:12px;color:#333;margin-bottom:10px">${esc(v)}</p>`).join("")}
+  ${config.resumo.filter(v => v.trim()).map(v => `<div style="font-size:12px;color:#333;margin-bottom:10px">${mdHtml(v)}</div>`).join("")}
 </div>` : ""}
 
 <div style="padding:20px 48px;border-top:1px solid #eee;display:flex;align-items:center;justify-content:space-between;color:#999;font-size:11px">

@@ -24,9 +24,12 @@ export function ArrayField({ label, values = [], onChange, mono = false, placeho
           </div>
         ))}
       </div>
-      <button onClick={() => onChange([...values, ""])} className="btn-ghost" style={{ marginTop: 12 }}>
-        <Bi name="plus-lg" size={12} /> {t.addLine}
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
+        <button onClick={() => onChange([...values, ""])} className="btn-ghost">
+          <Bi name="plus-lg" size={12} /> {t.addLine}
+        </button>
+        {!mono && <span style={{ fontSize: 11, color: "var(--tx3)", fontFamily: "var(--mono)" }}>{t.mdHint}</span>}
+      </div>
     </div>
   );
 }

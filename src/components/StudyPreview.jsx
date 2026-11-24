@@ -2,6 +2,7 @@ import React from "react";
 import { CustomTables } from "./CustomTables";
 import { useLang } from "../contexts/lang";
 import { formatDate } from "../utils/date";
+import { Md } from "./Md";
 
 export function StudyPreview({ config }) {
   const { t } = useLang();
@@ -14,7 +15,7 @@ export function StudyPreview({ config }) {
   };
 
   return (
-    <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, lineHeight: 1.75, color: "#1a1a2e", background: "#fff" }}>
+    <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, lineHeight: 1.75, color: "#1a1a2e", background: "#fff", "--md-primary": primary }}>
       <div data-anchor="sec:info" style={{ padding: "56px 48px 42px", background: `linear-gradient(160deg, ${primary}08, transparent)`, borderBottom: `4px solid ${primary}` }}>
         {config.logo && <div style={{ marginBottom: 28 }}><img src={config.logo} alt="Logo" style={{ maxHeight: 100, maxWidth: 350, objectFit: "contain" }} /></div>}
         <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#aaa", textTransform: "uppercase", marginBottom: 14 }}>{t.doc_study_overline}</div>
@@ -33,7 +34,7 @@ export function StudyPreview({ config }) {
             <div style={{ width: 5, height: 24, background: primary, borderRadius: 3 }} />
             <div style={{ fontSize: 18, fontWeight: 800, color: primary }}>{t.doc_study_intro}</div>
           </div>
-          {config.introducao.filter(v => v.trim()).map((v, i) => <p key={i} style={{ fontSize: 13, color: "#333", marginBottom: 12 }}>{v}</p>)}
+          {config.introducao.filter(v => v.trim()).map((v, i) => <div key={i} style={{ fontSize: 13, color: "#333", marginBottom: 12 }}><Md text={v} /></div>)}
         </div>
       )}
 
@@ -88,8 +89,8 @@ export function StudyPreview({ config }) {
                   <div style={{ fontSize: 15, fontWeight: 800, color: "#1a1a2e" }}>{p.titulo || t.noTitle}</div>
                   <span style={{ background: `${c}18`, color: c, padding: "2px 10px", borderRadius: 12, fontSize: 10, fontWeight: 800, letterSpacing: .5, marginLeft: "auto" }}>{p.tipo}</span>
                 </div>
-                {d.explicacao?.some(v => v.trim()) && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>{t.doc_study_fieldExplanation}</div>{d.explicacao.filter(v => v.trim()).map((v, j) => <p key={j} style={{ fontSize: 12, color: "#333", lineHeight: 1.7, marginBottom: 6 }}>{v}</p>)}</div>}
-                {d.exemplos?.some(v => v.trim()) && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>{t.doc_study_fieldExamples}</div>{d.exemplos.filter(v => v.trim()).map((v, j) => <p key={j} style={{ fontSize: 12, color: "#333", lineHeight: 1.7, marginBottom: 6 }}>{v}</p>)}</div>}
+                {d.explicacao?.some(v => v.trim()) && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>{t.doc_study_fieldExplanation}</div>{d.explicacao.filter(v => v.trim()).map((v, j) => <div key={j} style={{ fontSize: 12, color: "#333", lineHeight: 1.7, marginBottom: 6 }}><Md text={v} /></div>)}</div>}
+                {d.exemplos?.some(v => v.trim()) && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>{t.doc_study_fieldExamples}</div>{d.exemplos.filter(v => v.trim()).map((v, j) => <div key={j} style={{ fontSize: 12, color: "#333", lineHeight: 1.7, marginBottom: 6 }}><Md text={v} /></div>)}</div>}
                 {d.codigo?.some(v => v.trim()) && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>{t.doc_study_fieldCode}</div>{d.codigo.filter(v => v.trim()).map((v, j) => <pre key={j} style={{ background: `#${config.cores.codeBg}`, color: `#${config.cores.codeText}`, padding: "12px 16px", borderRadius: 8, fontSize: 11, fontFamily: "monospace", lineHeight: 1.6, overflowX: "auto", marginBottom: 8, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{v}</pre>)}</div>}
               </div>
             );
@@ -105,7 +106,7 @@ export function StudyPreview({ config }) {
             <div style={{ width: 5, height: 24, background: typeColors.RESUMO, borderRadius: 3 }} />
             <div style={{ fontSize: 18, fontWeight: 800, color: primary }}>{t.doc_study_conclusion}</div>
           </div>
-          {config.conclusao.filter(v => v.trim()).map((v, i) => <p key={i} style={{ fontSize: 13, color: "#333", marginBottom: 12 }}>{v}</p>)}
+          {config.conclusao.filter(v => v.trim()).map((v, i) => <div key={i} style={{ fontSize: 13, color: "#333", marginBottom: 12 }}><Md text={v} /></div>)}
         </div>
       )}
 

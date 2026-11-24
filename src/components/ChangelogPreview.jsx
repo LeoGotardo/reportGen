@@ -3,6 +3,7 @@ import { CHANGE_TYPES } from "../constants/templates";
 import { CustomTables } from "./CustomTables";
 import { useLang } from "../contexts/lang";
 import { formatDate } from "../utils/date";
+import { Md } from "./Md";
 
 export function ChangelogPreview({ config }) {
   const { t } = useLang();
@@ -25,7 +26,7 @@ export function ChangelogPreview({ config }) {
   const typeOrder = ["breaking", "feat", "fix", "refactor", "perf", "style", "chore"];
 
   return (
-    <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, lineHeight: 1.75, color: "#1a1a2e", background: "#fff" }}>
+    <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, lineHeight: 1.75, color: "#1a1a2e", background: "#fff", "--md-primary": primary }}>
       <div data-anchor="sec:info" style={{ padding: "48px 48px 36px", borderBottom: `4px solid ${primary}` }}>
         {config.logo && <div style={{ marginBottom: 24 }}><img src={config.logo} alt="Logo" style={{ maxHeight: 80, maxWidth: 280, objectFit: "contain" }} /></div>}
         <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#aaa", textTransform: "uppercase", marginBottom: 12 }}>{t.doc_changelog_overline}</div>
@@ -61,7 +62,7 @@ export function ChangelogPreview({ config }) {
             <div style={{ width: 5, height: 24, background: primary, borderRadius: 3 }} />
             <div style={{ fontSize: 16, fontWeight: 800, color: primary }}>{t.doc_changelog_overview}</div>
           </div>
-          {config.descricao.filter(v => v.trim()).map((v, i) => <p key={i} style={{ fontSize: 12, color: "#333", marginBottom: 10 }}>{v}</p>)}
+          {config.descricao.filter(v => v.trim()).map((v, i) => <div key={i} style={{ fontSize: 12, color: "#333", marginBottom: 10 }}><Md text={v} /></div>)}
         </div>
       )}
 
@@ -91,7 +92,7 @@ export function ChangelogPreview({ config }) {
                     </td>
                     <td style={{ padding: "8px 12px", borderBottom: "1px solid #eee", fontWeight: 600, fontSize: 12 }}>{m.titulo || "—"}</td>
                     <td style={{ padding: "8px 12px", borderBottom: "1px solid #eee", fontFamily: "monospace", fontSize: 10, color: "#666" }}>{m.arquivo || "—"}</td>
-                    <td style={{ padding: "8px 12px", borderBottom: "1px solid #eee", fontSize: 11, color: "#444" }}>{m.impacto || "—"}</td>
+                    <td style={{ padding: "8px 12px", borderBottom: "1px solid #eee", fontSize: 11, color: "#444" }}><Md text={m.impacto || "—"} inline /></td>
                   </tr>
                 );
               })}
@@ -120,9 +121,9 @@ export function ChangelogPreview({ config }) {
                   <div key={m.id} data-anchor={`item:${m.id}`} style={{ marginBottom: 20, borderLeft: `3px solid ${c}`, paddingLeft: 18 }}>
                     <div style={{ fontSize: 14, fontWeight: 800, color: "#1a1a2e", marginBottom: 6 }}>{m.titulo || t.noTitle}</div>
                     {m.arquivo && <div style={{ fontFamily: "monospace", fontSize: 10, color: "#666", background: "#f5f5f5", padding: "3px 10px", borderRadius: 5, display: "inline-block", marginBottom: 8 }}>{m.arquivo}</div>}
-                    {m.descricao?.trim() && <p style={{ fontSize: 12, color: "#333", marginBottom: 8, lineHeight: 1.7 }}>{m.descricao}</p>}
-                    {m.motivacao?.trim() && <div style={{ marginBottom: 8 }}><div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 4 }}>{t.doc_changelog_fieldMotiv}</div><p style={{ fontSize: 12, color: "#555", lineHeight: 1.6 }}>{m.motivacao}</p></div>}
-                    {m.impacto?.trim() && <div style={{ marginBottom: 8 }}><div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 4 }}>{t.doc_changelog_fieldImpact}</div><p style={{ fontSize: 12, color: "#555", lineHeight: 1.6 }}>{m.impacto}</p></div>}
+                    {m.descricao?.trim() && <div style={{ fontSize: 12, color: "#333", marginBottom: 8, lineHeight: 1.7 }}><Md text={m.descricao} /></div>}
+                    {m.motivacao?.trim() && <div style={{ marginBottom: 8 }}><div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 4 }}>{t.doc_changelog_fieldMotiv}</div><div style={{ fontSize: 12, color: "#555", lineHeight: 1.6 }}><Md text={m.motivacao} /></div></div>}
+                    {m.impacto?.trim() && <div style={{ marginBottom: 8 }}><div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 4 }}>{t.doc_changelog_fieldImpact}</div><div style={{ fontSize: 12, color: "#555", lineHeight: 1.6 }}><Md text={m.impacto} /></div></div>}
                     {(m.codigoAntes?.trim() || m.codigoDepois?.trim()) && (
                       <div style={{ marginTop: 10 }}>
                         <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>Diff</div>
@@ -136,7 +137,7 @@ export function ChangelogPreview({ config }) {
                         </div>
                       </div>
                     )}
-                    {m.notas?.trim() && <div style={{ marginTop: 8, padding: "8px 12px", background: "#fffbeb", borderLeft: "3px solid #D97706", borderRadius: "0 6px 6px 0" }}><span style={{ fontSize: 10, fontWeight: 700, color: "#D97706" }}>{t.doc_docx_notePrefix}</span><span style={{ fontSize: 11, color: "#555" }}>{m.notas}</span></div>}
+                    {m.notas?.trim() && <div style={{ marginTop: 8, padding: "8px 12px", background: "#fffbeb", borderLeft: "3px solid #D97706", borderRadius: "0 6px 6px 0" }}><span style={{ fontSize: 10, fontWeight: 700, color: "#D97706" }}>{t.doc_docx_notePrefix}</span><span style={{ fontSize: 11, color: "#555" }}><Md text={m.notas} /></span></div>}
                   </div>
                 ))}
               </div>
@@ -153,7 +154,7 @@ export function ChangelogPreview({ config }) {
             <div style={{ width: 5, height: 24, background: `#${config.cores.chore}`, borderRadius: 3 }} />
             <div style={{ fontSize: 16, fontWeight: 800, color: primary }}>{t.doc_changelog_summary}</div>
           </div>
-          {config.resumo.filter(v => v.trim()).map((v, i) => <p key={i} style={{ fontSize: 12, color: "#333", marginBottom: 10 }}>{v}</p>)}
+          {config.resumo.filter(v => v.trim()).map((v, i) => <div key={i} style={{ fontSize: 12, color: "#333", marginBottom: 10 }}><Md text={v} /></div>)}
         </div>
       )}
 
